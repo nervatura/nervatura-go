@@ -826,6 +826,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 		"ui_report": "reportkey", "ui_menu": "menukey"}
 	var infoData = SM{"qkey": "refnumber->id", "nervatype": "", "refnumber": "",
 		"useDeleted": "false", "extraInfo": "false"}
+	var err error
 	refIndex := 0
 
 	if _, found := options["nervatype"]; !found || GetIType(options["nervatype"]) != "string" {
@@ -875,7 +876,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				infoData["refType"] = strings.Split(infoData["refnumber"], "/")[0]
 				infoData["refnumber"] = infoData["refnumber"][len(infoData["refType"])+1:]
 				if len(strings.Split(infoData["refnumber"], "~")) > 1 {
-					refIndex, err := strconv.Atoi(strings.Split(infoData["refnumber"], "~")[1])
+					refIndex, err = strconv.Atoi(strings.Split(infoData["refnumber"], "~")[1])
 					if err != nil {
 						return nil, errors.New(GetMessage("invalid_refnumber"))
 					}
@@ -915,7 +916,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				fieldname := strings.Split(infoData["refnumber"], "~~")[len(snum)-1]
 				refnumber := strings.Replace(infoData["refnumber"], "~~"+fieldname, "", 1)
 				if len(strings.Split(fieldname, "~")) > 1 {
-					refIndex, err := strconv.Atoi(strings.Split(fieldname, "~")[1])
+					refIndex, err = strconv.Atoi(strings.Split(fieldname, "~")[1])
 					if err != nil {
 						return nil, errors.New(GetMessage("invalid_refnumber"))
 					}
@@ -946,7 +947,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 		case "item", "payment", "movement":
 			//refnumber~rownumber
 			if len(strings.Split(infoData["refnumber"], "~")) > 1 {
-				refIndex, err := strconv.Atoi(strings.Split(infoData["refnumber"], "~")[1])
+				refIndex, err = strconv.Atoi(strings.Split(infoData["refnumber"], "~")[1])
 				if err != nil {
 					return nil, errors.New(GetMessage("invalid_refnumber"))
 				}
@@ -961,7 +962,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 			//partnumber~validfrom~curr~qty -> def. price
 			//partnumber~pricetype~validfrom~curr~qty
 			if len(strings.Split(infoData["refnumber"], "~")) == 5 || len(strings.Split(infoData["refnumber"], "~")) == 4 {
-				var qtyStr = ""
+				var qtyStr string
 				if len(strings.Split(infoData["refnumber"], "~")) == 4 {
 					infoData["pricetype"] = "price"
 					infoData["validfrom"] = strings.Split(infoData["refnumber"], "~")[1]

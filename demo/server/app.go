@@ -410,6 +410,9 @@ func main() {
 	signingKeys := ntura.IM{}
 	if config.APIEndpoint != "" {
 		signingKeys, err = getCertificates(config.APIEndpoint)
+		if err != nil {
+			panic(err)
+		}
 	}
 	signingKeys[config.TokenKid] = config.TokenKey
 

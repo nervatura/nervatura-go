@@ -293,6 +293,9 @@ func (api *API) AuthUserLogin(options IM) (string, error) {
 	}
 	refname = getMD5Hash(refname)
 	hash, err := api.getHashvalue(refname)
+	if err != nil {
+		return "", err
+	}
 
 	if password != "" && hash != "" {
 		match, err := argon2id.ComparePasswordAndHash(password, hash)
