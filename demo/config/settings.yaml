@@ -2,7 +2,7 @@
 # Environment variables prefix: NT (prefix + "_" + the key name)
 # e.q. NT_API_KEY, NT_ALIAS_DEMO
 lang: en
-report_dir: ../../../report-templates/templates
+report_dir: ../../report-templates/templates
 start_page: default
 
 api_key: APISECRETKEY
@@ -45,7 +45,7 @@ alias:
   # Value: a valid database alias name (e.q. demo) or empty (multiple database)
   default: demo
   # Database alias list
-  demo: sqlite3://file:../data/demo.db?cache=shared&mode=rwc
+  demo: sqlite3://file:data/demo.db?cache=shared&mode=rwc
   test: sqlite3://file:test.db?cache=shared&mode=rwc
   pgdemo: postgres://postgres:admin@localhost:5432/nervatura?sslmode=disable
   mydemo: mysql://root:admin@tcp(localhost:3306)/nervatura?allowOldPasswords=true&allowCleartextPasswords=true
