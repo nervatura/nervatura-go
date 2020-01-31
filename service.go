@@ -798,7 +798,7 @@ func (nstore *NervaStore) sendEmail(options IM) (results IM, err error) {
 	if _, found := nstore.settings.SMTP["user"]; found && GetIType(nstore.settings.SMTP["user"]) == "string" {
 		username = nstore.settings.SMTP["user"].(string)
 	}
-	password := ""
+	var password string
 	if _, found := nstore.settings.SMTP["password"]; found && GetIType(nstore.settings.SMTP["password"]) == "string" {
 		password = nstore.settings.SMTP["password"].(string)
 	}

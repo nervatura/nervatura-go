@@ -277,7 +277,7 @@ func (api *API) AuthUserLogin(options IM) (string, error) {
 		}
 		options["database"] = api.NStore.settings.Alias["default"]
 	}
-	password := ""
+	var password string
 	if _, found := options["password"]; found && options["password"] != nil {
 		password = options["password"].(string)
 	}
