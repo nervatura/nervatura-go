@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/jordan-wright/email"
 	"github.com/nervatura/go-report"
 )
@@ -562,8 +562,8 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	}
 	switch results["report"].(IM)["reptype"] {
 	case "xls":
-		cols := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-			"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+		//cols := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+		//	"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
 		template := IM{}
 		if err := json.Unmarshal([]byte(results["report"].(IM)["report"].(string)), &template); err != nil {
 			return results, err
@@ -592,10 +592,14 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 						for index := 0; index < len(columns); index++ {
 							if index <= 25 {
 								colname := columns[index].(IM)["name"].(string)
+								cell, err := excelize.CoordinatesToCellName(index+1, 1)
+								if err != nil {
+									return results, err
+								}
 								if _, found := results["datarows"].(IM)["labels"].(IM)[colname]; found {
-									xlsx.SetCellValue(sname, cols[index]+"1", results["datarows"].(IM)["labels"].(IM)[colname])
+									xlsx.SetCellValue(sname, cell, results["datarows"].(IM)["labels"].(IM)[colname])
 								} else {
-									xlsx.SetCellValue(sname, cols[index]+"1", colname)
+									xlsx.SetCellValue(sname, cell, colname)
 								}
 							}
 						}
@@ -605,8 +609,12 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 							drow := results["datarows"].(IM)[key].([]IM)[index]
 							for c := 0; c < len(columns); c++ {
 								colname := columns[c].(IM)["name"].(string)
+								cell, err := excelize.CoordinatesToCellName(c+1, index+2)
+								if err != nil {
+									return results, err
+								}
 								if _, found := drow[colname]; found {
-									xlsx.SetCellValue(sname, cols[c]+strconv.Itoa(index+2), drow[colname])
+									xlsx.SetCellValue(sname, cell, drow[colname])
 								}
 							}
 						}
