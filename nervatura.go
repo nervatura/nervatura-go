@@ -44,6 +44,9 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+//TimeLayout DateTime format
+const TimeLayout = "2006-01-02 15:04:05"
+
 //IM is a map[string]interface{} type short alias
 type IM = map[string]interface{}
 

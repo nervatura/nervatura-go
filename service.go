@@ -544,7 +544,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 		trows += len(results["datarows"].(IM)[ds["dataset"].(string)].([]IM))
 	}
 	results["datarows"].(IM)["title"] = results["report"].(IM)["repname"]
-	results["datarows"].(IM)["crtime"] = time.Now().Format("2006-01-02 15:04:05")
+	results["datarows"].(IM)["crtime"] = time.Now().Format(TimeLayout)
 	if trows == 0 {
 		return results, errors.New(GetMessage("nodata"))
 	}

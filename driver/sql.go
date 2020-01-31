@@ -289,7 +289,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	var err error
 	if ds.db == nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+			"stamp":   time.Now().Format(ntura.TimeLayout),
 			"state":   "err",
 			"message": ntura.GetMessage("missing_driver")})
 		return logData, errors.New(ntura.GetMessage("missing_driver"))
@@ -298,7 +298,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	trans, err := ds.db.Begin()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+			"stamp":   time.Now().Format(ntura.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -317,13 +317,13 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 
 	logData = append(logData, SM{
 		"database": ds.alias,
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(ntura.TimeLayout),
 		"state":    "create",
 		"message":  ntura.GetMessage("log_start_process")})
 
 	//drop all tables if exist
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_drop_table")})
 
@@ -348,7 +348,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		_, err = trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+				"stamp":   time.Now().Format(ntura.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -357,7 +357,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	err = trans.Commit()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+			"stamp":   time.Now().Format(ntura.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -366,7 +366,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	//create all tables
 	trans, err = ds.db.Begin()
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_create_table")})
 	model := ntura.DataModel()["model"].(IM)
@@ -420,7 +420,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		_, err = trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+				"stamp":   time.Now().Format(ntura.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -429,7 +429,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 
 	//create indexes
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_create_index")})
 	indexRows := ntura.DataModel()["index"].(map[string]ntura.MI)
@@ -447,7 +447,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		_, err = trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+				"stamp":   time.Now().Format(ntura.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -456,7 +456,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 
 	//insert data
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_init_data")})
 	dataRows := ntura.DataModel()["data"].(map[string][]IM)
@@ -506,7 +506,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 			_, err = trans.Exec(sqlString)
 			if err != nil {
 				logData = append(logData, SM{
-					"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+					"stamp":   time.Now().Format(ntura.TimeLayout),
 					"state":   "err",
 					"message": err.Error()})
 				return logData, err
@@ -525,7 +525,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		_, err = trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+				"stamp":   time.Now().Format(ntura.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -535,7 +535,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	err = trans.Commit()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+			"stamp":   time.Now().Format(ntura.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -543,7 +543,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 
 	//compact
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_rebuilding")})
 	switch ds.engine {
@@ -552,7 +552,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		_, err = ds.db.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+				"stamp":   time.Now().Format(ntura.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err

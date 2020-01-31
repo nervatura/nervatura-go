@@ -337,7 +337,7 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	database := options["database"].(string)
 	if err := api.NStore.ds.CreateConnection(database, api.NStore.settings.Alias[database], api.NStore.settings); err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+			"stamp":   time.Now().Format(TimeLayout),
 			"state":   "err",
 			"message": GetMessage("not_connect")})
 		return logData, errors.New(GetMessage("not_connect"))
@@ -346,7 +346,7 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	logData, err := api.NStore.ds.CreateDatabase(logData)
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+			"stamp":   time.Now().Format(TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -358,7 +358,7 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 			logData, err = api.demoDatabase(options)
 			if err != nil {
 				logData = append(logData, SM{
-					"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+					"stamp":   time.Now().Format(TimeLayout),
 					"state":   "err",
 					"message": err.Error()})
 				return logData, err
@@ -367,7 +367,7 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	}
 
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(TimeLayout),
 		"state":   "log",
 		"message": GetMessage("info_create_ok")})
 
@@ -389,7 +389,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "groups",
 		"result":   resultStr[1:],
@@ -408,7 +408,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "customer",
 		"datatype": "deffield",
@@ -424,7 +424,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "customer",
 		"datatype": "customer",
@@ -440,7 +440,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "customer",
 		"datatype": "address",
@@ -456,7 +456,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "customer",
 		"datatype": "contact",
@@ -472,7 +472,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "customer",
 		"datatype": "event",
@@ -492,7 +492,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "employee",
 		"datatype": "deffield",
@@ -507,7 +507,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "employee",
 		"datatype": "employee",
@@ -522,7 +522,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "employee",
 		"datatype": "address",
@@ -537,7 +537,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "employee",
 		"datatype": "contact",
@@ -552,7 +552,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "employee",
 		"datatype": "event",
@@ -572,7 +572,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "product",
 		"datatype": "deffield",
@@ -587,7 +587,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "product",
 		"datatype": "product",
@@ -602,7 +602,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "product",
 		"datatype": "barcode",
@@ -617,7 +617,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "product",
 		"datatype": "price",
@@ -632,7 +632,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "product",
 		"datatype": "event",
@@ -652,7 +652,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "project",
 		"datatype": "deffield",
@@ -667,7 +667,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "project",
 		"datatype": "project",
@@ -682,7 +682,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "project",
 		"datatype": "address",
@@ -697,7 +697,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "project",
 		"datatype": "contact",
@@ -712,7 +712,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "project",
 		"datatype": "event",
@@ -732,7 +732,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "tool",
 		"datatype": "deffield",
@@ -747,7 +747,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "tool",
 		"datatype": "tool",
@@ -762,7 +762,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "tool",
 		"datatype": "event",
@@ -779,7 +779,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "place",
 		"result":   resultStr[1:],
@@ -796,7 +796,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "document(offer,order,invoice,rent,worksheet)",
 		"datatype": "trans",
@@ -811,7 +811,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "item",
 		"result":   resultStr[1:],
@@ -825,7 +825,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "link",
 		"result":   resultStr[1:],
@@ -842,7 +842,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "payment(bank,petty cash)",
 		"datatype": "trans",
@@ -857,7 +857,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "payment",
 		"result":   resultStr[1:],
@@ -871,7 +871,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "link",
 		"result":   resultStr[1:],
@@ -890,7 +890,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "stock control(tool movement,delivery,stock transfer,correction,formula,production)",
 		"datatype": "trans",
@@ -905,7 +905,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "movement",
 		"result":   resultStr[1:],
@@ -919,7 +919,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "link",
 		"result":   resultStr[1:],
@@ -935,7 +935,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"section":  "sample menus",
 		"datatype": "ui_menu",
@@ -950,7 +950,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + strconv.Itoa(result[index])
 	}
 	logData = append(logData, SM{
-		"stamp":    time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":    time.Now().Format(TimeLayout),
 		"state":    "demo",
 		"datatype": "ui_menufields",
 		"result":   resultStr[1:],
@@ -974,7 +974,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		resultStr += "," + reports[index]["reportkey"].(string)
 	}
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"stamp":   time.Now().Format(TimeLayout),
 		"state":   "demo",
 		"section": "report templates",
 		"result":  resultStr[1:],

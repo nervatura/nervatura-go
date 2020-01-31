@@ -578,7 +578,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 							tm, err = time.Parse("2006-01-02T15:04:05", value.(string))
 						}
 						if err != nil {
-							tm, err = time.Parse("2006-01-02 15:04:05", value.(string))
+							tm, err = time.Parse(TimeLayout, value.(string))
 						}
 						if err != nil {
 							tm, err = time.Parse("2006-01-02 15:04", value.(string))
