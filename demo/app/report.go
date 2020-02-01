@@ -9,6 +9,22 @@ import (
 	ntura "github.com/nervatura/nervatura-go"
 )
 
+func getReportResult(results ntura.IM, err error, options ntura.IM, c echo.Context) error {
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, ntura.SM{"code": "400", "message": err.Error()})
+	}
+	if options["output"] == "tmp" {
+		return c.JSON(http.StatusOK, results)
+	}
+	if results["filetype"] == "xlsx" {
+		return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", results["template"].([]uint8))
+	}
+	if results["filetype"] == "ntr" && options["output"] == "xml" {
+		return c.XML(http.StatusOK, results["template"])
+	}
+	return c.Blob(http.StatusOK, "application/pdf", results["template"].([]uint8))
+}
+
 func (app *App) report(c echo.Context) error {
 	options := ntura.IM{"filters": ntura.IM{}}
 	for key, value := range c.QueryParams() {
@@ -34,19 +50,7 @@ func (app *App) report(c echo.Context) error {
 		}
 	}
 	results, err := (&ntura.API{NStore: c.Get("nstore").(*ntura.NervaStore)}).Report(options)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, ntura.SM{"code": "400", "message": err.Error()})
-	}
-	if options["output"] == "tmp" {
-		return c.JSON(http.StatusOK, results)
-	}
-	if results["filetype"] == "xlsx" {
-		return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", results["template"].([]uint8))
-	}
-	if results["filetype"] == "ntr" && options["output"] == "xml" {
-		return c.XML(http.StatusOK, results["template"])
-	}
-	return c.Blob(http.StatusOK, "application/pdf", results["template"].([]uint8))
+	return getReportResult(results, err, options, c)
 }
 
 func (app *App) reportList(c echo.Context) error {

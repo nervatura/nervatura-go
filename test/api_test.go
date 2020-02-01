@@ -12,6 +12,13 @@ func getAPI() *nt.API {
 	return &nt.API{NStore: nt.New(config, &driver.SQLDriver{})}
 }
 
+func getLogin() (string, *nt.API, error) {
+	api := getAPI()
+	options := nt.IM{"database": alias, "username": username, "password": password}
+	token, err := api.AuthUserLogin(options)
+	return token, api, err
+}
+
 func TestDatabaseCreate(t *testing.T) {
 	options := nt.IM{"database": alias, "demo": "true", "report_dir": "../../report-templates/templates"}
 	_, err := getAPI().DatabaseCreate(options)
@@ -22,29 +29,31 @@ func TestDatabaseCreate(t *testing.T) {
 
 func TestApiAuthUserLogin(t *testing.T) {
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	token, err := getAPI().AuthUserLogin(options)
+	_, err := getAPI().AuthUserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
-	print(token)
+	//print(token)
 }
 
 func TestApiAuthTokenLogin(t *testing.T) {
-	options := nt.IM{"token": testToken}
-	err := getAPI().AuthTokenLogin(options)
+	token, api, err := getLogin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := nt.IM{"token": token}
+	err = api.AuthTokenLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestApiAuthPassword(t *testing.T) {
-	api := getAPI()
-	options := nt.IM{"token": testToken}
-	err := api.AuthTokenLogin(options)
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
-	options = nt.IM{"username": "demo", "password": "321", "confirm": "321"}
+	options := nt.IM{"username": "demo", "password": "321", "confirm": "321"}
 	err = api.AuthPassword(options)
 	if err != nil {
 		t.Fatal(err)
@@ -52,13 +61,11 @@ func TestApiAuthPassword(t *testing.T) {
 }
 
 func TestAPIDelete(t *testing.T) {
-	api := getAPI()
-	options := nt.IM{"token": testToken}
-	err := api.AuthTokenLogin(options)
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
-	options = nt.IM{"nervatype": "address", "id": 2}
+	options := nt.IM{"nervatype": "address", "id": 2}
 	err = api.APIDelete(options)
 	if err != nil {
 		t.Fatal(err)
@@ -71,13 +78,11 @@ func TestAPIDelete(t *testing.T) {
 }
 
 func TestAPIGet(t *testing.T) {
-	api := getAPI()
-	options := nt.IM{"token": testToken}
-	err := api.AuthTokenLogin(options)
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
-	options = nt.IM{"nervatype": "customer", "metadata": true,
+	options := nt.IM{"nervatype": "customer", "metadata": true,
 		"filter": "custname;==;First Customer Co.|custnumber;in;DMCUST/00001,DMCUST/00002"}
 	_, err = api.APIGet(options)
 	if err != nil {
@@ -91,8 +96,7 @@ func TestAPIGet(t *testing.T) {
 }
 
 func TestAPIView(t *testing.T) {
-	api := getAPI()
-	err := api.AuthTokenLogin(nt.IM{"token": testToken})
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,8 +117,7 @@ func TestAPIView(t *testing.T) {
 }
 
 func TestAPIFunction(t *testing.T) {
-	api := getAPI()
-	err := api.AuthTokenLogin(nt.IM{"token": testToken})
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,8 +148,7 @@ func TestAPIFunction(t *testing.T) {
 }
 
 func TestAPIReport(t *testing.T) {
-	api := getAPI()
-	err := api.AuthTokenLogin(nt.IM{"token": testToken})
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,8 +190,7 @@ func TestAPIReport(t *testing.T) {
 }
 
 func TestAPIReportList(t *testing.T) {
-	api := getAPI()
-	err := api.AuthTokenLogin(nt.IM{"token": testToken})
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,8 +205,7 @@ func TestAPIReportList(t *testing.T) {
 }
 
 func TestAPIReportDelete(t *testing.T) {
-	api := getAPI()
-	err := api.AuthTokenLogin(nt.IM{"token": testToken})
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,8 +220,7 @@ func TestAPIReportDelete(t *testing.T) {
 }
 
 func TestAPIReportInstall(t *testing.T) {
-	api := getAPI()
-	err := api.AuthTokenLogin(nt.IM{"token": testToken})
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,9 +236,7 @@ func TestAPIReportInstall(t *testing.T) {
 }
 
 func TestAPIPost(t *testing.T) {
-	api := getAPI()
-	options := nt.IM{"token": testToken}
-	err := api.AuthTokenLogin(options)
+	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
