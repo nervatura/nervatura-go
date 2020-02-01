@@ -274,7 +274,7 @@ func TestAPIPost(t *testing.T) {
 			"transtype":   57,
 			"direction":   70,
 			"crdate":      "2019-09-01",
-			"transdate":   "2019-09-01",
+			"transdate":   "2019-09-02",
 			"duedate":     "2019-09-08T00:00:00",
 			"customer_id": 2,
 			"department":  149,
@@ -286,8 +286,8 @@ func TestAPIPost(t *testing.T) {
 			"keys": nt.IM{
 				"transnumber": nt.IL{"numberdef", "invoice_out"}}},
 		nt.IM{
-			"crdate":    "2019-09-01",
-			"transdate": "2019-09-01",
+			"crdate":    "2019-09-03",
+			"transdate": "2019-09-04",
 			"duedate":   "2019-09-08T00:00:00",
 			"curr":      "EUR",
 			"notes":     "Create a new item by Keys",
