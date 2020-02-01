@@ -20,7 +20,7 @@ func getLogin() (string, *nt.API, error) {
 }
 
 func TestDatabaseCreate(t *testing.T) {
-	options := nt.IM{"database": alias, "demo": "true", "report_dir": "../../report-templates/templates"}
+	options := nt.IM{"database": alias, "demo": "true", "report_dir": reportDir}
 	_, err := getAPI().DatabaseCreate(options)
 	if err != nil {
 		t.Fatal(err)
@@ -168,7 +168,7 @@ func TestAPIReport(t *testing.T) {
 		"reportkey": "ntr_invoice_en",
 		"output":    "xml",
 		"nervatype": "trans",
-		"refnumber": "DMINV/00001",
+		"refnumber": "DMINV/00002",
 	}
 	_, err = api.Report(options)
 	if err != nil {
@@ -179,7 +179,7 @@ func TestAPIReport(t *testing.T) {
 		"reportkey": "xls_vat_en",
 		"filters": nt.IM{
 			"date_from": "2014-01-01",
-			"date_to":   "2019-01-01",
+			"date_to":   "2022-01-01",
 			"curr":      "EUR",
 		},
 	}
@@ -196,7 +196,7 @@ func TestAPIReportList(t *testing.T) {
 	}
 
 	options := nt.IM{
-		"report_dir": "../../report-templates/templates",
+		"report_dir": reportDir,
 	}
 	_, err = api.ReportList(options)
 	if err != nil {
@@ -226,7 +226,7 @@ func TestAPIReportInstall(t *testing.T) {
 	}
 
 	options := nt.IM{
-		"report_dir": "../../report-templates/templates",
+		"report_dir": reportDir,
 		"reportkey":  "ntr_cash_in_en",
 	}
 	_, err = api.ReportInstall(options)
@@ -250,12 +250,10 @@ func TestAPIPost(t *testing.T) {
 			"address_metadata1": "value1",
 			"address_metadata2": "value2~note2"},
 		nt.IM{
-			"id":                6,
-			"zipcode":           "54321",
-			"city":              "BigCity",
-			"notes":             "Update an item by IDs",
-			"address_metadata1": "value1",
-			"address_metadata2": "value2~note2"},
+			"id":      6,
+			"zipcode": "54321",
+			"city":    "BigCity",
+			"notes":   "Update an item by IDs"},
 		nt.IM{
 			"keys": nt.IM{
 				"nervatype": "customer",
@@ -268,11 +266,9 @@ func TestAPIPost(t *testing.T) {
 		nt.IM{
 			"keys": nt.IM{
 				"id": "customer/DMCUST/00001~1"},
-			"zipcode":           "54321",
-			"city":              "BigCity",
-			"notes":             "Update an item by Keys",
-			"address_metadata1": "value1",
-			"address_metadata2": "value2~note2"}}
+			"zipcode": "54321",
+			"city":    "BigCity",
+			"notes":   "Update an item by Keys"}}
 	transData := []nt.IM{
 		nt.IM{
 			"transtype":   57,
@@ -308,7 +304,7 @@ func TestAPIPost(t *testing.T) {
 			"closed": 1,
 			"notes":  "Update an item by Keys",
 			"keys": nt.IM{
-				"id": "DMINV/00001"}}}
+				"id": "DMINV/00003"}}}
 	_, err = api.APIPost("address", addressData)
 	if err != nil {
 		t.Fatal(err)

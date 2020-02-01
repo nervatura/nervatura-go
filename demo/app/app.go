@@ -149,9 +149,4 @@ func (app *App) parseRequests() {
 		npi.POST("", app.npiTokenLogin)
 	}
 
-	//app.server.POST("/npi/token/login*", app.npiTokenLogin)
-	//app.server.POST("/npi/token/", app.npi, app.tokenAuth)
-	//app.server.POST("/npi/", app.npiTokenLogin)
-	//app.server.POST("/npi", app.npiTokenLogin)
-
 }
