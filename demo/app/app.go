@@ -111,27 +111,47 @@ func (app *App) parseRequests() {
 		return c.Redirect(http.StatusMovedPermanently, "/docs/")
 	})
 
-	app.server.POST("/api/auth/login*", app.apiAuthLogin)
-	app.server.POST("/api/auth/password*", app.apiAuthPassword, app.tokenAuth)
-	app.server.GET("/api/auth/refresh*", app.apiAuthRefresh, app.tokenAuth)
+	api := app.server.Group("/api")
+	{
+		api.POST("/database*", app.apiDatabase)
+		api.POST("/function*", app.apiFunction, app.tokenAuth)
+		api.POST("/view*", app.apiView, app.tokenAuth)
+	}
 
-	app.server.POST("/api/database*", app.apiDatabase)
-	app.server.POST("/api/function*", app.apiFunction, app.tokenAuth)
-	app.server.POST("/api/view*", app.apiView, app.tokenAuth)
+	auth := app.server.Group("/api/auth")
+	{
+		auth.POST("/login*", app.apiAuthLogin)
+		auth.POST("/password*", app.apiAuthPassword, app.tokenAuth)
+		auth.GET("/refresh*", app.apiAuthRefresh, app.tokenAuth)
+	}
 
-	app.server.GET("/api/report*", app.report, app.tokenAuth)
-	app.server.GET("/api/report/list*", app.reportList, app.tokenAuth)
-	app.server.POST("/api/report/install*", app.reportInstall, app.tokenAuth)
-	app.server.DELETE("/api/report/delete*", app.reportDelete, app.tokenAuth)
+	nervatype := app.server.Group("/api/:nervatype", app.tokenAuth)
+	{
+		nervatype.GET("", app.apiGetFilter)
+		nervatype.GET("/:ids", app.apiGetIds)
+		nervatype.POST("", app.apiPost)
+		nervatype.DELETE("", app.apiDelete)
+	}
 
-	app.server.GET("/api/:nervatype", app.apiGetFilter, app.tokenAuth)
-	app.server.GET("/api/:nervatype/:ids", app.apiGetIds, app.tokenAuth)
-	app.server.POST("/api/:nervatype", app.apiPost, app.tokenAuth)
-	app.server.DELETE("/api/:nervatype", app.apiDelete, app.tokenAuth)
+	report := app.server.Group("/api/report", app.tokenAuth)
+	{
+		report.GET("", app.report)
+		report.GET("/list*", app.reportList)
+		report.POST("/install*", app.reportInstall)
+		report.DELETE("/delete*", app.reportDelete)
+	}
 
-	app.server.POST("/npi/token/login*", app.npiTokenLogin)
-	app.server.POST("/npi/token/", app.npi, app.tokenAuth)
-	app.server.POST("/npi/", app.npiTokenLogin)
-	app.server.POST("/npi", app.npiTokenLogin)
+	npi := app.server.Group("/npi")
+	{
+		npi.POST("/token/login*", app.npiTokenLogin)
+		npi.POST("/token/", app.npi, app.tokenAuth)
+		npi.POST("/", app.npiTokenLogin)
+		npi.POST("", app.npiTokenLogin)
+	}
+
+	//app.server.POST("/npi/token/login*", app.npiTokenLogin)
+	//app.server.POST("/npi/token/", app.npi, app.tokenAuth)
+	//app.server.POST("/npi/", app.npiTokenLogin)
+	//app.server.POST("/npi", app.npiTokenLogin)
 
 }

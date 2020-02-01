@@ -39,10 +39,9 @@ func (app *App) report(c echo.Context) error {
 					options["report_id"] = reportID
 				}
 			case "output":
+				options["output"] = value[0]
 				if value[0] == "data" {
 					options["output"] = "tmp"
-				} else {
-					options["output"] = value[0]
 				}
 			default:
 				options[key] = value[0]
