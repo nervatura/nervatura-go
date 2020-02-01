@@ -31,52 +31,65 @@ type SQLDriver struct {
 	db      *sql.DB
 }
 
+const (
+	dcCasInt      = "{CAS_INT}"
+	dcCaeInt      = "{CAE_INT}"
+	dcCasFloat    = "{CAS_FLOAT}"
+	dcCaeFloat    = "{CAE_FLOAT}"
+	dcCasDate     = "{CAS_DATE}"
+	dcCaeDate     = "{CAE_DATE}"
+	dcFmsDate     = "{FMS_DATE}"
+	dcFmeDate     = "{FME_DATE}"
+	dcFmsDateTime = "{FMS_DATETIME}"
+	dcFmeDateTime = "{FME_DATETIME}"
+)
+
 func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 	switch ds.engine {
 	case "sqlite", "sqlite3":
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_INT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_INT}", " as integer)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_FLOAT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_FLOAT}", " as float8)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_DATE}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_DATE}", " as date)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATE}", "to_char(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATE}", ", 'YYYY-MM-DD')")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATETIME}", "to_char(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATETIME}", ", 'YYYY-MM-DD HH24:MI')")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasInt, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeInt, " as integer)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as float8)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " as date)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "to_char(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", 'YYYY-MM-DD')")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "to_char(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDateTime, ", 'YYYY-MM-DD HH24:MI')")
 	case "mysql":
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_INT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_INT}", " as signed)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_FLOAT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_FLOAT}", " as decimal)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_DATE}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_DATE}", " as date)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATE}", "date_format(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATE}", ", '%Y-%m-%d')")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATETIME}", "date_format(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATETIME}", ", '%Y-%m-%d %H:%i')")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasInt, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeInt, " as signed)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as decimal)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " as date)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "date_format(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", '%Y-%m-%d')")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "date_format(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDateTime, ", '%Y-%m-%d %H:%i')")
 	case "mssql":
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_INT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_INT}", " as int)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_FLOAT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_FLOAT}", " as float)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_DATE}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_DATE}", " as date)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATE}", "convert(varchar(10),")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATE}", ", 120)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATETIME}", "convert(varchar(16),")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATETIME}", ", 120)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasInt, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeInt, " as int)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as float)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " as date)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "convert(varchar(10),")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", 120)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "convert(varchar(16),")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDateTime, ", 120)")
 	case "postgres":
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_INT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_INT}", " as integer)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_FLOAT}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_FLOAT}", " as float8)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAS_DATE}", "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{CAE_DATE}", " as date)")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATE}", "to_char(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATE}", ", 'YYYY-MM-DD')")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FMS_DATETIME}", "to_char(")
-		sqlStr = strings.ReplaceAll(sqlStr, "{FME_DATETIME}", ", 'YYYY-MM-DD HH24:MI')")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasInt, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeInt, " as integer)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as float8)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " as date)")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "to_char(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", 'YYYY-MM-DD')")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "to_char(")
+		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDateTime, ", 'YYYY-MM-DD HH24:MI')")
 	}
 	//print(sqlStr)
 	return sqlStr
