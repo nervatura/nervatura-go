@@ -7,9 +7,9 @@ import (
 func demoData() IM {
 	return IM{
 		"groups": []IM{
-			{"groupname": "department", "groupvalue": "sales", "description": "Sample department"},
-			{"groupname": "department", "groupvalue": "logistics", "description": "Sample department"},
-			{"groupname": "department", "groupvalue": "production", "description": "Sample department"},
+			{"groupname": "department", "groupvalue": "sales", "description": "Sample sales department"},
+			{"groupname": "department", "groupvalue": "logistics", "description": "Sample logistics department"},
+			{"groupname": "department", "groupvalue": "production", "description": "Sample production department"},
 			{"groupname": "eventgroup", "groupvalue": "visit"},
 			{"groupname": "eventgroup", "groupvalue": "pricing"},
 			{"groupname": "eventgroup", "groupvalue": "car"}},
