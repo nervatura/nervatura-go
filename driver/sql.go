@@ -3,6 +3,7 @@ package nervatura
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -251,6 +252,14 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string, settings ntura.Sett
 	return nil
 }
 
+// getPrmString - get database parameter string
+func (ds *SQLDriver) getPrmString(index int) string {
+	if ds.engine == "postgres" {
+		return "$" + strconv.Itoa(index)
+	}
+	return "?"
+}
+
 // CheckHashtable - check/create a password ref. table
 func (ds *SQLDriver) CheckHashtable(hashtable string) error {
 
@@ -260,19 +269,21 @@ func (ds *SQLDriver) CheckHashtable(hashtable string) error {
 	var name string
 	sqlString := ""
 	if ds.engine == "sqlite3" {
-		sqlString = "select name from sqlite_master where name = '" + hashtable + "'"
+		sqlString = fmt.Sprintf(
+			"select name from sqlite_master where name = %s ", ds.getPrmString(1))
 	} else {
-		sqlString = "select table_name from information_schema.tables where table_name = '" + hashtable + "'"
+		sqlString = fmt.Sprintf(
+			"select table_name from information_schema.tables where table_name = %s ", ds.getPrmString(1))
 	}
-	err := ds.db.QueryRow(sqlString).Scan(&name)
+	err := ds.db.QueryRow(sqlString, hashtable).Scan(&name)
 	if err != nil {
 		textType := ds.getDataType("text")
-		sqlString = "CREATE TABLE " + hashtable + " ( refname " + textType + ", value " + textType + ");"
+		sqlString = fmt.Sprintf("CREATE TABLE %s ( refname %s, value %s);", hashtable, textType, textType)
 		_, err = ds.db.Exec(sqlString)
 		if err != nil {
 			return err
 		}
-		sqlString = "CREATE UNIQUE INDEX " + hashtable + "_refname_idx ON " + hashtable + " (refname);"
+		sqlString = fmt.Sprintf("CREATE UNIQUE INDEX %s_refname_idx ON %s (refname);", hashtable, hashtable)
 		_, err = ds.db.Exec(sqlString)
 	}
 
@@ -285,15 +296,20 @@ func (ds *SQLDriver) UpdateHashtable(hashtable, refname, value string) error {
 	if err != nil {
 		return err
 	}
-	sqlString := "select value from " + hashtable + " where refname = '" + refname + "'"
+	sqlString := fmt.Sprintf(
+		"select value from %s where refname = %s", hashtable, ds.getPrmString(1))
 	var hash string
-	err = ds.db.QueryRow(sqlString).Scan(&hash)
+	err = ds.db.QueryRow(sqlString, refname).Scan(&hash)
 	if err != nil {
-		sqlString = "insert into " + hashtable + "(refname, value) values('" + refname + "','" + value + "') "
+		sqlString = fmt.Sprintf(
+			"insert into %s(refname, value) values(%s,%s)",
+			hashtable, ds.getPrmString(1), ds.getPrmString(2))
 	} else {
-		sqlString = "update " + hashtable + " set value='" + value + "' where refname='" + refname + "'"
+		sqlString = fmt.Sprintf(
+			"update %s set value=%s where refname=%s",
+			hashtable, ds.getPrmString(1), ds.getPrmString(2))
 	}
-	_, err = ds.db.Exec(sqlString)
+	_, err = ds.db.Exec(sqlString, value, refname)
 	return err
 }
 
@@ -840,38 +856,62 @@ func (ds *SQLDriver) QuerySQL(sqlString string, trans interface{}) ([]IM, error)
 	return result, nil
 }
 
+func (ds *SQLDriver) lastInsertID(model string, result sql.Result, trans interface{}) (int, error) {
+	var sqlString string
+	resid, err := result.LastInsertId()
+	if err != nil {
+		switch ds.engine {
+		case "postgres":
+			sqlString = fmt.Sprintf("select currval('%s_id_seq') as id", model)
+		case "mssql":
+			sqlString = fmt.Sprintf("select ident_current('%s') as id", model)
+		default:
+			return -1, err
+		}
+		if trans != nil {
+			err = trans.(*sql.Tx).QueryRow(sqlString).Scan(&resid)
+		} else {
+			err = ds.db.QueryRow(sqlString).Scan(&resid)
+		}
+		if err != nil {
+			return -1, err
+		}
+	}
+	return int(resid), nil
+}
+
 //Update is a basic nosql friendly update/insert/delete and returns the update/insert id
 func (ds *SQLDriver) Update(options ntura.Update) (int, error) {
 	sqlString := ""
 	id := options.IDKey
-	fields := ""
-	values := ""
-	sets := ""
+	params := make([]interface{}, 0)
+	fields := make([]string, 0)
+	values := make([]string, 0)
+	sets := make([]string, 0)
+	prmIndex := 0
 	for fieldname, value := range options.Values {
-		fields += ", " + fieldname
+		prmIndex++
 		if value == nil {
-			values += ", null"
-			sets += ", " + fieldname + "=null"
+			params = append(params, "null")
 		} else {
-			switch value.(type) {
-			case int:
-				values += ", " + strconv.Itoa(value.(int))
-				sets += ", " + fieldname + "=" + strconv.Itoa(value.(int))
-			case float64:
-				values += ", " + strconv.FormatFloat(value.(float64), 'f', -1, 64)
-				sets += ", " + fieldname + "=" + strconv.FormatFloat(value.(float64), 'f', -1, 64)
-			case string:
-				values += ", '" + strings.ReplaceAll(value.(string), "'", "''") + "'"
-				sets += ", " + fieldname + "='" + value.(string) + "'"
-			}
+			params = append(params, value)
 		}
+		fields = append(fields, fieldname)
+		values = append(values, ds.getPrmString(prmIndex))
+		sets = append(sets, fmt.Sprintf("%s=%s", fieldname, ds.getPrmString(prmIndex)))
 	}
 	if id <= 0 {
-		sqlString += "insert into " + options.Model + " (" + fields[2:] + ") values (" + values[2:] + ")"
+		sqlString += fmt.Sprintf(
+			"insert into %s (%s) values (%s)",
+			options.Model, strings.Join(fields, ","), strings.Join(values, ","))
 	} else if len(options.Values) == 0 {
-		sqlString += "delete from " + options.Model + " where id=" + strconv.Itoa(id)
+		params = append(params, id)
+		sqlString += fmt.Sprintf(
+			"delete from %s where id=%s", options.Model, ds.getPrmString(1))
 	} else {
-		sqlString += "update " + options.Model + " set " + sets[2:] + " where id=" + strconv.Itoa(id)
+		params = append(params, id)
+		sqlString += fmt.Sprintf(
+			"update %s set %s where id=%s", options.Model, strings.Join(sets, ","), ds.getPrmString(1))
 	}
 	if options.Trans != nil {
 		switch options.Trans.(type) {
@@ -884,34 +924,15 @@ func (ds *SQLDriver) Update(options ntura.Update) (int, error) {
 	var result sql.Result
 	var err error
 	if options.Trans != nil {
-		result, err = options.Trans.(*sql.Tx).Exec(ds.decodeEngine(sqlString))
+		result, err = options.Trans.(*sql.Tx).Exec(ds.decodeEngine(sqlString), params...)
 	} else {
-		result, err = ds.db.Exec(ds.decodeEngine(sqlString))
+		result, err = ds.db.Exec(ds.decodeEngine(sqlString), params...)
 	}
 	if err != nil {
 		return id, err
 	}
 	if id <= 0 {
-		resid, err := result.LastInsertId()
-		if err != nil {
-			switch ds.engine {
-			case "postgres":
-				sqlString = "select currval('" + options.Model + "_id_seq') as id"
-			case "mssql":
-				sqlString = "select ident_current('" + options.Model + "') as id"
-			default:
-				return id, err
-			}
-			if options.Trans != nil {
-				err = options.Trans.(*sql.Tx).QueryRow(sqlString).Scan(&resid)
-			} else {
-				err = ds.db.QueryRow(sqlString).Scan(&resid)
-			}
-			if err != nil {
-				return id, err
-			}
-		}
-		id = int(resid)
+		return ds.lastInsertID(options.Model, result, options.Trans)
 	}
 	return id, nil
 }
