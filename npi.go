@@ -2,7 +2,6 @@ package nervatura
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 )
 
@@ -68,7 +67,7 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 			Fields: []string{"*"}, From: "ui_audit",
 			Filters: []Filter{
 				Filter{Field: "usergroup", Comp: "==",
-					Value: strconv.Itoa(validator["employee"].(IM)["usergroup"].(int))},
+					Value: validator["employee"].(IM)["usergroup"]},
 			}}}
 		results, err := npi.NStore.ds.Query(query, nil)
 		if err != nil {
@@ -80,11 +79,11 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 		query = []Query{Query{
 			Fields: []string{"ref_id_2"}, From: "link",
 			Filters: []Filter{
-				Filter{Field: "deleted", Comp: "==", Value: "0"},
+				Filter{Field: "deleted", Comp: "==", Value: 0},
 				Filter{Field: "nervatype_1", Comp: "==",
-					Value: strconv.Itoa(groups["nervatype"].(IM)["groups"].(int))},
+					Value: groups["nervatype"].(IM)["groups"]},
 				Filter{Field: "nervatype_2", Comp: "==",
-					Value: strconv.Itoa(groups["nervatype"].(IM)["groups"].(int))},
+					Value: groups["nervatype"].(IM)["groups"]},
 			}}}
 		results, err = npi.NStore.ds.Query(query, nil)
 		if err != nil {
@@ -120,7 +119,7 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 		Fields: []string{"value"}, From: "fieldvalue",
 		Filters: []Filter{
 			Filter{Field: "ref_id", Comp: "is", Value: "null"},
-			Filter{Field: "fieldname", Comp: "==", Value: "'log_login'"},
+			Filter{Field: "fieldname", Comp: "==", Value: "log_login"},
 		}}}
 	results, err = npi.NStore.ds.Query(query, nil)
 	if err != nil {

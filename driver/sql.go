@@ -591,8 +591,42 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	return logData, nil
 }
 
-func (ds *SQLDriver) decodeSQL(queries []ntura.Query) (string, error) {
+func (ds *SQLDriver) getFilterString(filter ntura.Filter, start bool, sqlString string, params []interface{}) (string, []interface{}) {
+	if start {
+		sqlString += "("
+	} else if filter.Or == false {
+		sqlString += " and ("
+	} else {
+		sqlString += " or "
+	}
+	sqlString += filter.Field
+	switch filter.Comp {
+	case "==":
+		params = append(params, filter.Value)
+		sqlString += "=" + ds.getPrmString(len(params))
+	case "like", "!=", "<", "<=", ">", ">=", "is":
+		params = append(params, filter.Value)
+		sqlString += " " + filter.Comp + " " + ds.getPrmString(len(params))
+	case "in":
+		if ntura.GetIType(filter.Value) == "string" {
+			values := strings.Split(filter.Value.(string), ",")
+			prmStr := make([]string, 0)
+			for _, value := range values {
+				params = append(params, value)
+				prmStr = append(prmStr, ds.getPrmString(len(params)))
+			}
+			sqlString += " in(" + strings.Join(prmStr, ",") + ")"
+		}
+	}
+	if filter.Or == false {
+		sqlString += ")"
+	}
+	return sqlString, params
+}
+
+func (ds *SQLDriver) decodeSQL(queries []ntura.Query) (string, []interface{}, error) {
 	sqlString := ""
+	params := make([]interface{}, 0)
 	for qi := 0; qi < len(queries); qi++ {
 		query := queries[qi]
 		if qi > 0 {
@@ -600,70 +634,41 @@ func (ds *SQLDriver) decodeSQL(queries []ntura.Query) (string, error) {
 		} else {
 			sqlString += "select "
 		}
-		for fi := 0; fi < len(query.Fields); fi++ {
-			if fi > 0 {
-				sqlString += ", "
-			}
-			sqlString += query.Fields[fi]
-		}
-		sqlString += " from " + query.From
+		sqlString += strings.Join(query.Fields, ",") + " from " + query.From
 		if len(query.Filters) > 0 || query.Filter != "" {
 			sqlString += " where "
 		}
 		if len(query.Filters) > 0 {
 			for wi := 0; wi < len(query.Filters); wi++ {
-				filter := query.Filters[wi]
-				if wi == 0 {
-					sqlString += "("
-				} else if filter.Or == false {
-					sqlString += " and ("
-				} else {
-					sqlString += " or "
-				}
-				sqlString += filter.Field
-				switch filter.Comp {
-				case "==":
-					sqlString += "=" + filter.Value
-				case "like":
-					sqlString += " like " + filter.Value
-				case "!=", "<", "<=", ">", ">=", "is":
-					sqlString += " " + filter.Comp + " " + filter.Value
-				case "in":
-					sqlString += " in(" + filter.Value + ")"
-				}
-				if filter.Or == false {
-					sqlString += ")"
-				}
+				sqlString, params = ds.getFilterString(query.Filters[wi], (wi == 0), sqlString, params)
 			}
 		}
 		if query.Filter != "" {
 			sqlString += query.Filter
 		}
 		if len(query.OrderBy) > 0 {
-			order := ""
-			for index := 0; index < len(query.OrderBy); index++ {
-				order += "," + query.OrderBy[index]
-			}
-			if order != "" && order != "," {
-				sqlString += " order by " + order[1:]
+			order := strings.Join(query.OrderBy, ",")
+			if order != "" {
+				sqlString += " order by " + order
 			}
 		}
 	}
-	return strings.Trim(sqlString, " "), nil
+	return strings.Trim(sqlString, " "), params, nil
 }
 
 //Query is a basic nosql friendly queries the database
 func (ds *SQLDriver) Query(queries []ntura.Query, trans interface{}) ([]IM, error) {
-	sqlString, err := ds.decodeSQL(queries)
+	sqlString, params, err := ds.decodeSQL(queries)
 	if err != nil {
 		return nil, err
 	}
-	return ds.QuerySQL(sqlString, trans)
+	return ds.QuerySQL(sqlString, params, trans)
 }
 
 //QueryParams - custom sql queries with parameters
 func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	sqlString, whereStr, havingStr, orderStr := "", "", "", ""
+	params := make([]interface{}, 0)
 	if _, found := options["sqlStr"]; found {
 		switch options["sqlStr"].(type) {
 		case string:
@@ -747,11 +752,11 @@ func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 		}
 	}
 	//println(sqlString)
-	return ds.QuerySQL(sqlString, trans)
+	return ds.QuerySQL(sqlString, params, trans)
 }
 
 //QuerySQL executes a SQL query
-func (ds *SQLDriver) QuerySQL(sqlString string, trans interface{}) ([]IM, error) {
+func (ds *SQLDriver) QuerySQL(sqlString string, params []interface{}, trans interface{}) ([]IM, error) {
 	result := make([]IM, 0)
 	var rows *sql.Rows
 	var err error
@@ -765,9 +770,9 @@ func (ds *SQLDriver) QuerySQL(sqlString string, trans interface{}) ([]IM, error)
 
 	//println(ds.decodeEngine(sqlString))
 	if trans != nil {
-		rows, err = trans.(*sql.Tx).Query(ds.decodeEngine(sqlString))
+		rows, err = trans.(*sql.Tx).Query(ds.decodeEngine(sqlString), params...)
 	} else {
-		rows, err = ds.db.Query(ds.decodeEngine(sqlString))
+		rows, err = ds.db.Query(ds.decodeEngine(sqlString), params...)
 	}
 	if err != nil {
 		return result, err
@@ -888,17 +893,15 @@ func (ds *SQLDriver) Update(options ntura.Update) (int, error) {
 	fields := make([]string, 0)
 	values := make([]string, 0)
 	sets := make([]string, 0)
-	prmIndex := 0
 	for fieldname, value := range options.Values {
-		prmIndex++
 		if value == nil {
 			params = append(params, "null")
 		} else {
 			params = append(params, value)
 		}
 		fields = append(fields, fieldname)
-		values = append(values, ds.getPrmString(prmIndex))
-		sets = append(sets, fmt.Sprintf("%s=%s", fieldname, ds.getPrmString(prmIndex)))
+		values = append(values, ds.getPrmString(len(params)))
+		sets = append(sets, fmt.Sprintf("%s=%s", fieldname, ds.getPrmString(len(params))))
 	}
 	if id <= 0 {
 		sqlString += fmt.Sprintf(
@@ -966,6 +969,7 @@ func (ds *SQLDriver) RollbackTransaction(trans interface{}) error {
 func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 	result := []IM{}
 	sqlString := ""
+	params := make([]interface{}, 0)
 	switch options["qkey"] {
 	case "user":
 		sqlString = `select e.id, e.username, e.empnumber, e.usergroup, ug.groupvalue as scope, dg.groupvalue as department
@@ -1656,7 +1660,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 		return result, errors.New(ntura.GetMessage("missing_fieldname"))
 	}
 	//print(sqlString)
-	return ds.QuerySQL(sqlString, trans)
+	return ds.QuerySQL(sqlString, params, trans)
 }
 
 //GetIDfromRefnumber - returns dbs id from public key

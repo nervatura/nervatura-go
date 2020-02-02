@@ -71,7 +71,7 @@ func TestGetInfofromRefnumber(t *testing.T) {
 		[]string{"item", "DMINV/00001~1"},
 		[]string{"payment", "DMPMT/00001~1"},
 		[]string{"movement", "DMCORR/00001~1"},
-		[]string{"price", "DMPROD/00001~price~2018-04-05~EUR~0"},
+		[]string{"price", "DMPROD/00001~price~2019-04-05~EUR~0"},
 		[]string{"product", "DMPROD/00001"},
 		[]string{"place", "bank"},
 		[]string{"tax", "15%"},

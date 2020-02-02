@@ -112,18 +112,18 @@ type DataDriver interface {
 		Connected bool
 		Engine    string
 	} //Returns the database connection
-	CreateConnection(string, string, Settings) error                  //Create a new database connection
-	CreateDatabase(logData []SM) ([]SM, error)                        //Create a Nervatura Database
-	CheckHashtable(hashtable string) error                            //Check/create a password ref. table
-	UpdateHashtable(hashtable, refname, value string) error           //Set a password
-	Query(queries []Query, transaction interface{}) ([]IM, error)     //Query is a basic nosql friendly queries the database
-	QueryParams(options IM, transaction interface{}) ([]IM, error)    //Custom sql queries with parameters
-	QuerySQL(sqlString string, transaction interface{}) ([]IM, error) //Executes a SQL query
-	QueryKey(options SM, transaction interface{}) ([]IM, error)       //Complex data queries
-	Update(options Update) (int, error)                               //Update is a basic nosql friendly update/insert/delete and returns the update/insert id
-	BeginTransaction() (interface{}, error)                           //Begins a transaction and returns an it
-	CommitTransaction(trans interface{}) error                        //Commit a transaction
-	RollbackTransaction(trans interface{}) error                      //Rollback a transaction
+	CreateConnection(string, string, Settings) error                                        //Create a new database connection
+	CreateDatabase(logData []SM) ([]SM, error)                                              //Create a Nervatura Database
+	CheckHashtable(hashtable string) error                                                  //Check/create a password ref. table
+	UpdateHashtable(hashtable, refname, value string) error                                 //Set a password
+	Query(queries []Query, transaction interface{}) ([]IM, error)                           //Query is a basic nosql friendly queries the database
+	QueryParams(options IM, transaction interface{}) ([]IM, error)                          //Custom sql queries with parameters
+	QuerySQL(sqlString string, params []interface{}, transaction interface{}) ([]IM, error) //Executes a SQL query
+	QueryKey(options SM, transaction interface{}) ([]IM, error)                             //Complex data queries
+	Update(options Update) (int, error)                                                     //Update is a basic nosql friendly update/insert/delete and returns the update/insert id
+	BeginTransaction() (interface{}, error)                                                 //Begins a transaction and returns an it
+	CommitTransaction(trans interface{}) error                                              //Commit a transaction
+	RollbackTransaction(trans interface{}) error                                            //Rollback a transaction
 }
 
 //Filter query filter type
@@ -131,7 +131,7 @@ type Filter struct {
 	Or    bool   // and (False) or (True)
 	Field string //Fieldname and alias
 	Comp  string //==,!=,<,<=,>,>=,in,is
-	Value string
+	Value interface{}
 }
 
 //Query data desc. type

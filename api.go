@@ -30,7 +30,7 @@ func (api *API) getHashvalue(refname string) (string, error) {
 	}
 	query := []Query{Query{
 		Fields: []string{"*"}, From: hashtable, Filters: []Filter{
-			Filter{Field: "refname", Comp: "==", Value: "'" + refname + "'"},
+			Filter{Field: "refname", Comp: "==", Value: refname},
 		}}}
 	rows, err := api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -71,9 +71,9 @@ func (api *API) authUser(options IM) error {
 	} else {
 		query := []Query{Query{
 			Fields: []string{"*"}, From: "customer", Filters: []Filter{
-				Filter{Field: "inactive", Comp: "==", Value: "0"},
-				Filter{Field: "deleted", Comp: "==", Value: "0"},
-				Filter{Field: "custnumber", Comp: "==", Value: "'" + options["username"].(string) + "'"}}}}
+				Filter{Field: "inactive", Comp: "==", Value: 0},
+				Filter{Field: "deleted", Comp: "==", Value: 0},
+				Filter{Field: "custnumber", Comp: "==", Value: options["username"]}}}}
 		rows, err := api.NStore.ds.Query(query, nil)
 		if err != nil {
 			return err
@@ -226,16 +226,16 @@ func (api *API) AuthPassword(options IM) error {
 		if _, found := options["custnumber"]; found {
 			query = []Query{Query{
 				Fields: []string{"*"}, From: "customer", Filters: []Filter{
-					Filter{Field: "inactive", Comp: "==", Value: "0"},
-					Filter{Field: "deleted", Comp: "==", Value: "0"},
-					Filter{Field: "custnumber", Comp: "==", Value: "'" + options["custnumber"].(string) + "'"},
+					Filter{Field: "inactive", Comp: "==", Value: 0},
+					Filter{Field: "deleted", Comp: "==", Value: 0},
+					Filter{Field: "custnumber", Comp: "==", Value: options["custnumber"]},
 				}}}
 			refname = "customer"
 		} else {
 			query = []Query{Query{
 				Fields: []string{"*"}, From: "employee", Filters: []Filter{
-					Filter{Field: "deleted", Comp: "==", Value: "0"},
-					Filter{Field: "username", Comp: "==", Value: "'" + options["username"].(string) + "'"},
+					Filter{Field: "deleted", Comp: "==", Value: 0},
+					Filter{Field: "username", Comp: "==", Value: options["username"]},
 				}}}
 			refname = "employee"
 		}
@@ -1055,10 +1055,10 @@ func (api *API) APIGet(options IM) (results []IM, err error) {
 
 	query := []Query{Query{
 		Fields: []string{"*"}, From: nervatype, Filters: []Filter{
-			Filter{Field: "deleted", Comp: "==", Value: "0"},
+			Filter{Field: "deleted", Comp: "==", Value: 0},
 		}}}
 	if _, found := options["ids"]; found && GetIType(options["ids"]) == "string" {
-		query[0].Filters = append(query[0].Filters, Filter{Field: "id", Comp: "in", Value: options["ids"].(string)})
+		query[0].Filters = append(query[0].Filters, Filter{Field: "id", Comp: "in", Value: options["ids"]})
 	} else if _, found := options["filter"]; found && GetIType(options["filter"]) == "string" {
 		filters := strings.Split(options["filter"].(string), "|")
 		for index := 0; index < len(filters); index++ {
@@ -1075,16 +1075,6 @@ func (api *API) APIGet(options IM) (results []IM, err error) {
 				return results, errors.New(GetMessage("invalid_value") + "- comparison: " + fields[1])
 			}
 			value := fields[2]
-			switch api.NStore.models[nervatype].(IM)[fields[0]].(MF).Type {
-			case "string", "text", "date":
-				fields[2] = strings.ReplaceAll(fields[2], "'", "")
-				values := strings.Split(fields[2], ",")
-				value = ""
-				for fld := 0; fld < len(values); fld++ {
-					value += ",'" + values[fld] + "'"
-				}
-				value = value[1:]
-			}
 			query[0].Filters = append(query[0].Filters, Filter{Field: fields[0], Comp: fields[1], Value: value})
 		}
 	} else {
@@ -1176,7 +1166,11 @@ func (api *API) APIView(options []IM) (results IM, err error) {
 		if _, found := options[index]["text"]; !found || GetIType(options[index]["text"]) != "string" {
 			return results, errors.New(GetMessage("missing_required_field") + ": text")
 		}
-		result, err := api.NStore.ds.QuerySQL(options[index]["text"].(string), trans)
+		if _, found := options[index]["values"]; !found || GetIType(options[index]["values"]) != "[]interface{}" {
+			return results, errors.New(GetMessage("missing_required_field") + ": values")
+		}
+		result, err := api.NStore.ds.QuerySQL(
+			options[index]["text"].(string), options[index]["values"].([]interface{}), trans)
 		if err != nil {
 			return results, err
 		}
@@ -1690,7 +1684,7 @@ func (api *API) ReportDelete(options IM) (err error) {
 
 	query := []Query{Query{
 		Fields: []string{"*"}, From: "ui_report", Filters: []Filter{
-			Filter{Field: "reportkey", Comp: "==", Value: "'" + options["reportkey"].(string) + "'"},
+			Filter{Field: "reportkey", Comp: "==", Value: options["reportkey"]},
 		}}}
 	rows, err := api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1725,7 +1719,7 @@ func (api *API) ReportDelete(options IM) (err error) {
 
 	query = []Query{Query{
 		Fields: []string{"*"}, From: "ui_reportfields", Filters: []Filter{
-			Filter{Field: "report_id", Comp: "==", Value: strconv.Itoa(refID)},
+			Filter{Field: "report_id", Comp: "==", Value: refID},
 		}}}
 	rows, err = api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1740,7 +1734,7 @@ func (api *API) ReportDelete(options IM) (err error) {
 
 	query = []Query{Query{
 		Fields: []string{"*"}, From: "ui_reportsources", Filters: []Filter{
-			Filter{Field: "report_id", Comp: "==", Value: strconv.Itoa(refID)},
+			Filter{Field: "report_id", Comp: "==", Value: refID},
 		}}}
 	rows, err = api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1755,7 +1749,7 @@ func (api *API) ReportDelete(options IM) (err error) {
 
 	query = []Query{Query{
 		Fields: []string{"*"}, From: "ui_message", Filters: []Filter{
-			Filter{Field: "secname", Comp: "==", Value: "'" + options["reportkey"].(string) + "'"},
+			Filter{Field: "secname", Comp: "==", Value: options["reportkey"]},
 		}}}
 	rows, err = api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1808,7 +1802,7 @@ func (api *API) ReportInstall(options IM) (result int, err error) {
 			report["reportkey"] = attr.Value
 			query := []Query{Query{
 				Fields: []string{"*"}, From: "ui_report", Filters: []Filter{
-					Filter{Field: "reportkey", Comp: "==", Value: "'" + attr.Value + "'"},
+					Filter{Field: "reportkey", Comp: "==", Value: attr.Value},
 				}}}
 			rows, err := api.NStore.ds.Query(query, nil)
 			if err != nil {
@@ -1828,7 +1822,7 @@ func (api *API) ReportInstall(options IM) (result int, err error) {
 	query := []Query{Query{
 		Fields: []string{"*"}, From: "groups", Filters: []Filter{
 			Filter{Field: "groupname", Comp: "in",
-				Value: "'nervatype','transtype','direction','filetype','fieldtype','wheretype'"},
+				Value: "nervatype,transtype,direction,filetype,fieldtype,wheretype"},
 		}}}
 	rows, err := api.NStore.ds.Query(query, nil)
 	if err != nil {

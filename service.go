@@ -105,7 +105,7 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 
 	query := []Query{Query{
 		Fields: []string{"*"}, From: "numberdef", Filters: []Filter{
-			Filter{Field: "numberkey", Comp: "==", Value: "'" + numberkey + "'"}}}}
+			Filter{Field: "numberkey", Comp: "==", Value: numberkey}}}}
 	result, err := nstore.ds.Query(query, trans)
 	if err != nil {
 		return retnumber, err
@@ -141,7 +141,7 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 		transyear := time.Now().Format("2006")
 		query := []Query{Query{
 			Fields: []string{"value"}, From: "fieldvalue", Filters: []Filter{
-				Filter{Field: "fieldname", Comp: "==", Value: "'transyear'"},
+				Filter{Field: "fieldname", Comp: "==", Value: "transyear"},
 				Filter{Field: "ref_id", Comp: "is", Value: "null"}}}}
 		result, err = nstore.ds.Query(query, trans)
 		if err != nil {
@@ -424,7 +424,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 
 	query := []Query{Query{
 		Fields: []string{"*"}, From: "ui_reportsources", Filters: []Filter{
-			Filter{Field: "report_id", Comp: "==", Value: strconv.Itoa(results["report"].(IM)["id"].(int))},
+			Filter{Field: "report_id", Comp: "==", Value: results["report"].(IM)["id"]},
 		}}}
 	results["sources"], err = nstore.ds.Query(query, nil)
 	if err != nil {
@@ -447,13 +447,14 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	}
 
 	results["datarows"] = IM{}
-	secname := "'" + reportkey + "_report'"
+	secname := make([]string, 0)
+	secname = append(secname, reportkey+"_report")
 	for index := 0; index < len(results["sources"].([]IM)); index++ {
-		secname += ",'" + reportkey + "_" + results["sources"].([]IM)[index]["dataset"].(string) + "'"
+		secname = append(secname, results["sources"].([]IM)[index]["dataset"].(string))
 	}
 	query = []Query{Query{
 		Fields: []string{"*"}, From: "ui_message", Filters: []Filter{
-			Filter{Field: "secname", Comp: "in", Value: secname},
+			Filter{Field: "secname", Comp: "in", Value: strings.Join(secname, ",")},
 		}}}
 	labels, err := nstore.ds.Query(query, nil)
 	if err != nil {
@@ -537,7 +538,8 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 			ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@where_str", results["where_str"].(IM)["nods"].(string))
 		}
 		ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@where_str", "")
-		results["datarows"].(IM)[ds["dataset"].(string)], err = nstore.ds.QuerySQL(ds["sqlstr"].(string), nil)
+		params := make([]interface{}, 0)
+		results["datarows"].(IM)[ds["dataset"].(string)], err = nstore.ds.QuerySQL(ds["sqlstr"].(string), params, nil)
 		if err != nil {
 			return results, err
 		}
@@ -562,8 +564,6 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	}
 	switch results["report"].(IM)["reptype"] {
 	case "xls":
-		//cols := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-		//	"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
 		template := IM{}
 		if err := json.Unmarshal([]byte(results["report"].(IM)["report"].(string)), &template); err != nil {
 			return results, err
