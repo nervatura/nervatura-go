@@ -689,6 +689,18 @@ func setParamList(paramList []interface{}, whereStr, havingStr, sqlString string
 	return whereStr, havingStr, sqlString
 }
 
+func setParamLimit(options IM, sqlString string) string {
+	if _, found := options["rlimit"]; found {
+		if options["rlimit"] == true {
+			if _, found := options["rowlimit"]; found && ntura.GetIType(options["rowlimit"]) == "int" {
+				sqlString = strings.ReplaceAll(sqlString, ";", "")
+				sqlString += " limit " + strconv.Itoa(options["rowlimit"].(int))
+			}
+		}
+	}
+	return sqlString
+}
+
 //QueryParams - custom sql queries with parameters
 func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	sqlString, whereStr, havingStr, orderStr := "", "", "", ""
@@ -712,14 +724,8 @@ func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	sqlString = strings.ReplaceAll(sqlString, "@where_str", whereStr)
 	sqlString = strings.ReplaceAll(sqlString, "@having_str", havingStr)
 	sqlString = strings.ReplaceAll(sqlString, "@orderby_str", orderStr)
-	if _, found := options["rlimit"]; found {
-		if options["rlimit"] == true {
-			if _, found := options["rowlimit"]; found && ntura.GetIType(options["rowlimit"]) == "int" {
-				sqlString = strings.ReplaceAll(sqlString, ";", "")
-				sqlString += " limit " + strconv.Itoa(options["rowlimit"].(int))
-			}
-		}
-	}
+	sqlString = setParamLimit(options, sqlString)
+
 	//println(sqlString)
 	return ds.QuerySQL(sqlString, params, trans)
 }
