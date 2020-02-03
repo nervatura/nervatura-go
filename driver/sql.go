@@ -762,12 +762,6 @@ func getQueryRowValue(value interface{}, dbtype string) interface{} {
 		}
 		return nil
 
-	case *sql.NullInt32:
-		if value.(*sql.NullInt32).Valid {
-			return int(value.(*sql.NullInt32).Int32)
-		}
-		return nil
-
 	case *sql.NullInt64:
 		if value.(*sql.NullInt64).Valid {
 			return int(value.(*sql.NullInt64).Int64)
