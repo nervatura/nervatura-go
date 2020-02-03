@@ -672,6 +672,23 @@ func getParamValue(prm ntura.IM) string {
 	return prm["value"].(string)
 }
 
+func setParamList(paramList []interface{}, whereStr, havingStr, sqlString string) (string, string, string) {
+	for index := 0; index < len(paramList); index++ {
+		prm := paramList[index].(IM)
+		name := prm["name"].(string)
+		value := getParamValue(prm)
+		switch prm["wheretype"] {
+		case "where":
+			whereStr = strings.ReplaceAll(whereStr, name, value)
+		case "having":
+			havingStr = strings.ReplaceAll(havingStr, name, value)
+		case "in":
+			sqlString = strings.ReplaceAll(sqlString, name, value)
+		}
+	}
+	return whereStr, havingStr, sqlString
+}
+
 //QueryParams - custom sql queries with parameters
 func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	sqlString, whereStr, havingStr, orderStr := "", "", "", ""
@@ -689,19 +706,7 @@ func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 		orderStr = options["orderStr"].(string)
 	}
 	if _, found := options["paramList"]; found && ntura.GetIType(options["paramList"]) == "[]interface{}" {
-		for index := 0; index < len(options["paramList"].([]interface{})); index++ {
-			prm := options["paramList"].([]interface{})[index].(IM)
-			name := prm["name"].(string)
-			value := getParamValue(prm)
-			switch prm["wheretype"] {
-			case "where":
-				whereStr = strings.ReplaceAll(whereStr, name, value)
-			case "having":
-				havingStr = strings.ReplaceAll(havingStr, name, value)
-			case "in":
-				sqlString = strings.ReplaceAll(sqlString, name, value)
-			}
-		}
+		whereStr, havingStr, sqlString = setParamList(options["paramList"].([]interface{}), whereStr, havingStr, sqlString)
 	}
 
 	sqlString = strings.ReplaceAll(sqlString, "@where_str", whereStr)
