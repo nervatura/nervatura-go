@@ -424,11 +424,11 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 			if field.Default != nil && field.Default != "nextnumber" {
 				switch field.Default.(type) {
 				case int:
-					sqlString += " DEFAULT " + strconv.Itoa(field.Default.(int))
+					sqlString += " " + "DEFAULT" + " " + strconv.Itoa(field.Default.(int))
 				case float64:
-					sqlString += " DEFAULT " + strconv.FormatFloat(field.Default.(float64), 'f', -1, 64)
+					sqlString += " " + "DEFAULT" + " " + strconv.FormatFloat(field.Default.(float64), 'f', -1, 64)
 				case string:
-					sqlString += " DEFAULT " + field.Default.(string)
+					sqlString += " " + "DEFAULT" + " " + field.Default.(string)
 				}
 			}
 			sqlString += ", "
