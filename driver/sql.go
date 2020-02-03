@@ -649,74 +649,57 @@ func (ds *SQLDriver) Query(queries []ntura.Query, trans interface{}) ([]IM, erro
 	return ds.QuerySQL(sqlString, params, trans)
 }
 
+func getParamValue(prm ntura.IM) string {
+	switch prm["type"] {
+	case "integer", "number":
+		if ntura.GetIType(prm["value"]) == "float64" {
+			return strconv.FormatFloat(prm["value"].(float64), 'f', -1, 64)
+		}
+		if ntura.GetIType(prm["value"]) == "int" {
+			return strconv.Itoa(prm["value"].(int))
+		}
+	case "boolean":
+		if ntura.GetIType(prm["value"]) == "bool" {
+			return strconv.FormatBool(prm["value"].(bool))
+		}
+	case "string", "date":
+		value := prm["value"].(string)
+		if strings.Index(value, "'") == -1 {
+			value = "'" + value + "'"
+		}
+		return value
+	}
+	return prm["value"].(string)
+}
+
 //QueryParams - custom sql queries with parameters
 func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	sqlString, whereStr, havingStr, orderStr := "", "", "", ""
 	params := make([]interface{}, 0)
-	if _, found := options["sqlStr"]; found {
-		switch options["sqlStr"].(type) {
-		case string:
-			sqlString = options["sqlStr"].(string)
-		}
+	if _, found := options["sqlStr"]; found && ntura.GetIType(options["sqlStr"]) == "string" {
+		sqlString = options["sqlStr"].(string)
 	}
-	if _, found := options["whereStr"]; found {
-		switch options["whereStr"].(type) {
-		case string:
-			whereStr = options["whereStr"].(string)
-		}
+	if _, found := options["whereStr"]; found && ntura.GetIType(options["whereStr"]) == "string" {
+		whereStr = options["whereStr"].(string)
 	}
-	if _, found := options["havingStr"]; found {
-		switch options["havingStr"].(type) {
-		case string:
-			havingStr = options["havingStr"].(string)
-		}
+	if _, found := options["havingStr"]; found && ntura.GetIType(options["havingStr"]) == "string" {
+		havingStr = options["havingStr"].(string)
 	}
-	if _, found := options["orderStr"]; found {
-		switch options["orderStr"].(type) {
-		case string:
-			orderStr = options["orderStr"].(string)
-		}
+	if _, found := options["orderStr"]; found && ntura.GetIType(options["orderStr"]) == "string" {
+		orderStr = options["orderStr"].(string)
 	}
-	if _, found := options["paramList"]; found {
-		switch options["paramList"].(type) {
-		case []interface{}:
-			for index := 0; index < len(options["paramList"].([]interface{})); index++ {
-				prm := options["paramList"].([]interface{})[index].(IM)
-				name := prm["name"].(string)
-				value := ""
-				switch prm["type"] {
-				case "integer", "number":
-					switch prm["value"].(type) {
-					case float64:
-						value = strconv.FormatFloat(prm["value"].(float64), 'f', -1, 64)
-					case int:
-						value = strconv.Itoa(prm["value"].(int))
-					default:
-						value = prm["value"].(string)
-					}
-				case "boolean":
-					switch prm["value"].(type) {
-					case bool:
-						value = strconv.FormatBool(prm["value"].(bool))
-					default:
-						value = prm["value"].(string)
-					}
-				case "string", "date":
-					value = prm["value"].(string)
-					if strings.Index(value, "'") == -1 {
-						value = "'" + value + "'"
-					}
-				default:
-					value = prm["value"].(string)
-				}
-				switch prm["wheretype"] {
-				case "where":
-					whereStr = strings.ReplaceAll(whereStr, name, value)
-				case "having":
-					havingStr = strings.ReplaceAll(havingStr, name, value)
-				case "in":
-					sqlString = strings.ReplaceAll(sqlString, name, value)
-				}
+	if _, found := options["paramList"]; found && ntura.GetIType(options["paramList"]) == "[]interface{}" {
+		for index := 0; index < len(options["paramList"].([]interface{})); index++ {
+			prm := options["paramList"].([]interface{})[index].(IM)
+			name := prm["name"].(string)
+			value := getParamValue(prm)
+			switch prm["wheretype"] {
+			case "where":
+				whereStr = strings.ReplaceAll(whereStr, name, value)
+			case "having":
+				havingStr = strings.ReplaceAll(havingStr, name, value)
+			case "in":
+				sqlString = strings.ReplaceAll(sqlString, name, value)
 			}
 		}
 	}
@@ -726,12 +709,9 @@ func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	sqlString = strings.ReplaceAll(sqlString, "@orderby_str", orderStr)
 	if _, found := options["rlimit"]; found {
 		if options["rlimit"] == true {
-			if _, found := options["rowlimit"]; found {
-				switch options["rowlimit"].(type) {
-				case int:
-					sqlString = strings.ReplaceAll(sqlString, ";", "")
-					sqlString += " limit " + strconv.Itoa(options["rowlimit"].(int))
-				}
+			if _, found := options["rowlimit"]; found && ntura.GetIType(options["rowlimit"]) == "int" {
+				sqlString = strings.ReplaceAll(sqlString, ";", "")
+				sqlString += " limit " + strconv.Itoa(options["rowlimit"].(int))
 			}
 		}
 	}
