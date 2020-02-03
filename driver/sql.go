@@ -730,6 +730,75 @@ func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	return ds.QuerySQL(sqlString, params, trans)
 }
 
+func initQueryCols(cols []*sql.ColumnType) ([]interface{}, []string, []string) {
+	values := make([]interface{}, len(cols))
+	fields := make([]string, len(cols))
+	dbtypes := make([]string, len(cols))
+	for i := range cols {
+		fields[i] = cols[i].Name()
+		dbtypes[i] = cols[i].DatabaseTypeName()
+		//println(cols[i].DatabaseTypeName())
+		switch cols[i].DatabaseTypeName() {
+		case "BOOL", "BOOLEAN", "BIT":
+			values[i] = new(sql.NullBool)
+		case "INTEGER", "SERIAL", "INT", "INT4", "INT8":
+			values[i] = new(sql.NullInt64)
+		case "DOUBLE", "FLOAT8", "DECIMAL(19,4)", "DECIMAL":
+			values[i] = new(sql.NullFloat64)
+		case "DATETIME", "TIMESTAMP", "DATE":
+			values[i] = new(sql.NullTime)
+		default:
+			values[i] = new(sql.NullString)
+		}
+	}
+	return values, fields, dbtypes
+}
+
+func getQueryRowValue(value interface{}, dbtype string) interface{} {
+	switch value.(type) {
+	case *sql.NullBool:
+		if value.(*sql.NullBool).Valid {
+			return value.(*sql.NullBool).Bool
+		}
+		return nil
+
+	case *sql.NullInt32:
+		if value.(*sql.NullInt32).Valid {
+			return int(value.(*sql.NullInt32).Int32)
+		}
+		return nil
+
+	case *sql.NullInt64:
+		if value.(*sql.NullInt64).Valid {
+			return int(value.(*sql.NullInt64).Int64)
+		}
+		return nil
+
+	case *sql.NullFloat64:
+		if value.(*sql.NullFloat64).Valid {
+			return value.(*sql.NullFloat64).Float64
+		}
+		return nil
+
+	case *sql.NullTime:
+		if value.(*sql.NullTime).Valid {
+			if dbtype == "DATE" {
+				return value.(*sql.NullTime).Time.Format("2006-01-02")
+			}
+			return value.(*sql.NullTime).Time
+		}
+		return nil
+
+	case *sql.NullString:
+		if value.(*sql.NullString).Valid {
+			return value.(*sql.NullString).String
+		}
+		return nil
+
+	}
+	return value
+}
+
 //QuerySQL executes a SQL query
 func (ds *SQLDriver) QuerySQL(sqlString string, params []interface{}, trans interface{}) ([]IM, error) {
 	result := make([]IM, 0)
@@ -758,26 +827,7 @@ func (ds *SQLDriver) QuerySQL(sqlString string, params []interface{}, trans inte
 	if err != nil {
 		return result, err
 	}
-	values := make([]interface{}, len(cols))
-	fields := make([]string, len(cols))
-	dbtypes := make([]string, len(cols))
-	for i := range cols {
-		fields[i] = cols[i].Name()
-		dbtypes[i] = cols[i].DatabaseTypeName()
-		//println(cols[i].DatabaseTypeName())
-		switch cols[i].DatabaseTypeName() {
-		case "BOOL", "BOOLEAN", "BIT":
-			values[i] = new(sql.NullBool)
-		case "INTEGER", "SERIAL", "INT", "INT4", "INT8":
-			values[i] = new(sql.NullInt64)
-		case "DOUBLE", "FLOAT8", "DECIMAL(19,4)", "DECIMAL":
-			values[i] = new(sql.NullFloat64)
-		case "DATETIME", "TIMESTAMP", "DATE":
-			values[i] = new(sql.NullTime)
-		default:
-			values[i] = new(sql.NullString)
-		}
-	}
+	values, fields, dbtypes := initQueryCols(cols)
 
 	for rows.Next() {
 		err = rows.Scan(values...)
@@ -786,50 +836,7 @@ func (ds *SQLDriver) QuerySQL(sqlString string, params []interface{}, trans inte
 		}
 		row := make(IM)
 		for index, value := range values {
-			switch value.(type) {
-			case *sql.NullBool:
-				if value.(*sql.NullBool).Valid {
-					row[fields[index]] = value.(*sql.NullBool).Bool
-				} else {
-					row[fields[index]] = nil
-				}
-			case *sql.NullInt32:
-				if value.(*sql.NullInt32).Valid {
-					row[fields[index]] = int(value.(*sql.NullInt32).Int32)
-				} else {
-					row[fields[index]] = nil
-				}
-			case *sql.NullInt64:
-				if value.(*sql.NullInt64).Valid {
-					row[fields[index]] = int(value.(*sql.NullInt64).Int64)
-				} else {
-					row[fields[index]] = nil
-				}
-			case *sql.NullFloat64:
-				if value.(*sql.NullFloat64).Valid {
-					row[fields[index]] = value.(*sql.NullFloat64).Float64
-				} else {
-					row[fields[index]] = nil
-				}
-			case *sql.NullTime:
-				if value.(*sql.NullTime).Valid {
-					if dbtypes[index] == "DATE" {
-						row[fields[index]] = value.(*sql.NullTime).Time.Format("2006-01-02")
-					} else {
-						row[fields[index]] = value.(*sql.NullTime).Time
-					}
-				} else {
-					row[fields[index]] = nil
-				}
-			case *sql.NullString:
-				if value.(*sql.NullString).Valid {
-					row[fields[index]] = value.(*sql.NullString).String
-				} else {
-					row[fields[index]] = nil
-				}
-			default:
-				row[fields[index]] = value
-			}
+			row[fields[index]] = getQueryRowValue(value, dbtypes[index])
 		}
 		result = append(result, row)
 	}
