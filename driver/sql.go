@@ -47,7 +47,6 @@ func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 		dcFmeDate     = "{FME_DATE}"
 		dcFmsDateTime = "{FMS_DATETIME}"
 		dcFmeDateTime = "{FME_DATETIME}"
-		asDate        = " as date)"
 	)
 
 	switch ds.engine {
@@ -57,7 +56,7 @@ func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as float8)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, asDate)
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " "+"as date)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "to_char(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", 'YYYY-MM-DD')")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "to_char(")
@@ -68,7 +67,7 @@ func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as decimal)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, asDate)
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " as date)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "date_format(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", '%Y-%m-%d')")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "date_format(")
@@ -79,7 +78,7 @@ func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasFloat, "cast(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCaeFloat, " as float)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasDate, "cast(")
-		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, asDate)
+		sqlStr = strings.ReplaceAll(sqlStr, dcCaeDate, " as date)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDate, "convert(varchar(10),")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", 120)")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "convert(varchar(16),")
@@ -306,6 +305,51 @@ func (ds *SQLDriver) UpdateHashtable(hashtable, refname, value string) error {
 	return err
 }
 
+func (ds *SQLDriver) dropData(logData []SM, trans *sql.Tx) ([]SM, error) {
+	//drop all tables if exist
+	logData = append(logData, SM{
+		"stamp":   time.Now().Format(ntura.TimeLayout),
+		"state":   "create",
+		"message": ntura.GetMessage("log_drop_table")})
+
+	var dropList = []string{
+		"pattern", "movement", "payment", "item", "trans", "barcode", "price", "tool", "product", "tax", "rate",
+		"place", "currency", "project", "customer", "event", "contact", "address", "numberdef", "log", "fieldvalue",
+		"deffield", "ui_audit", "link", "ui_userconfig", "ui_printqueue", "employee", "ui_reportsources",
+		"ui_reportfields", "ui_report", "ui_message", "ui_menufields", "ui_menu", "ui_language", "groups"}
+	for index := 0; index < len(dropList); index++ {
+		sqlString := ""
+		if ds.engine == "mysql" {
+			sqlString = "SET FOREIGN_KEY_CHECKS=0; "
+		}
+		if ds.engine == "mssql" {
+			sqlString += "DROP TABLE " + dropList[index] + ";"
+		} else {
+			sqlString += "DROP TABLE IF EXISTS " + dropList[index] + ";"
+		}
+		if ds.engine == "mysql" {
+			sqlString = " SET FOREIGN_KEY_CHECKS=1;"
+		}
+		_, err := trans.Exec(sqlString)
+		if err != nil {
+			logData = append(logData, SM{
+				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"state":   "err",
+				"message": err.Error()})
+			return logData, err
+		}
+	}
+	err := trans.Commit()
+	if err != nil {
+		logData = append(logData, SM{
+			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"state":   "err",
+			"message": err.Error()})
+		return logData, err
+	}
+	return logData, nil
+}
+
 // CreateDatabase - create a Nervatura Database
 func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	var err error
@@ -343,45 +387,8 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		"state":    "create",
 		"message":  ntura.GetMessage("log_start_process")})
 
-	//drop all tables if exist
-	logData = append(logData, SM{
-		"stamp":   time.Now().Format(ntura.TimeLayout),
-		"state":   "create",
-		"message": ntura.GetMessage("log_drop_table")})
-
-	var dropList = []string{
-		"pattern", "movement", "payment", "item", "trans", "barcode", "price", "tool", "product", "tax", "rate",
-		"place", "currency", "project", "customer", "event", "contact", "address", "numberdef", "log", "fieldvalue",
-		"deffield", "ui_audit", "link", "ui_userconfig", "ui_printqueue", "employee", "ui_reportsources",
-		"ui_reportfields", "ui_report", "ui_message", "ui_menufields", "ui_menu", "ui_language", "groups"}
-	for index := 0; index < len(dropList); index++ {
-		sqlString := ""
-		if ds.engine == "mysql" {
-			sqlString = "SET FOREIGN_KEY_CHECKS=0; "
-		}
-		if ds.engine == "mssql" {
-			sqlString += "DROP TABLE " + dropList[index] + ";"
-		} else {
-			sqlString += "DROP TABLE IF EXISTS " + dropList[index] + ";"
-		}
-		if ds.engine == "mysql" {
-			sqlString = " SET FOREIGN_KEY_CHECKS=1;"
-		}
-		_, err = trans.Exec(sqlString)
-		if err != nil {
-			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
-				"state":   "err",
-				"message": err.Error()})
-			return logData, err
-		}
-	}
-	err = trans.Commit()
+	logData, err = ds.dropData(logData, trans)
 	if err != nil {
-		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
-			"state":   "err",
-			"message": err.Error()})
 		return logData, err
 	}
 
