@@ -188,17 +188,22 @@ func setRefID(refID IM, mname string, keyFields []string, values IM, id int) IM 
 	return refID
 }
 
-func getRefID(refID IM, keyFields []string) string {
-	switch len(keyFields) {
-	case 2:
-		return refID[keyFields[0]].(IM)[keyFields[1]].(string)
-	case 3:
-		return refID[keyFields[0]].(IM)[keyFields[1]].(IM)[keyFields[2]].(string)
-	case 4:
-		return refID[keyFields[0]].(IM)[keyFields[1]].(IM)[keyFields[2]].(IM)[keyFields[3]].(string)
-	default:
-		return "0"
+func getRefID(refID IM, value interface{}) interface{} {
+	if ntura.GetIType(value) == "[]string" {
+		keyFields := value.([]string)
+		switch len(keyFields) {
+		case 2:
+			return refID[keyFields[0]].(IM)[keyFields[1]]
+		case 3:
+			return refID[keyFields[0]].(IM)[keyFields[1]].(IM)[keyFields[2]]
+		case 4:
+			return refID[keyFields[0]].(IM)[keyFields[1]].(IM)[keyFields[2]].(IM)[keyFields[3]]
+		default:
+			return "0"
+		}
 	}
+	return value
+
 }
 
 //Properties - DataDriver features
@@ -368,6 +373,43 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 	return logData, nil
 }
 
+func (ds *SQLDriver) createTableFields(sqlString, fieldname, indexName string, field ntura.MF) string {
+	sqlString += fieldname
+	if field.References != nil {
+		reference := ds.getDataType("reference")
+		reference = strings.ReplaceAll(reference, "foreign_key", field.References[0]+"(id)")
+		reference = strings.ReplaceAll(reference, "field_name", fieldname)
+		reference = strings.ReplaceAll(reference, "index_name", fieldname+"__idx")
+		reference = strings.ReplaceAll(reference, "constraint_name", indexName+"__"+fieldname+"__constraint")
+		if (ds.engine == "mssql") && (len(field.References) == 3) {
+			reference += field.References[2]
+		} else {
+			reference += field.References[1]
+		}
+		sqlString += " " + reference
+	} else {
+		sqlString += " " + ds.getDataType(field.Type)
+		if field.Length > 0 {
+			sqlString += "(" + strconv.Itoa(field.Length) + ")"
+		}
+	}
+	if field.NotNull && field.References == nil {
+		sqlString += " NOT NULL"
+	}
+	if field.Default != nil && field.Default != "nextnumber" {
+		switch field.Default.(type) {
+		case int:
+			sqlString += " " + "DEFAULT" + " " + strconv.Itoa(field.Default.(int))
+		case float64:
+			sqlString += " " + "DEFAULT" + " " + strconv.FormatFloat(field.Default.(float64), 'f', -1, 64)
+		case string:
+			sqlString += " " + "DEFAULT" + " " + field.Default.(string)
+		}
+	}
+	sqlString += ", "
+	return sqlString
+}
+
 //createTable - create all tables
 func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 
@@ -382,39 +424,7 @@ func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 		for fld := 0; fld < len(model[createList[index]].(IM)["_fields"].(SL)); fld++ {
 			fieldname := model[createList[index]].(IM)["_fields"].(SL)[fld]
 			field := model[createList[index]].(IM)[fieldname].(ntura.MF)
-			sqlString += fieldname
-			if field.References != nil {
-				reference := ds.getDataType("reference")
-				reference = strings.ReplaceAll(reference, "foreign_key", field.References[0]+"(id)")
-				reference = strings.ReplaceAll(reference, "field_name", fieldname)
-				reference = strings.ReplaceAll(reference, "index_name", fieldname+"__idx")
-				reference = strings.ReplaceAll(reference, "constraint_name", createList[index]+"__"+fieldname+"__constraint")
-				if (ds.engine == "mssql") && (len(field.References) == 3) {
-					reference += field.References[2]
-				} else {
-					reference += field.References[1]
-				}
-				sqlString += " " + reference
-			} else {
-				sqlString += " " + ds.getDataType(field.Type)
-				if field.Length > 0 {
-					sqlString += "(" + strconv.Itoa(field.Length) + ")"
-				}
-			}
-			if field.NotNull && field.References == nil {
-				sqlString += " NOT NULL"
-			}
-			if field.Default != nil && field.Default != "nextnumber" {
-				switch field.Default.(type) {
-				case int:
-					sqlString += " " + "DEFAULT" + " " + strconv.Itoa(field.Default.(int))
-				case float64:
-					sqlString += " " + "DEFAULT" + " " + strconv.FormatFloat(field.Default.(float64), 'f', -1, 64)
-				case string:
-					sqlString += " " + "DEFAULT" + " " + field.Default.(string)
-				}
-			}
-			sqlString += ", "
+			sqlString = ds.createTableFields(sqlString, fieldname, createList[index], field)
 		}
 		sqlString += ");"
 		sqlString = strings.ReplaceAll(sqlString, ", );", ");")
@@ -490,11 +500,7 @@ func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 			fldNames := []string{"id"}
 			fldValues := []string{ds.getPrmString(1)}
 			for field, value := range dataRows[mname][index] {
-				if ntura.GetIType(value) == "[]string" {
-					params = append(params, getRefID(refID, value.([]string)))
-				} else {
-					params = append(params, value)
-				}
+				params = append(params, getRefID(refID, value))
 				fldNames = append(fldNames, field)
 				fldValues = append(fldValues, ds.getPrmString(len(params)))
 			}
