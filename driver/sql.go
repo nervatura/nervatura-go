@@ -464,7 +464,7 @@ func (ds *SQLDriver) createIndex(logData []SM, trans *sql.Tx) ([]SM, error) {
 	return logData, nil
 }
 
-// insertData - create indexes
+// insertData - insert data
 func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 
 	model := ntura.DataModel()["model"].(IM)
@@ -509,24 +509,6 @@ func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 					"message": err.Error()})
 				return logData, err
 			}
-		}
-	}
-
-	switch ds.engine {
-	case "postgres":
-		//update all sequences
-		sqlString := ""
-		for index := 0; index < len(createList); index++ {
-			sqlString += fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT max(id) FROM %s));",
-				createList[index], createList[index])
-		}
-		_, err := trans.Exec(sqlString)
-		if err != nil {
-			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
-				"state":   "err",
-				"message": err.Error()})
-			return logData, err
 		}
 	}
 
@@ -591,6 +573,24 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	logData, err = ds.insertData(logData, trans)
 	if err != nil {
 		return logData, err
+	}
+
+	switch ds.engine {
+	case "postgres":
+		//update all sequences
+		sqlString := ""
+		for index := 0; index < len(createList); index++ {
+			sqlString += fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT max(id) FROM %s));",
+				createList[index], createList[index])
+		}
+		_, err := trans.Exec(sqlString)
+		if err != nil {
+			logData = append(logData, SM{
+				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"state":   "err",
+				"message": err.Error()})
+			return logData, err
+		}
 	}
 
 	err = trans.Commit()
