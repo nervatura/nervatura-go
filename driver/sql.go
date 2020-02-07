@@ -35,6 +35,18 @@ type SQLDriver struct {
 	db      *sql.DB
 }
 
+var dropList = []string{
+	"pattern", "movement", "payment", "item", "trans", "barcode", "price", "tool", "product", "tax", "rate",
+	"place", "currency", "project", "customer", "event", "contact", "address", "numberdef", "log", "fieldvalue",
+	"deffield", "ui_audit", "link", "ui_userconfig", "ui_printqueue", "employee", "ui_reportsources",
+	"ui_reportfields", "ui_report", "ui_message", "ui_menufields", "ui_menu", "ui_language", "groups"}
+
+var createList = []string{
+	"groups", "ui_language", "ui_menu", "ui_menufields", "ui_message", "ui_report", "ui_reportfields", "ui_reportsources",
+	"employee", "ui_printqueue", "ui_userconfig", "link", "ui_audit", "deffield", "fieldvalue", "log", "numberdef",
+	"address", "contact", "event", "customer", "project", "currency", "place", "rate", "tax", "product", "tool", "price",
+	"barcode", "trans", "item", "payment", "movement", "pattern"}
+
 func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 	const (
 		dcCasInt      = "{CAS_INT}"
@@ -305,18 +317,24 @@ func (ds *SQLDriver) UpdateHashtable(hashtable, refname, value string) error {
 	return err
 }
 
-func (ds *SQLDriver) dropData(logData []SM, trans *sql.Tx) ([]SM, error) {
-	//drop all tables if exist
+//dropData - drop all tables if exist
+func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
+
+	trans, err := ds.db.Begin()
+	if err != nil {
+		logData = append(logData, SM{
+			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"state":   "err",
+			"message": err.Error()})
+		return logData, err
+	}
+	defer rollBackTrans(trans, err)
+
 	logData = append(logData, SM{
 		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_drop_table")})
 
-	var dropList = []string{
-		"pattern", "movement", "payment", "item", "trans", "barcode", "price", "tool", "product", "tax", "rate",
-		"place", "currency", "project", "customer", "event", "contact", "address", "numberdef", "log", "fieldvalue",
-		"deffield", "ui_audit", "link", "ui_userconfig", "ui_printqueue", "employee", "ui_reportsources",
-		"ui_reportfields", "ui_report", "ui_message", "ui_menufields", "ui_menu", "ui_language", "groups"}
 	for index := 0; index < len(dropList); index++ {
 		sqlString := ""
 		if ds.engine == "mysql" {
@@ -339,7 +357,7 @@ func (ds *SQLDriver) dropData(logData []SM, trans *sql.Tx) ([]SM, error) {
 			return logData, err
 		}
 	}
-	err := trans.Commit()
+	err = trans.Commit()
 	if err != nil {
 		logData = append(logData, SM{
 			"stamp":   time.Now().Format(ntura.TimeLayout),
@@ -350,60 +368,15 @@ func (ds *SQLDriver) dropData(logData []SM, trans *sql.Tx) ([]SM, error) {
 	return logData, nil
 }
 
-// CreateDatabase - create a Nervatura Database
-func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
-	var err error
-	if ds.db == nil {
-		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
-			"state":   "err",
-			"message": ntura.GetMessage("missing_driver")})
-		return logData, errors.New(ntura.GetMessage("missing_driver"))
-	}
+//createTable - create all tables
+func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 
-	trans, err := ds.db.Begin()
-	if err != nil {
-		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
-			"state":   "err",
-			"message": err.Error()})
-		return logData, err
-	}
-	defer func() {
-		pe := recover()
-		if trans != nil {
-			if err != nil || pe != nil {
-				trans.Rollback()
-			}
-		}
-		if pe != nil {
-			panic(pe)
-		}
-	}()
-
-	logData = append(logData, SM{
-		"database": ds.alias,
-		"stamp":    time.Now().Format(ntura.TimeLayout),
-		"state":    "create",
-		"message":  ntura.GetMessage("log_start_process")})
-
-	logData, err = ds.dropData(logData, trans)
-	if err != nil {
-		return logData, err
-	}
-
-	//create all tables
-	trans, err = ds.db.Begin()
 	logData = append(logData, SM{
 		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
 		"message": ntura.GetMessage("log_create_table")})
 	model := ntura.DataModel()["model"].(IM)
-	var createList = []string{
-		"groups", "ui_language", "ui_menu", "ui_menufields", "ui_message", "ui_report", "ui_reportfields", "ui_reportsources",
-		"employee", "ui_printqueue", "ui_userconfig", "link", "ui_audit", "deffield", "fieldvalue", "log", "numberdef",
-		"address", "contact", "event", "customer", "project", "currency", "place", "rate", "tax", "product", "tool", "price",
-		"barcode", "trans", "item", "payment", "movement", "pattern"}
+
 	for index := 0; index < len(createList); index++ {
 		sqlString := "CREATE TABLE " + createList[index] + "("
 		for fld := 0; fld < len(model[createList[index]].(IM)["_fields"].(SL)); fld++ {
@@ -446,7 +419,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		sqlString += ");"
 		sqlString = strings.ReplaceAll(sqlString, ", );", ");")
 		//println(sqlString)
-		_, err = trans.Exec(sqlString)
+		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
 				"stamp":   time.Now().Format(ntura.TimeLayout),
@@ -456,7 +429,12 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		}
 	}
 
-	//create indexes
+	return logData, nil
+}
+
+// createIndex - create indexes
+func (ds *SQLDriver) createIndex(logData []SM, trans *sql.Tx) ([]SM, error) {
+
 	logData = append(logData, SM{
 		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
@@ -473,7 +451,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		}
 		sqlString += ");"
 		sqlString = strings.ReplaceAll(sqlString, ", );", ");")
-		_, err = trans.Exec(sqlString)
+		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
 				"stamp":   time.Now().Format(ntura.TimeLayout),
@@ -483,7 +461,13 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		}
 	}
 
-	//insert data
+	return logData, nil
+}
+
+// insertData - create indexes
+func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
+
+	model := ntura.DataModel()["model"].(IM)
 	logData = append(logData, SM{
 		"stamp":   time.Now().Format(ntura.TimeLayout),
 		"state":   "create",
@@ -532,7 +516,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 			values = strings.ReplaceAll(values, ", );", ");")
 			sqlString := insertID + "INSERT INTO " + mname + "(" + fields + " VALUES(" + values
 			//println(sqlString)
-			_, err = trans.Exec(sqlString)
+			_, err := trans.Exec(sqlString)
 			if err != nil {
 				logData = append(logData, SM{
 					"stamp":   time.Now().Format(ntura.TimeLayout),
@@ -551,7 +535,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 			sqlString += "SELECT setval('" + createList[index] + "_id_seq', (SELECT max(id) FROM " + createList[index] + "));"
 
 		}
-		_, err = trans.Exec(sqlString)
+		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
 				"stamp":   time.Now().Format(ntura.TimeLayout),
@@ -559,6 +543,69 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 				"message": err.Error()})
 			return logData, err
 		}
+	}
+
+	return logData, nil
+}
+
+func rollBackTrans(trans *sql.Tx, err error) {
+	pe := recover()
+	if trans != nil {
+		if err != nil || pe != nil {
+			trans.Rollback()
+		}
+	}
+	if pe != nil {
+		panic(pe)
+	}
+}
+
+// CreateDatabase - create a Nervatura Database
+func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
+	var err error
+	if ds.db == nil {
+		logData = append(logData, SM{
+			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"state":   "err",
+			"message": ntura.GetMessage("missing_driver")})
+		return logData, errors.New(ntura.GetMessage("missing_driver"))
+	}
+
+	logData = append(logData, SM{
+		"database": ds.alias,
+		"stamp":    time.Now().Format(ntura.TimeLayout),
+		"state":    "create",
+		"message":  ntura.GetMessage("log_start_process")})
+
+	logData, err = ds.dropData(logData)
+	if err != nil {
+		return logData, err
+	}
+
+	trans, err := ds.db.Begin()
+	if err != nil {
+		logData = append(logData, SM{
+			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"state":   "err",
+			"message": err.Error()})
+		return logData, err
+	}
+	defer rollBackTrans(trans, err)
+
+	trans, err = ds.db.Begin()
+	logData, err = ds.createTable(logData, trans)
+	if err != nil {
+		return logData, err
+	}
+
+	logData, err = ds.createIndex(logData, trans)
+	if err != nil {
+		return logData, err
+	}
+
+	logData, err = ds.insertData(logData, trans)
+	if err != nil {
+		return logData, err
 	}
 
 	err = trans.Commit()
