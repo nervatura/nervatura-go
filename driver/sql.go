@@ -482,41 +482,26 @@ func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 		keyFields := model[mname].(IM)["_key"].([]string)
 		insertID := ""
 		if ds.engine == "mssql" {
-			insertID = "SET IDENTITY_INSERT " + mname + " ON; "
+			insertID = fmt.Sprintf("SET IDENTITY_INSERT %s ON; ", mname)
 		}
 		for index := 0; index < len(dataRows[mname]); index++ {
 			refID = setRefID(refID, mname, keyFields, dataRows[mname][index], index+1)
-			fields := "id, "
-			values := strconv.Itoa(index+1) + ", "
+			params := []interface{}{index + 1}
+			fldNames := []string{"id"}
+			fldValues := []string{ds.getPrmString(1)}
 			for field, value := range dataRows[mname][index] {
-				fields += field + ", "
-				switch value.(type) {
-				case []string:
-					values += getRefID(refID, value.([]string)) + ", "
-				default:
-					switch model[mname].(IM)[field].(ntura.ModelField).Type {
-					case "string", "password", "text", "date", "datetime":
-						values += "'" + value.(string) + "', "
-					default:
-						switch value.(type) {
-						case int:
-							values += strconv.Itoa(value.(int)) + ", "
-						case float64:
-							values += strconv.FormatFloat(value.(float64), 'f', -1, 64) + ", "
-						default:
-							values += value.(string) + ", "
-						}
-					}
-
+				if ntura.GetIType(value) == "[]string" {
+					params = append(params, getRefID(refID, value.([]string)))
+				} else {
+					params = append(params, value)
 				}
+				fldNames = append(fldNames, field)
+				fldValues = append(fldValues, ds.getPrmString(len(params)))
 			}
-			fields += ") "
-			fields = strings.ReplaceAll(fields, ", ) ", ") ")
-			values += ");"
-			values = strings.ReplaceAll(values, ", );", ");")
-			sqlString := insertID + "INSERT INTO " + mname + "(" + fields + " VALUES(" + values
+			sqlString := insertID + fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s);",
+				mname, strings.Join(fldNames, ","), strings.Join(fldValues, ","))
 			//println(sqlString)
-			_, err := trans.Exec(sqlString)
+			_, err := trans.Exec(sqlString, params...)
 			if err != nil {
 				logData = append(logData, SM{
 					"stamp":   time.Now().Format(ntura.TimeLayout),
@@ -532,8 +517,8 @@ func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 		//update all sequences
 		sqlString := ""
 		for index := 0; index < len(createList); index++ {
-			sqlString += "SELECT setval('" + createList[index] + "_id_seq', (SELECT max(id) FROM " + createList[index] + "));"
-
+			sqlString += fmt.Sprintf("SELECT setval('%s_id_seq', (SELECT max(id) FROM %s));",
+				createList[index], createList[index])
 		}
 		_, err := trans.Exec(sqlString)
 		if err != nil {
