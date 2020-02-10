@@ -1080,65 +1080,87 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 			}
 			return sqlString, params
 		},
+
+		"reportfields": func(options SM) (string, IL) {
+			params := IL{options["report_id"]}
+			sqlString =
+				`select rf.fieldname as fieldname, ft.groupvalue as fieldtype, rf.dataset as dataset, wt.groupvalue as wheretype, rf.sqlstr as sqlstr
+				from ui_reportfields rf
+				inner join groups ft on rf.fieldtype=ft.id
+				inner join groups wt on rf.wheretype=wt.id
+				where rf.report_id=` + ds.getPrmString(1)
+			return sqlString, params
+		},
+
+		"listprice": func(options SM) (string, IL) {
+			params := IL{options["vendorprice"], options["product_id"], options["posdate"], options["posdate"], options["curr"], options["qty"]}
+			sqlString =
+				`select min(p.pricevalue) as mp 
+				from price p 
+				left join link l on l.ref_id_1 = p.id and l.nervatype_1 = ( 
+					select id from groups 
+					where groupname = 'nervatype' and groupvalue = 'price') and l.deleted = 0 
+				where p.deleted = 0 and p.discount is null and p.pricevalue <> 0 
+					and l.ref_id_2 is null and p.vendorprice = ` + ds.getPrmString(1) + ` and p.product_id = ` + ds.getPrmString(2) + ` 
+					and p.validfrom <= ` + ds.getPrmString(3) + ` and ( p.validto >= ` + ds.getPrmString(4) + ` or 
+					p.validto is null) and p.curr = ` + ds.getPrmString(5) + ` and p.qty <= ` + ds.getPrmString(6)
+			return sqlString, params
+		},
+
+		"custprice": func(options SM) (string, IL) {
+			params := IL{options["vendorprice"], options["product_id"], options["posdate"], options["posdate"],
+				options["curr"], options["qty"], options["customer_id"]}
+			sqlString =
+				`select min(p.pricevalue) as mp 
+				from price p 
+				inner join link l on l.ref_id_1 = p.id 
+					and l.nervatype_1 = (select id from groups where groupname = 'nervatype' and groupvalue = 'price') 
+					and l.nervatype_2 = (select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
+					and l.deleted = 0 
+				where p.deleted = 0 and p.discount is null and p.pricevalue <> 0 
+					and p.vendorprice = ` + ds.getPrmString(1) + ` and p.product_id = ` + ds.getPrmString(2) + ` and p.validfrom <= ` + ds.getPrmString(3) + ` 
+					and ( p.validto >= ` + ds.getPrmString(4) + ` or p.validto is null) and p.curr = ` + ds.getPrmString(5) + ` 
+					and p.qty <= ` + ds.getPrmString(6) + ` and l.ref_id_2 = ` + ds.getPrmString(7)
+			return sqlString, params
+		},
+
+		"grouprice": func(options SM) (string, IL) {
+			params := IL{options["customer_id"], options["vendorprice"], options["product_id"], options["posdate"], options["posdate"],
+				options["curr"], options["qty"]}
+			sqlString =
+				`select min(p.pricevalue) as mp 
+				from price p 
+				inner join link l on l.ref_id_1 = p.id and l.deleted = 0 
+					and l.nervatype_1 = (select id from groups where groupname = 'nervatype' and groupvalue = 'price') 
+					and l.nervatype_2 = (select id from groups where groupname = 'nervatype' and groupvalue = 'groups') 
+				inner join groups g on g.id = l.ref_id_2 
+					and g.id in (select l.ref_id_2 from link l where l.deleted = 0 
+					and l.nervatype_1 = (select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
+					and l.nervatype_2 = (select id from groups where groupname = 'nervatype' and groupvalue = 'groups') 
+					and l.ref_id_1 = ` + ds.getPrmString(1) + `) 
+				where p.deleted = 0 and p.discount is null and p.pricevalue <> 0 and p.vendorprice = ` + ds.getPrmString(2) + ` 
+					and p.product_id = ` + ds.getPrmString(3) + ` and p.validfrom <= ` + ds.getPrmString(4) + ` 
+					and ( p.validto >= ` + ds.getPrmString(5) + ` or p.validto is null) 
+					and p.curr = ` + ds.getPrmString(6) + ` and p.qty <= ` + ds.getPrmString(7)
+			return sqlString, params
+		},
+
+		"data_audit": func(options SM) (string, IL) {
+			params := IL{options["id"]}
+			sqlString =
+				`select tt.groupvalue as transfilter 
+				from employee e inner join link l on l.ref_id_1 = e.usergroup and l.deleted = 0 
+				inner join groups nt1 on l.nervatype_1 = nt1.id and nt1.groupname = 'nervatype' and nt1.groupvalue = 'groups' 
+				inner join groups nt2 on l.nervatype_2 = nt2.id and nt2.groupname = 'nervatype' and nt2.groupvalue = 'groups' 
+				inner join groups tt on l.ref_id_2 = tt.id where e.id = ` + ds.getPrmString(1)
+			return sqlString, params
+		},
 	}
 
 	if _, found := keys[options["qkey"]]; found {
 		sqlString, params = keys[options["qkey"]](options)
 	} else {
 		switch options["qkey"] {
-
-		case "reportfields":
-			sqlString = `select rf.fieldname as fieldname, ft.groupvalue as fieldtype, rf.dataset as dataset, wt.groupvalue as wheretype, rf.sqlstr as sqlstr
-		from ui_reportfields rf
-		inner join groups ft on rf.fieldtype=ft.id
-		inner join groups wt on rf.wheretype=wt.id
-		where rf.report_id=` + options["report_id"]
-
-		case "listprice":
-			sqlString = `select min(p.pricevalue) as mp 
-		from price p 
-		left join link l on l.ref_id_1 = p.id and l.nervatype_1 = ( 
-			select id from groups 
-			where groupname = 'nervatype' and groupvalue = 'price') and l.deleted = 0 
-		where p.deleted = 0 and p.discount is null and p.pricevalue <> 0 
-			and l.ref_id_2 is null and p.vendorprice = ` + options["vendorprice"] + ` and p.product_id = ` + options["product_id"] + ` 
-			and p.validfrom <= '` + options["posdate"] + `' and ( p.validto >= '` + options["posdate"] + `' or 
-			p.validto is null) and p.curr = '` + options["curr"] + `' and p.qty <= ` + options["qty"]
-
-		case "custprice":
-			sqlString = `select min(p.pricevalue) as mp 
-		from price p 
-		inner join link l on l.ref_id_1 = p.id 
-			and l.nervatype_1 = (select id from groups where groupname = 'nervatype' and groupvalue = 'price') 
-			and l.nervatype_2 = (select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
-			and l.deleted = 0 
-		where p.deleted = 0 and p.discount is null and p.pricevalue <> 0 
-			and p.vendorprice = ` + options["vendorprice"] + ` and p.product_id = ` + options["product_id"] + ` and p.validfrom <= '` + options["posdate"] + `' 
-			and ( p.validto >= '` + options["posdate"] + `' or p.validto is null) and p.curr = '` + options["curr"] + `' 
-			and p.qty <= ` + options["qty"] + ` and l.ref_id_2 = ` + options["customer_id"]
-
-		case "grouprice":
-			sqlString = `select min(p.pricevalue) as mp 
-		from price p 
-		inner join link l on l.ref_id_1 = p.id and l.deleted = 0 
-			and l.nervatype_1 = (select id from groups where groupname = 'nervatype' and groupvalue = 'price') 
-			and l.nervatype_2 = (select id from groups where groupname = 'nervatype' and groupvalue = 'groups') 
-		inner join groups g on g.id = l.ref_id_2 
-			and g.id in (select l.ref_id_2 from link l where l.deleted = 0 
-			and l.nervatype_1 = (select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
-			and l.nervatype_2 = (select id from groups where groupname = 'nervatype' and groupvalue = 'groups') 
-			and l.ref_id_1 = ` + options["customer_id"] + `) 
-		where p.deleted = 0 and p.discount is null and p.pricevalue <> 0 and p.vendorprice = ` + options["vendorprice"] + ` 
-			and p.product_id = ` + options["product_id"] + ` and p.validfrom <= '` + options["posdate"] + `' 
-			and ( p.validto >= '` + options["posdate"] + `' or p.validto is null) 
-			and p.curr = '` + options["curr"] + `' and p.qty <= ` + options["qty"]
-
-		case "data_audit":
-			sqlString = `select tt.groupvalue as transfilter 
-		  from employee e inner join link l on l.ref_id_1 = e.usergroup and l.deleted = 0 
-			inner join groups nt1 on l.nervatype_1 = nt1.id and nt1.groupname = 'nervatype' and nt1.groupvalue = 'groups' 
-			inner join groups nt2 on l.nervatype_2 = nt2.id and nt2.groupname = 'nervatype' and nt2.groupvalue = 'groups' 
-			inner join groups tt on l.ref_id_2 = tt.id where e.id = ` + options["id"]
 
 		case "object_audit":
 			sqlString = `select inf.groupvalue as inputfilter from ui_audit a 
