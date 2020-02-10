@@ -989,6 +989,44 @@ func (ds *SQLDriver) RollbackTransaction(trans interface{}) error {
 	return trans.(*sql.Tx).Rollback()
 }
 
+func (ds *SQLDriver) getQueryKeyOption(options SM, keys SL, sqlString string, params IL) (string, IL) {
+	queryParams := make([]interface{}, 0)
+	fieldParams := make([]interface{}, 0)
+	for _, key := range keys {
+		if _, found := options[key]; found {
+			queryParams = append(queryParams, options[key])
+			fieldParams = append(fieldParams, ds.getPrmString(len(params)+len(fieldParams)))
+		}
+	}
+	if len(queryParams) > 0 {
+		params = append(params, queryParams...)
+		sqlString = fmt.Sprintf(sqlString, fieldParams...)
+		return sqlString, params
+	}
+	return "", params
+}
+
+func (ds *SQLDriver) splitInParams(inString string, start int) (IL, SL) {
+	inValues := strings.Split(inString, ",")
+	params := make([]interface{}, 0)
+	inPrm := make([]string, 0)
+	for _, value := range inValues {
+		params = append(params, value)
+		inPrm = append(inPrm, ds.getPrmString(len(params)+start))
+	}
+	return params, inPrm
+}
+
+func (ds *SQLDriver) getQueryKeySplit(options SM, key, sqlString string, params IL) (string, IL) {
+	if _, found := options[key]; found {
+		values, fieldParams := ds.splitInParams(options[key], len(params))
+		params = append(params, values...)
+		sqlString = fmt.Sprintf(sqlString, strings.Join(fieldParams, ","))
+		return sqlString, params
+	}
+	return "", params
+}
+
 //QueryKey - complex data queries
 func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 	result := []IM{}
@@ -1019,12 +1057,8 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 
 		"metadata": func(options SM) (string, IL) {
 			params := IL{options["nervatype"]}
-			ids := strings.Split(options["ids"], ",")
-			inPrm := make([]string, 0)
-			for i, id := range ids {
-				params = append(params, id)
-				inPrm = append(inPrm, ds.getPrmString(i+2))
-			}
+			values, inPrm := ds.splitInParams(options["ids"], len(params))
+			params = append(params, values...)
 			sqlString =
 				`select fv.*, ft.groupvalue as fieldtype from fieldvalue fv 
 				inner join deffield df on fv.fieldname = df.fieldname
@@ -1057,6 +1091,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 
 		"default_report": func(options SM) (string, IL) {
 			params := IL{}
+			whereString := ""
 			sqlString =
 				`select r.*, ft.groupvalue as reptype
 				from ui_report r
@@ -1070,14 +1105,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
             inner join groups dir on r.direction=dir.id and dir.groupvalue=` + ds.getPrmString(len(params))
 				}
 			}
-			if _, found := options["reportkey"]; found {
-				params = append(params, options["reportkey"])
-				sqlString += ` where r.reportkey=` + ds.getPrmString(len(params))
-			}
-			if _, found := options["report_id"]; found {
-				params = append(params, options["report_id"])
-				sqlString += ` where r.id=` + ds.getPrmString(len(params))
-			}
+			whereString, params = ds.getQueryKeyOption(options, SL{"reportkey"}, ` where r.reportkey=%s`, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeyOption(options, SL{"report_id"}, ` where r.id=%s`, params)
+			sqlString += whereString
 			return sqlString, params
 		},
 
@@ -1155,50 +1186,51 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				inner join groups tt on l.ref_id_2 = tt.id where e.id = ` + ds.getPrmString(1)
 			return sqlString, params
 		},
+
+		"object_audit": func(options SM) (string, IL) {
+			whereString := ""
+			params := IL{options["usergroup"]}
+			sqlString =
+				`select inf.groupvalue as inputfilter from ui_audit a 
+				inner join groups inf on a.inputfilter = inf.id 
+				inner join groups nt on a.nervatype = nt.id 
+				left join groups st on a.subtype = st.id 
+				where (a.usergroup = ` + ds.getPrmString(1) + `) `
+			whereString, params = ds.getQueryKeyOption(options, SL{"subtype"}, ` and a.subtype=%s`, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeySplit(options, "subtypeIn", ` and a.subtype in (%s) `, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeyOption(options, SL{"transtype"}, ` and st.groupvalue=%s`, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeySplit(options, "transtypeIn", ` and st.groupvalue in (%s) `, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeyOption(options, SL{"nervatype"}, ` and a.nervatype=%s`, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeySplit(options, "nervatypeIn", ` and a.nervatype in (%s) `, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeyOption(options, SL{"groupvalue"}, ` and nt.groupvalue=%s`, params)
+			sqlString += whereString
+			whereString, params = ds.getQueryKeySplit(options, "groupvalueIn", ` and nt.groupvalue in (%s) `, params)
+			sqlString += whereString
+			return sqlString, params
+		},
+
+		"dbs_settings": func(options SM) (string, IL) {
+			params := IL{}
+			sqlString =
+				`select 'setting' as stype, fieldname, value, notes as data, id as info 
+				from fieldvalue where deleted = 0 and ref_id is null  
+				union select 'pattern' as stype, p.description as fieldname, p.notes as value, 
+					tt.groupvalue as data, p.defpattern as info 
+				from pattern p inner join groups tt on p.transtype = tt.id where p.deleted = 0`
+			return sqlString, params
+		},
 	}
 
 	if _, found := keys[options["qkey"]]; found {
 		sqlString, params = keys[options["qkey"]](options)
 	} else {
 		switch options["qkey"] {
-
-		case "object_audit":
-			sqlString = `select inf.groupvalue as inputfilter from ui_audit a 
-		  inner join groups inf on a.inputfilter = inf.id 
-			inner join groups nt on a.nervatype = nt.id 
-			left join groups st on a.subtype = st.id 
-			where (a.usergroup = ` + options["usergroup"] + `) `
-			if _, found := options["subtype"]; found {
-				sqlString += ` and a.subtype = ` + options["subtype"]
-			}
-			if _, found := options["subtypeIn"]; found {
-				sqlString += ` and a.subtype in (` + options["subtypeIn"] + `) `
-			}
-			if _, found := options["transtype"]; found {
-				sqlString += ` and st.groupvalue = '` + options["transtype"] + `' `
-			}
-			if _, found := options["transtypeIn"]; found {
-				sqlString += ` and st.groupvalue in (` + options["transtypeIn"] + `) `
-			}
-			if _, found := options["nervatype"]; found {
-				sqlString += ` and a.nervatype = ` + options["nervatype"]
-			}
-			if _, found := options["nervatypeIn"]; found {
-				sqlString += ` and a.nervatype in (` + options["nervatypeIn"] + `) `
-			}
-			if _, found := options["groupvalue"]; found {
-				sqlString += ` and nt.groupvalue = '` + options["groupvalue"] + `' `
-			}
-			if _, found := options["groupvalueIn"]; found {
-				sqlString += ` and nt.groupvalue in (` + options["groupvalueIn"] + `) `
-			}
-
-		case "dbs_settings":
-			sqlString = `select 'setting' as stype, fieldname, value, notes as data, id as info 
-		  from fieldvalue where deleted = 0 and ref_id is null  
-			union select 'pattern' as stype, p.description as fieldname, p.notes as value, 
-			  tt.groupvalue as data, p.defpattern as info 
-			from pattern p inner join groups tt on p.transtype = tt.id where p.deleted = 0`
 
 		case "id->refnumber":
 			switch options["nervatype"] {
