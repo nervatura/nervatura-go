@@ -1080,7 +1080,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refId", "id"}, ` where trans_id = %s and id <= %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and deleted = 0")
+			sqlString += useDeleted(options["useDeleted"], " and deleted=0")
 			return sqlString, params
 		}
 		sqlString = fmt.Sprintf(`select ti.*, t.transnumber, tt.groupvalue as transtype 
@@ -1135,7 +1135,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 		whereString, params = ds.getQueryKeyOption(options,
 			SL{"id"}, ` where id = %s `, params)
 		sqlString += whereString
-		sqlString += useDeleted(options["useDeleted"], " and deleted = 0")
+		sqlString += useDeleted(options["useDeleted"], " and deleted=0")
 		return sqlString, params
 	}
 }
