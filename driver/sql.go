@@ -1027,7 +1027,7 @@ func (ds *SQLDriver) getQueryKeySplit(options SM, key, sqlString string, params 
 	return "", params
 }
 
-func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
+func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
@@ -1046,7 +1046,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 				SL{"refTypeId", "refId", "id"}, ` where nervatype = %s and ref_id = %s and id <= %s `, params)
 			sqlString += whereString
 			sqlString += useDeleted(options["useDeleted"], " and deleted = 0")
-			return sqlString, params
+			return sqlString, params, nil
 		}
 		sqlString = fmt.Sprintf(`select nt.groupvalue as head_nervatype, t.*
 		  from %s t inner join groups nt on t.nervatype = nt.id`, options["nervatype"])
@@ -1054,7 +1054,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			SL{"id"}, ` where t.id = %s `, params)
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"], " and t.deleted = 0")
-		return sqlString, params
+		return sqlString, params, nil
 
 	case "fieldvalue", "setting":
 		if _, found := options["refId"]; found {
@@ -1063,7 +1063,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 				SL{"fieldname", "refId", "id"}, ` where fieldname = %s and ref_id = %s and id <= %s `, params)
 			sqlString += whereString
 			sqlString += useDeleted(options["useDeleted"], " and deleted = 0")
-			return sqlString, params
+			return sqlString, params, nil
 		}
 		sqlString = `select fv.*, nt.groupvalue as head_nervatype 
 			  from fieldvalue fv inner join deffield df on fv.fieldname = df.fieldname 
@@ -1072,7 +1072,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			SL{"id"}, ` where fv.id = %s `, params)
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"], " and fv.deleted = 0")
-		return sqlString, params
+		return sqlString, params, nil
 
 	case "item", "payment", "movement":
 		if _, found := options["refId"]; found {
@@ -1081,7 +1081,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 				SL{"refId", "id"}, ` where trans_id = %s and id <= %s `, params)
 			sqlString += whereString
 			sqlString += useDeleted(options["useDeleted"], " and deleted=0")
-			return sqlString, params
+			return sqlString, params, nil
 		}
 		sqlString = fmt.Sprintf(`select ti.*, t.transnumber, tt.groupvalue as transtype 
 				  from %s ti inner join trans t on ti.trans_id = t.id 
@@ -1091,7 +1091,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"],
 			" and ( t.deleted = 0 or tt.groupvalue in ('cash', 'invoice', 'receipt'))")
-		return sqlString, params
+		return sqlString, params, nil
 
 	case "price":
 		sqlString = `select pr.*, p.partnumber from price pr 
@@ -1100,7 +1100,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			SL{"id"}, ` where pr.id = %s `, params)
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"], " and p.deleted = 0")
-		return sqlString, params
+		return sqlString, params, nil
 
 	case "link":
 		sqlString = `select l.*, nt1.groupvalue as nervatype1, nt2.groupvalue as nervatype2 
@@ -1110,7 +1110,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			SL{"id"}, ` where l.id = %s `, params)
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"], " and l.deleted = 0")
-		return sqlString, params
+		return sqlString, params, nil
 
 	case "rate":
 		sqlString = `select r.*, rt.groupvalue as rate_type, p.planumber 
@@ -1120,7 +1120,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			SL{"id"}, ` where r.id = %s `, params)
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"], " and r.deleted = 0")
-		return sqlString, params
+		return sqlString, params, nil
 
 	case "log":
 		sqlString = `select l.*, e.empnumber from log l 
@@ -1128,7 +1128,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 		whereString, params = ds.getQueryKeyOption(options,
 			SL{"id"}, ` where l.id = %s `, params)
 		sqlString += whereString
-		return sqlString, params
+		return sqlString, params, nil
 
 	default:
 		sqlString = fmt.Sprintf(`select * from %s `, options["nervatype"])
@@ -1136,18 +1136,359 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL) {
 			SL{"id"}, ` where id = %s `, params)
 		sqlString += whereString
 		sqlString += useDeleted(options["useDeleted"], " and deleted=0")
-		return sqlString, params
+		return sqlString, params, nil
 	}
 }
 
+func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
+	var sqlString, whereString string
+	params := make(IL, 0)
+
+	useDeleted := func(value, whereString, trueString string) string {
+		if value == "false" {
+			return whereString
+		}
+		return trueString
+	}
+
+	keys := map[string]func(options SM) (string, IL, error){
+		"barcode": func(options SM) (string, IL, error) {
+			sqlString = useDeleted(options["useDeleted"],
+				`select barcode.id from barcode 
+				inner join product on barcode.product_id = product.id
+				where product.deleted = 0 and `, `select id from barcode where `)
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` code = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"customer": func(options SM) (string, IL, error) {
+			if options["extraInfo"] == "true" {
+				sqlString = fmt.Sprintf(`select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
+						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
+					from customer c 
+					inner join groups ct on c.custtype = ct.id 
+					left join ( 
+						select * from address where id = ( select min(id) from address where deleted = 0 
+							and nervatype = ( select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
+							and ref_id = ( select min(c.id) from customer c inner join groups ct on c.custtype = ct.id and groupvalue = 'own' where c.deleted = 0))
+					) addr on c.id = addr.ref_id 
+					where c.id = ( select min(c.id) from customer c inner join groups ct on c.custtype = ct.id and groupvalue = 'own' where c.deleted = 0)  
+					union select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
+						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
+					from customer c 
+					inner join groups ct on c.custtype = ct.id 
+					left join ( 
+						select * from address where id = ( select min(id) from address where deleted = 0 
+							and nervatype = ( select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
+							and ref_id = ( select id from customer where custnumber = '%s'))
+					) addr on c.id = addr.ref_id `, options["refnumber"])
+			} else {
+				sqlString = `select c.id as id, ct.groupvalue as custtype 
+					from customer c inner join groups ct on c.custtype = ct.id `
+			}
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where c.custnumber = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], " and c.deleted = 0", "")
+			return sqlString, params, nil
+		},
+
+		"event": func(options SM) (string, IL, error) {
+			sqlString = `select e.id as id, ntype.groupvalue as ref_nervatype 
+				from event e inner join groups ntype on e.nervatype = ntype.id  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where e.calnumber = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], " and e.deleted = 0", "")
+			return sqlString, params, nil
+		},
+
+		"groups": func(options SM) (string, IL, error) {
+			sqlString = `select id from groups  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refType", "refnumber"}, ` where groupname = %s and groupvalue = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], " and deleted=0", "")
+			return sqlString, params, nil
+		},
+
+		"deffield": func(options SM) (string, IL, error) {
+			sqlString = `select df.id, nt.groupvalue as ref_nervatype from deffield df 
+			  inner join groups nt on df.nervatype = nt.id  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where df.fieldname = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], " and df.deleted=0", "")
+			return sqlString, params, nil
+		},
+
+		"fieldvalue": func(options SM) (string, IL, error) {
+			sqlString = `select id from fieldvalue  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refID", "refnumber"}, ` where ref_id = %s and fieldname = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], " and deleted =0", "")
+			return sqlString, params, nil
+		},
+
+		"item": func(options SM) (string, IL, error) {
+			sqlString = fmt.Sprintf(
+				`select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit, 
+					it.qty as qty, it.discount as discount, it.tax_id as tax_id, ta.rate as rate 
+				from item it 
+				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
+				inner join tax ta on it.tax_id = ta.id 
+				inner join groups ttype on t.transtype = ttype.id 
+				inner join groups dir on t.direction = dir.id 
+				left join currency cu on t.curr = cu.curr `,
+				options["refnumber"])
+			sqlString += useDeleted(options["useDeleted"], " where t.deleted = 0 and it.deleted = 0", "")
+			return sqlString, params, nil
+		},
+
+		"payment": func(options SM) (string, IL, error) {
+			sqlString = fmt.Sprintf(
+				`select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction 
+				from payment it 
+				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
+				inner join groups ttype on t.transtype = ttype.id 
+				inner join groups dir on t.direction = dir.id `, options["refnumber"])
+			sqlString += useDeleted(options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"movement": func(options SM) (string, IL, error) {
+			sqlString = fmt.Sprintf(
+				`select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, mt.groupvalue as movetype 
+				from movement it 
+				inner join groups mt on it.movetype = mt.id 
+				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
+				inner join groups ttype on t.transtype = ttype.id 
+				inner join groups dir on t.direction = dir.id `, options["refnumber"])
+			sqlString += useDeleted(options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"price": func(options SM) (string, IL, error) {
+			sqlString = `select pr.id as id from price pr 
+			inner join product p on pr.product_id = p.id   `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber", "curr", "validfrom", "qty"},
+				` where p.partnumber = %s and pr.curr = %s and pr.validfrom = %s and pr.qty = %s `, params)
+			sqlString += whereString
+			if options["pricetype"] == "price" {
+				sqlString += ` and pr.discount is null`
+			} else {
+				sqlString += ` and pr.discount is not null`
+			}
+			sqlString += useDeleted(options["useDeleted"], " and p.deleted = 0 and pr.deleted = 0", "")
+			return sqlString, params, nil
+		},
+
+		"product": func(options SM) (string, IL, error) {
+			sqlString =
+				`select p.id as id, p.description as description, p.unit as unit, p.tax_id as tax_id, t.rate as rate 
+			from product p left join tax t on p.tax_id = t.id `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where p.partnumber = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], ` and p.deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"place": func(options SM) (string, IL, error) {
+			sqlString =
+				`select p.id as id, pt.groupvalue as placetype 
+			  from place p inner join groups pt on p.placetype = pt.id `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where p.planumber = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], ` and p.deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"tax": func(options SM) (string, IL, error) {
+			sqlString = `select id, rate from tax `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where taxcode = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"trans": func(options SM) (string, IL, error) {
+			sqlString = useDeleted(options["useDeleted"],
+				`select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
+				from trans t 
+				inner join groups ttype on t.transtype = ttype.id 
+				inner join groups dir on t.direction = dir.id 
+				left join currency cu on t.curr = cu.curr 
+				where t.transnumber = %s and ( t.deleted = 0 or ( ttype.groupvalue = 'invoice' and dir.groupvalue = 'out') 
+					or ( ttype.groupvalue = 'receipt' and dir.groupvalue = 'out') or ( ttype.groupvalue = 'cash'))`,
+				`select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
+				from trans t 
+				inner join groups ttype on t.transtype = ttype.id 
+				inner join groups dir on t.direction = dir.id 
+				left join currency cu on t.curr = cu.curr where t.transnumber = %s `)
+			sqlString, params = ds.getQueryKeyOption(options, SL{"refnumber"}, sqlString, params)
+			return sqlString, params, nil
+		},
+
+		"setting": func(options SM) (string, IL, error) {
+			sqlString = `select id from fieldvalue `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber"}, ` where ref_id is null and fieldname = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], ` and deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"link": func(options SM) (string, IL, error) {
+			sqlString = fmt.Sprintf(
+				`select l.id as id from link l 
+				inner join groups nt1 on l.nervatype_1 = nt1.id and nt1.groupname = 'nervatype' 
+				  and nt1.groupvalue = '%s' 
+				inner join groups nt2 on l.nervatype_2 = nt2.id and nt2.groupname = 'nervatype' 
+				and nt2.groupvalue = '%s' `,
+				options["refType1"], options["refType2"])
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refID1", "refID2"}, ` where l.ref_id_1 = %s and l.ref_id_2 = %s `, params)
+			sqlString += whereString
+			sqlString += useDeleted(options["useDeleted"], ` and l.deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"rate": func(options SM) (string, IL, error) {
+			sqlString = fmt.Sprintf(
+				`select r.id as id from rate r 
+			  inner join groups rt on r.ratetype = rt.id and rt.groupvalue = '%s' 
+				left join place p on r.place_id = p.id `, options["ratetype"])
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ratedate", "curr"}, ` where r.ratedate = %s and r.curr = %s `, params)
+			sqlString += whereString
+			if _, found := options["planumber"]; found {
+				whereString, params = ds.getQueryKeyOption(options,
+					SL{"planumber"}, ` and p.planumber = %s `, params)
+				sqlString += whereString
+			} else {
+				sqlString += ` and r.place_id is null `
+			}
+			sqlString += useDeleted(options["useDeleted"], ` and r.deleted = 0`, "")
+			return sqlString, params, nil
+		},
+
+		"log": func(options SM) (string, IL, error) {
+			sqlString = `select l.id as id from log l inner join employee e on l.employee_id = e.id `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber", "crdate"}, ` where e.empnumber = %s and l.crdate = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"ui_audit": func(options SM) (string, IL, error) {
+			sqlString = `select au.id as id from ui_audit au `
+			whereString, params = ds.getQueryKeyOption(options, SL{"usergroup"},
+				` inner join groups ug on au.usergroup = ug.id and ug.groupvalue = %s 
+				inner join groups nt on au.nervatype = nt.id `, params)
+			sqlString += whereString
+			if _, found := options["transType"]; found {
+				if options["refType"] == "trans" {
+					whereString, params = ds.getQueryKeyOption(options, SL{"transType"},
+						` inner join groups st on au.subtype = st.id and 
+					st.groupvalue = %s where `, params)
+					sqlString += whereString
+				} else {
+					whereString, params = ds.getQueryKeyOption(options, SL{"transType"},
+						` inner join ui_report rp on au.subtype = rp.id and 
+					rp.reportkey = %s where `, params)
+					sqlString += whereString
+				}
+			} else {
+				sqlString += ` where subtype is null and `
+			}
+			whereString, params = ds.getQueryKeyOption(options, SL{"refType"},
+				` nt.groupvalue = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"ui_menufields": func(options SM) (string, IL, error) {
+			sqlString =
+				`select mf.id as id from ui_menufields mf 
+			  inner join ui_menu m on mf.menu_id = m.id `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber", "fieldname"}, ` and m.menukey = %s where mf.fieldname = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"ui_reportfields": func(options SM) (string, IL, error) {
+			sqlString =
+				`select rf.id as id from ui_reportfields rf 
+			  inner join ui_report r on rf.report_id = r.id `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber", "fieldname"}, ` and r.reportkey = %s where rf.fieldname = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"ui_reportsources": func(options SM) (string, IL, error) {
+			sqlString =
+				`select rs.id as id from ui_reportsources rs 
+			  inner join ui_report r on rs.report_id = r.id `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"refnumber", "dataset"}, ` and r.reportkey = %s where rs.dataset = %s `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+	}
+
+	if _, found := keys[options["nervatype"]]; found {
+		return keys[options["nervatype"]](options)
+	}
+
+	switch options["nervatype"] {
+
+	case "employee", "pattern", "project", "tool", "currency", "numberdef",
+		"ui_language", "ui_report", "ui_menu":
+
+		sqlString = fmt.Sprintf(`select * from %s where %s `, options["nervatype"], options["refField"])
+		whereString, params = ds.getQueryKeyOption(options,
+			SL{"refnumber"}, ` = %s `, params)
+		sqlString += whereString
+		sqlString += useDeleted(options["useDeleted"], " and deleted = 0", "")
+		return sqlString, params, nil
+
+	case "address", "contact":
+		sqlString = fmt.Sprintf(
+			`select %s.id as id from %s 
+				inner join groups nt on %s.nervatype = nt.id 
+				  and nt.groupname = 'nervatype' and nt.groupvalue = '%s' 
+				inner join %s on %s.ref_id = %s.id 
+				  and %s.%s = '%s' `,
+			options["nervatype"], options["nervatype"], options["nervatype"], options["refType"],
+			options["refType"], options["nervatype"], options["refType"], options["refType"],
+			options["refField"], options["refnumber"])
+		whereString = fmt.Sprintf(`where %s.deleted = 0 and %s.deleted = 0`,
+			options["refType"], options["nervatype"])
+		sqlString += useDeleted(options["useDeleted"], whereString, "")
+		return sqlString, params, nil
+
+	default:
+		return sqlString, params, errors.New(ntura.GetMessage("invalid_refnumber"))
+	}
+
+}
+
 //QueryKey - complex data queries
-func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
-	result := []IM{}
+func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err error) {
+	result = []IM{}
 	sqlString := ""
 	params := make(IL, 0)
 
-	keys := map[string]func(options SM) (string, IL){
-		"user": func(options SM) (string, IL) {
+	keys := map[string]func(options SM) (string, IL, error){
+		"user": func(options SM) (string, IL, error) {
 			params := IL{options["username"]}
 			sqlString =
 				`select e.id, e.username, e.empnumber, e.usergroup, ug.groupvalue as scope, dg.groupvalue as department
@@ -1155,20 +1496,20 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				inner join groups ug on e.usergroup = ug.id
 				left join groups dg on e.department = dg.id
 				where e.deleted = 0 and e.inactive = 0 and e.username = ` + ds.getPrmString(1) + ``
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"user_guest": func(options SM) (string, IL) {
+		"user_guest": func(options SM) (string, IL, error) {
 			params := IL{}
 			sqlString =
 				`select e.id, e.username, e.empnumber, ug.id as usergroup, ug.groupvalue as scope, dg.groupvalue as department
 				from employee e, groups ug
 				left join groups dg on e.department = dg.id
 				where e.deleted = 0 and e.inactive = 0 and ug.groupname = 'usergroup' and ug.groupvalue = 'guest' and e.username = 'admin'`
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"metadata": func(options SM) (string, IL) {
+		"metadata": func(options SM) (string, IL, error) {
 			params := IL{options["nervatype"]}
 			values, inPrm := ds.splitInParams(options["ids"], len(params))
 			params = append(params, values...)
@@ -1180,10 +1521,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				where fv.deleted = 0 and df.deleted = 0 and nt.groupvalue = ` + ds.getPrmString(1) + `
 					and fv.ref_id in (` + strings.Join(inPrm, ",") + `) 
 				order by fv.fieldname, fv.id `
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"post_transtype": func(options SM) (string, IL) {
+		"post_transtype": func(options SM) (string, IL, error) {
 			params := IL{options["trans_id"], options["transtype_key"], options["transtype_id"],
 				options["customer_id"], options["custnumber"]}
 			sqlString =
@@ -1199,10 +1540,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				union select 'customer' as rtype, null as transtype, custnumber
 				from customer
 				where id=` + ds.getPrmString(4) + ` or custnumber=` + ds.getPrmString(5) + ` `
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"default_report": func(options SM) (string, IL) {
+		"default_report": func(options SM) (string, IL, error) {
 			params := IL{}
 			whereString := ""
 			sqlString =
@@ -1222,10 +1563,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 			sqlString += whereString
 			whereString, params = ds.getQueryKeyOption(options, SL{"report_id"}, ` where r.id=%s`, params)
 			sqlString += whereString
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"reportfields": func(options SM) (string, IL) {
+		"reportfields": func(options SM) (string, IL, error) {
 			params := IL{options["report_id"]}
 			sqlString =
 				`select rf.fieldname as fieldname, ft.groupvalue as fieldtype, rf.dataset as dataset, wt.groupvalue as wheretype, rf.sqlstr as sqlstr
@@ -1233,10 +1574,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				inner join groups ft on rf.fieldtype=ft.id
 				inner join groups wt on rf.wheretype=wt.id
 				where rf.report_id=` + ds.getPrmString(1)
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"listprice": func(options SM) (string, IL) {
+		"listprice": func(options SM) (string, IL, error) {
 			params := IL{options["vendorprice"], options["product_id"], options["posdate"], options["posdate"], options["curr"], options["qty"]}
 			sqlString =
 				`select min(p.pricevalue) as mp 
@@ -1248,10 +1589,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 					and l.ref_id_2 is null and p.vendorprice = ` + ds.getPrmString(1) + ` and p.product_id = ` + ds.getPrmString(2) + ` 
 					and p.validfrom <= ` + ds.getPrmString(3) + ` and ( p.validto >= ` + ds.getPrmString(4) + ` or 
 					p.validto is null) and p.curr = ` + ds.getPrmString(5) + ` and p.qty <= ` + ds.getPrmString(6)
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"custprice": func(options SM) (string, IL) {
+		"custprice": func(options SM) (string, IL, error) {
 			params := IL{options["vendorprice"], options["product_id"], options["posdate"], options["posdate"],
 				options["curr"], options["qty"], options["customer_id"]}
 			sqlString =
@@ -1265,10 +1606,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 					and p.vendorprice = ` + ds.getPrmString(1) + ` and p.product_id = ` + ds.getPrmString(2) + ` and p.validfrom <= ` + ds.getPrmString(3) + ` 
 					and ( p.validto >= ` + ds.getPrmString(4) + ` or p.validto is null) and p.curr = ` + ds.getPrmString(5) + ` 
 					and p.qty <= ` + ds.getPrmString(6) + ` and l.ref_id_2 = ` + ds.getPrmString(7)
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"grouprice": func(options SM) (string, IL) {
+		"grouprice": func(options SM) (string, IL, error) {
 			params := IL{options["customer_id"], options["vendorprice"], options["product_id"], options["posdate"], options["posdate"],
 				options["curr"], options["qty"]}
 			sqlString =
@@ -1286,10 +1627,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 					and p.product_id = ` + ds.getPrmString(3) + ` and p.validfrom <= ` + ds.getPrmString(4) + ` 
 					and ( p.validto >= ` + ds.getPrmString(5) + ` or p.validto is null) 
 					and p.curr = ` + ds.getPrmString(6) + ` and p.qty <= ` + ds.getPrmString(7)
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"data_audit": func(options SM) (string, IL) {
+		"data_audit": func(options SM) (string, IL, error) {
 			params := IL{options["id"]}
 			sqlString =
 				`select tt.groupvalue as transfilter 
@@ -1297,10 +1638,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				inner join groups nt1 on l.nervatype_1 = nt1.id and nt1.groupname = 'nervatype' and nt1.groupvalue = 'groups' 
 				inner join groups nt2 on l.nervatype_2 = nt2.id and nt2.groupname = 'nervatype' and nt2.groupvalue = 'groups' 
 				inner join groups tt on l.ref_id_2 = tt.id where e.id = ` + ds.getPrmString(1)
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"object_audit": func(options SM) (string, IL) {
+		"object_audit": func(options SM) (string, IL, error) {
 			whereString := ""
 			params := IL{options["usergroup"]}
 			sqlString =
@@ -1325,10 +1666,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 			sqlString += whereString
 			whereString, params = ds.getQueryKeySplit(options, "groupvalueIn", ` and nt.groupvalue in (%s) `, params)
 			sqlString += whereString
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"dbs_settings": func(options SM) (string, IL) {
+		"dbs_settings": func(options SM) (string, IL, error) {
 			params := IL{}
 			sqlString =
 				`select 'setting' as stype, fieldname, value, notes as data, id as info 
@@ -1336,10 +1677,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 				union select 'pattern' as stype, p.description as fieldname, p.notes as value, 
 					tt.groupvalue as data, p.defpattern as info 
 				from pattern p inner join groups tt on p.transtype = tt.id where p.deleted = 0`
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"delete_deffields": func(options SM) (string, IL) {
+		"delete_deffields": func(options SM) (string, IL, error) {
 			sqlString =
 				`select fv.id as id from deffield df 
           inner join groups nt on ((df.nervatype=nt.id) 
@@ -1347,16 +1688,23 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
           inner join fieldvalue fv on ((df.fieldname=fv.fieldname) 
 					  and (fv.deleted=0) and (fv.ref_id=%s))`
 			sqlString, params := ds.getQueryKeyOption(options, SL{"nervatype", "ref_id"}, sqlString, params)
-			return sqlString, params
+			return sqlString, params, nil
 		},
 
-		"id->refnumber": func(options SM) (string, IL) {
+		"id->refnumber": func(options SM) (string, IL, error) {
 			return ds.getID2Refnumber(options)
+		},
+
+		"refnumber->id": func(options SM) (string, IL, error) {
+			return ds.getRefnumber2ID(options)
 		},
 	}
 
 	if _, found := keys[options["qkey"]]; found {
-		sqlString, params = keys[options["qkey"]](options)
+		sqlString, params, err = keys[options["qkey"]](options)
+		if err != nil {
+			return result, err
+		}
 	} else {
 		switch options["qkey"] {
 
@@ -1388,248 +1736,6 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) ([]IM, error) {
 						where df.deleted=0`
 					}
 				}
-			}
-		case "refnumber->id":
-			switch options["nervatype"] {
-
-			case "employee", "pattern", "project", "tool", "currency", "numberdef",
-				"ui_language", "ui_report", "ui_menu":
-				sqlString = "select id from " + options["nervatype"] + " where " +
-					options["refField"] + " = '" + options["refnumber"] + "' "
-				if options["useDeleted"] == "false" {
-					sqlString += " and deleted = 0 "
-				}
-
-			case "address", "contact":
-				sqlString = `select ` + options["nervatype"] + `.id as id 
-				from ` + options["nervatype"] + ` 
-				inner join groups nt on ` + options["nervatype"] + `.nervatype = nt.id 
-				  and nt.groupname = 'nervatype' and nt.groupvalue = '` + options["refType"] + `' 
-				inner join ` + options["refType"] + ` on ` + options["nervatype"] + `.ref_id = ` + options["refType"] + `.id 
-				  and ` + options["refType"] + `.` + options["refField"] + ` = '` + options["refnumber"] + `' `
-				if options["useDeleted"] == "false" {
-					sqlString += `where ` + options["refType"] + `.deleted = 0 and ` + options["nervatype"] + `.deleted = 0`
-				}
-
-			case "barcode":
-				if options["useDeleted"] == "false" {
-					sqlString = `select barcode.id from barcode 
-					inner join product on barcode.product_id = product.id
-					where product.deleted = 0 and code='` + options["refnumber"] + `'`
-				} else {
-					sqlString = `select id from barcode where code='` + options["refnumber"] + `'`
-				}
-
-			case "customer":
-				if options["extraInfo"] == "true" {
-					sqlString = `select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
-						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
-					from customer c 
-					inner join groups ct on c.custtype = ct.id 
-					left join ( 
-						select * from address where id = ( select min(id) from address where deleted = 0 
-							and nervatype = ( select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
-							and ref_id = ( select min(c.id) from customer c inner join groups ct on c.custtype = ct.id and groupvalue = 'own' where c.deleted = 0))
-					) addr on c.id = addr.ref_id 
-					where c.id = ( select min(c.id) from customer c inner join groups ct on c.custtype = ct.id and groupvalue = 'own' where c.deleted = 0)  
-					union select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
-						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
-					from customer c 
-					inner join groups ct on c.custtype = ct.id 
-					left join ( 
-						select * from address where id = ( select min(id) from address where deleted = 0 
-							and nervatype = ( select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
-							and ref_id = ( select id from customer where custnumber = '` + options["refnumber"] + `'))
-					) addr on c.id = addr.ref_id 
-					where c.custnumber = '` + options["refnumber"] + `'`
-				} else {
-					sqlString = `select c.id as id, ct.groupvalue as custtype 
-					from customer c inner join groups ct on c.custtype = ct.id 
-					where c.custnumber = '` + options["refnumber"] + `'`
-				}
-				if options["useDeleted"] == "false" {
-					sqlString += ` and c.deleted = 0`
-				}
-
-			case "event":
-				sqlString = `select e.id as id, ntype.groupvalue as ref_nervatype 
-				from event e inner join groups ntype on e.nervatype = ntype.id 
-				where e.calnumber = '` + options["refnumber"] + `'`
-				if options["useDeleted"] == "false" {
-					sqlString += ` and e.deleted = 0`
-				}
-
-			case "groups":
-				sqlString = `select id from groups 
-				where groupname = '` + options["refType"] + `' and groupvalue = '` + options["refnumber"] + `'`
-				if options["useDeleted"] == "false" {
-					sqlString += ` and deleted = 0`
-				}
-
-			case "deffield":
-				sqlString = `select df.id, nt.groupvalue as ref_nervatype from deffield df 
-			  inner join groups nt on df.nervatype = nt.id 
-				where df.fieldname = '` + options["refnumber"] + `' `
-				if options["useDeleted"] == "false" {
-					sqlString += ` and df.deleted = 0`
-				}
-
-			case "fieldvalue":
-				sqlString = `select id from fieldvalue  
-				where ref_id = ` + options["refID"] + ` and fieldname = '` + options["refnumber"] + `' `
-				if options["useDeleted"] == "false" {
-					sqlString += ` and deleted = 0`
-				}
-
-			case "item":
-				sqlString = `select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit, 
-					it.qty as qty, it.discount as discount, it.tax_id as tax_id, ta.rate as rate 
-				from item it 
-				inner join trans t on it.trans_id = t.id and t.transnumber = '` + options["refnumber"] + `' 
-				inner join tax ta on it.tax_id = ta.id 
-				inner join groups ttype on t.transtype = ttype.id 
-				inner join groups dir on t.direction = dir.id 
-				left join currency cu on t.curr = cu.curr `
-				if options["useDeleted"] == "false" {
-					sqlString += ` where t.deleted = 0 and it.deleted = 0`
-				}
-
-			case "payment":
-				sqlString = `select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction 
-				from payment it 
-				inner join trans t on it.trans_id = t.id and t.transnumber = '` + options["refnumber"] + `' 
-				inner join groups ttype on t.transtype = ttype.id 
-				inner join groups dir on t.direction = dir.id `
-				if options["useDeleted"] == "false" {
-					sqlString += ` where t.deleted = 0 and it.deleted = 0`
-				}
-
-			case "movement":
-				sqlString = `select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, mt.groupvalue as movetype 
-				from movement it 
-				inner join groups mt on it.movetype = mt.id 
-				inner join trans t on it.trans_id = t.id and t.transnumber = '` + options["refnumber"] + `' 
-				inner join groups ttype on t.transtype = ttype.id 
-				inner join groups dir on t.direction = dir.id `
-				if options["useDeleted"] == "false" {
-					sqlString += ` where t.deleted = 0 and it.deleted = 0`
-				}
-
-			case "price":
-				sqlString = `select pr.id as id from price pr 
-				inner join product p on pr.product_id = p.id 
-				where p.partnumber = '` + options["refnumber"] + `' and pr.curr = '` + options["curr"] + `' and pr.validfrom = '` + options["validfrom"] + `' and pr.qty = ` + options["qty"] + `  `
-				if options["pricetype"] == "price" {
-					sqlString += ` and pr.discount is null`
-				} else {
-					sqlString += ` and pr.discount is not null`
-				}
-				if options["useDeleted"] == "false" {
-					sqlString += ` and p.deleted = 0 and pr.deleted = 0`
-				}
-
-			case "product":
-				sqlString = `select p.id as id, p.description as description, p.unit as unit, p.tax_id as tax_id, t.rate as rate 
-			  from product p left join tax t on p.tax_id = t.id 
-				where p.partnumber = '` + options["refnumber"] + `' `
-				if options["useDeleted"] == "false" {
-					sqlString += ` and p.deleted = 0`
-				}
-
-			case "place":
-				sqlString = `select p.id as id, pt.groupvalue as placetype 
-			  from place p inner join groups pt on p.placetype = pt.id 
-				where p.planumber = '` + options["refnumber"] + `' `
-				if options["useDeleted"] == "false" {
-					sqlString += ` and p.deleted = 0`
-				}
-
-			case "tax":
-				sqlString = `select id, rate from tax where taxcode = '` + options["refnumber"] + `' `
-
-			case "trans":
-				if options["useDeleted"] == "true" {
-					sqlString = `select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
-					from trans t 
-					inner join groups ttype on t.transtype = ttype.id 
-					inner join groups dir on t.direction = dir.id 
-					left join currency cu on t.curr = cu.curr where t.transnumber = '` + options["refnumber"] + `'`
-				} else {
-					sqlString = `select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
-					from trans t 
-					inner join groups ttype on t.transtype = ttype.id 
-					inner join groups dir on t.direction = dir.id 
-					left join currency cu on t.curr = cu.curr 
-					where t.transnumber = '` + options["refnumber"] + `' and ( t.deleted = 0 or ( ttype.groupvalue = 'invoice' and dir.groupvalue = 'out') 
-						or ( ttype.groupvalue = 'receipt' and dir.groupvalue = 'out') or ( ttype.groupvalue = 'cash'))`
-				}
-
-			case "setting":
-				sqlString = `select id from fieldvalue  
-				where ref_id is null and fieldname = '` + options["refnumber"] + `' `
-				if options["useDeleted"] == "false" {
-					sqlString += ` and deleted = 0`
-				}
-
-			case "link":
-				sqlString = `select l.id as id from link l 
-				inner join groups nt1 on l.nervatype_1 = nt1.id and nt1.groupname = 'nervatype' and nt1.groupvalue = '` + options["refType1"] + `' 
-				inner join groups nt2 on l.nervatype_2 = nt2.id and nt2.groupname = 'nervatype' and nt2.groupvalue = '` + options["refType2"] + `' 
-				where l.ref_id_1 = ` + options["refID1"] + ` and l.ref_id_2 = ` + options["refID2"] + ` `
-				if options["useDeleted"] == "false" {
-					sqlString += ` and l.deleted = 0`
-				}
-
-			case "rate":
-				sqlString = `select r.id as id from rate r 
-			  inner join groups rt on r.ratetype = rt.id and rt.groupvalue = '` + options["ratetype"] + `' 
-				left join place p on r.place_id = p.id 
-				where r.ratedate = '` + options["ratedate"] + `' and r.curr = '` + options["curr"] + `' `
-				if _, found := options["planumber"]; found {
-					sqlString += ` and p.planumber = '` + options["planumber"] + `' `
-				} else {
-					sqlString += ` and r.place_id is null `
-				}
-				if options["useDeleted"] == "false" {
-					sqlString += ` and r.deleted = 0`
-				}
-
-			case "log":
-				sqlString = `select l.id as id from log l inner join employee e on l.employee_id = e.id 
-			  where e.empnumber = '` + options["refnumber"] + `' and l.crdate = '` + options["crdate"] + `' `
-
-			case "ui_audit":
-				sqlString = `select au.id as id from ui_audit au 
-			  inner join groups ug on au.usergroup = ug.id and ug.groupvalue = '` + options["usergroup"] + `' 
-				inner join groups nt on au.nervatype = nt.id `
-				if _, found := options["transType"]; found {
-					if options["refType"] == "trans" {
-						sqlString += ` inner join groups st on au.subtype = st.id and st.groupvalue = '` + options["transType"] + `' where `
-					} else {
-						sqlString += ` inner join ui_report rp on au.subtype = rp.id and rp.reportkey = '` + options["transType"] + `' where `
-					}
-				} else {
-					sqlString += ` where subtype is null and `
-				}
-				sqlString += ` nt.groupvalue = '` + options["refType"] + `' `
-
-			case "ui_menufields":
-				sqlString = `select mf.id as id from ui_menufields mf 
-			  inner join ui_menu m on mf.menu_id = m.id and m.menukey = '` + options["refnumber"] + `' 
-				where mf.fieldname = '` + options["fieldname"] + `' `
-
-			case "ui_reportfields":
-				sqlString = `select rf.id as id from ui_reportfields rf 
-			  inner join ui_report r on rf.report_id = r.id and r.reportkey = '` + options["refnumber"] + `' 
-				where rf.fieldname = '` + options["fieldname"] + `' `
-
-			case "ui_reportsources":
-				sqlString = `select rs.id as id from ui_reportsources rs 
-			  inner join ui_report r on rs.report_id = r.id and r.reportkey = '` + options["refnumber"] + `' 
-				where rs.dataset = '` + options["dataset"] + `' `
-
-			default:
-				return nil, errors.New(ntura.GetMessage("invalid_refnumber"))
 			}
 
 		case "integrity":
