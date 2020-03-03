@@ -1031,6 +1031,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
+	const whereDelete = " and deleted = 0"
 	useDeleted := func(value, whereString string) string {
 		if value == "false" {
 			return whereString
@@ -1045,7 +1046,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refTypeId", "refId", "id"}, ` where nervatype = %s and ref_id = %s and id <= %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and deleted = 0")
+			sqlString += useDeleted(options["useDeleted"], whereDelete)
 			return sqlString, params, nil
 		}
 		sqlString = fmt.Sprintf(`select nt.groupvalue as head_nervatype, t.*
@@ -1062,7 +1063,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"fieldname", "refId", "id"}, ` where fieldname = %s and ref_id = %s and id <= %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and deleted = 0")
+			sqlString += useDeleted(options["useDeleted"], whereDelete)
 			return sqlString, params, nil
 		}
 		sqlString = `select fv.*, nt.groupvalue as head_nervatype 
@@ -1080,7 +1081,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refId", "id"}, ` where trans_id = %s and id <= %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and deleted=0")
+			sqlString += useDeleted(options["useDeleted"], whereDelete)
 			return sqlString, params, nil
 		}
 		sqlString = fmt.Sprintf(`select ti.*, t.transnumber, tt.groupvalue as transtype 
@@ -1135,7 +1136,7 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 		whereString, params = ds.getQueryKeyOption(options,
 			SL{"id"}, ` where id = %s `, params)
 		sqlString += whereString
-		sqlString += useDeleted(options["useDeleted"], " and deleted=0")
+		sqlString += useDeleted(options["useDeleted"], whereDelete)
 		return sqlString, params, nil
 	}
 }
@@ -1144,6 +1145,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
+	const whereDelete = " and deleted = 0"
 	useDeleted := func(value, whereString, trueString string) string {
 		if value == "false" {
 			return whereString
@@ -1229,7 +1231,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refID", "refnumber"}, ` where ref_id = %s and fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and deleted =0", "")
+			sqlString += useDeleted(options["useDeleted"], whereDelete, "")
 			return sqlString, params, nil
 		},
 
@@ -1457,7 +1459,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 		whereString, params = ds.getQueryKeyOption(options,
 			SL{"refnumber"}, ` = %s `, params)
 		sqlString += whereString
-		sqlString += useDeleted(options["useDeleted"], " and deleted = 0", "")
+		sqlString += useDeleted(options["useDeleted"], whereDelete, "")
 		return sqlString, params, nil
 
 	case "address", "contact":
