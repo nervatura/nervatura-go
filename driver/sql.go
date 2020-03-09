@@ -1146,16 +1146,16 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 	params := make(IL, 0)
 
 	const whereDelete = " and deleted = 0"
-	useDeleted := func(value, whereString, trueString string) string {
-		if value == "false" {
-			return whereString
+	filterValue := func(filter, value, trueResult, falseResult string) string {
+		if value == filter {
+			return trueResult
 		}
-		return trueString
+		return falseResult
 	}
 
 	keys := map[string]func(options SM) (string, IL, error){
 		"barcode": func(options SM) (string, IL, error) {
-			sqlString = useDeleted(options["useDeleted"],
+			sqlString = filterValue("false", options["useDeleted"],
 				`select barcode.id from barcode 
 				inner join product on barcode.product_id = product.id
 				where product.deleted = 0 and `, `select id from barcode where `)
@@ -1166,8 +1166,8 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 		},
 
 		"customer": func(options SM) (string, IL, error) {
-			if options["extraInfo"] == "true" {
-				sqlString = fmt.Sprintf(`select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
+			sqlString = filterValue("true", options["extraInfo"],
+				fmt.Sprintf(`select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
 						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
 					from customer c 
 					inner join groups ct on c.custtype = ct.id 
@@ -1185,15 +1185,13 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 						select * from address where id = ( select min(id) from address where deleted = 0 
 							and nervatype = ( select id from groups where groupname = 'nervatype' and groupvalue = 'customer') 
 							and ref_id = ( select id from customer where custnumber = '%s'))
-					) addr on c.id = addr.ref_id `, options["refnumber"])
-			} else {
-				sqlString = `select c.id as id, ct.groupvalue as custtype 
-					from customer c inner join groups ct on c.custtype = ct.id `
-			}
+					) addr on c.id = addr.ref_id `, options["refnumber"]),
+				`select c.id as id, ct.groupvalue as custtype 
+					from customer c inner join groups ct on c.custtype = ct.id `)
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where c.custnumber = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and c.deleted = 0", "")
+			sqlString += filterValue("false", options["useDeleted"], " and c.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1203,7 +1201,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where e.calnumber = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and e.deleted = 0", "")
+			sqlString += filterValue("false", options["useDeleted"], " and e.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1212,7 +1210,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refType", "refnumber"}, ` where groupname = %s and groupvalue = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and deleted=0", "")
+			sqlString += filterValue("false", options["useDeleted"], " and deleted=0", "")
 			return sqlString, params, nil
 		},
 
@@ -1222,7 +1220,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where df.fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], " and df.deleted=0", "")
+			sqlString += filterValue("false", options["useDeleted"], " and df.deleted=0", "")
 			return sqlString, params, nil
 		},
 
@@ -1231,7 +1229,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refID", "refnumber"}, ` where ref_id = %s and fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], whereDelete, "")
+			sqlString += filterValue("false", options["useDeleted"], whereDelete, "")
 			return sqlString, params, nil
 		},
 
@@ -1246,7 +1244,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 				inner join groups dir on t.direction = dir.id 
 				left join currency cu on t.curr = cu.curr `,
 				options["refnumber"])
-			sqlString += useDeleted(options["useDeleted"], " where t.deleted = 0 and it.deleted = 0", "")
+			sqlString += filterValue("false", options["useDeleted"], " where t.deleted = 0 and it.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1257,7 +1255,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
 				inner join groups ttype on t.transtype = ttype.id 
 				inner join groups dir on t.direction = dir.id `, options["refnumber"])
-			sqlString += useDeleted(options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1269,7 +1267,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
 				inner join groups ttype on t.transtype = ttype.id 
 				inner join groups dir on t.direction = dir.id `, options["refnumber"])
-			sqlString += useDeleted(options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1280,12 +1278,9 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 				SL{"refnumber", "curr", "validfrom", "qty"},
 				` where p.partnumber = %s and pr.curr = %s and pr.validfrom = %s and pr.qty = %s `, params)
 			sqlString += whereString
-			if options["pricetype"] == "price" {
-				sqlString += ` and pr.discount is null`
-			} else {
-				sqlString += ` and pr.discount is not null`
-			}
-			sqlString += useDeleted(options["useDeleted"], " and p.deleted = 0 and pr.deleted = 0", "")
+			sqlString += filterValue("price", options["pricetype"],
+				` and pr.discount is null`, ` and pr.discount is not null`)
+			sqlString += filterValue("false", options["useDeleted"], " and p.deleted = 0 and pr.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1296,7 +1291,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where p.partnumber = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], ` and p.deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` and p.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1307,7 +1302,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where p.planumber = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], ` and p.deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` and p.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1320,7 +1315,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 		},
 
 		"trans": func(options SM) (string, IL, error) {
-			sqlString = useDeleted(options["useDeleted"],
+			sqlString = filterValue("false", options["useDeleted"],
 				`select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
 				from trans t 
 				inner join groups ttype on t.transtype = ttype.id 
@@ -1342,7 +1337,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where ref_id is null and fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], ` and deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` and deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1357,7 +1352,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refID1", "refID2"}, ` where l.ref_id_1 = %s and l.ref_id_2 = %s `, params)
 			sqlString += whereString
-			sqlString += useDeleted(options["useDeleted"], ` and l.deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` and l.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1376,7 +1371,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			} else {
 				sqlString += ` and r.place_id is null `
 			}
-			sqlString += useDeleted(options["useDeleted"], ` and r.deleted = 0`, "")
+			sqlString += filterValue("false", options["useDeleted"], ` and r.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1459,7 +1454,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 		whereString, params = ds.getQueryKeyOption(options,
 			SL{"refnumber"}, ` = %s `, params)
 		sqlString += whereString
-		sqlString += useDeleted(options["useDeleted"], whereDelete, "")
+		sqlString += filterValue("false", options["useDeleted"], whereDelete, "")
 		return sqlString, params, nil
 
 	case "address", "contact":
@@ -1474,7 +1469,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			options["refField"], options["refnumber"])
 		whereString = fmt.Sprintf(`where %s.deleted = 0 and %s.deleted = 0`,
 			options["refType"], options["nervatype"])
-		sqlString += useDeleted(options["useDeleted"], whereString, "")
+		sqlString += filterValue("false", options["useDeleted"], whereString, "")
 		return sqlString, params, nil
 
 	default:
