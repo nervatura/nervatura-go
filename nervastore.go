@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	datetimeFmt string = "2006-01-02 15:04:05"
-	dateFmt     string = "2006-01-02"
+	datetimeISOFmt string = "2006-01-02T15:04:05-0700"
+	datetimeFmt    string = "2006-01-02 15:04:05"
+	dateFmt        string = "2006-01-02"
 )
 
 // NervaStore is the core structure of the Nervatura
@@ -173,16 +174,7 @@ func (nstore *NervaStore) checkFieldvalueNervatype(value interface{}, fieldname,
 		query.From = fieldtype
 	}
 	switch value.(type) {
-	case int32:
-		query.Filters = []Filter{
-			Filter{Field: "id", Comp: "==", Value: value}}
-	case int64:
-		query.Filters = []Filter{
-			Filter{Field: "id", Comp: "==", Value: value}}
-	case int:
-		query.Filters = []Filter{
-			Filter{Field: "id", Comp: "==", Value: value}}
-	case float64:
+	case int, int32, int64, float64:
 		query.Filters = []Filter{
 			Filter{Field: "id", Comp: "==", Value: value}}
 	case string:
@@ -309,7 +301,7 @@ func (nstore *NervaStore) insertLog(options IM) error {
 		}
 		if logEnabled == true && logstateID > 0 {
 			values := IM{"logstate": logstateID, "employee_id": nstore.User["id"],
-				"crdate": time.Now().Format("2006-01-02T15:04:05-0700")}
+				"crdate": time.Now().Format(datetimeISOFmt)}
 			if nervatypeID > 0 {
 				values["nervatype"] = nervatypeID
 			}
@@ -602,7 +594,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 					case time.Time:
 						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
 					case string:
-						tm, err := time.Parse("2006-01-02T15:04:05-0700", value.(string))
+						tm, err := time.Parse(datetimeISOFmt, value.(string))
 						if err != nil {
 							tm, err = time.Parse("2006-01-02T15:04:05", value.(string))
 						}
@@ -616,7 +608,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 							tm, err = time.Parse(dateFmt, value.(string))
 						}
 						if err != nil {
-							tm, err = time.Parse("2006-01-02 15:04:05", value.(string))
+							tm, err = time.Parse(datetimeFmt, value.(string))
 						}
 						if err != nil {
 							tm, err = time.Parse(dateFmt, value.(string))
@@ -624,7 +616,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 						if err != nil {
 							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 						}
-						checkValues["values"].(IM)[fieldname] = tm.Format("2006-01-02T15:04:05-0700")
+						checkValues["values"].(IM)[fieldname] = tm.Format(datetimeISOFmt)
 					default:
 						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 					}
