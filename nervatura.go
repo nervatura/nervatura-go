@@ -119,7 +119,7 @@ type DataDriver interface {
 	Query(queries []Query, transaction interface{}) ([]IM, error)                           //Query is a basic nosql friendly queries the database
 	QueryParams(options IM, transaction interface{}) ([]IM, error)                          //Custom sql queries with parameters
 	QuerySQL(sqlString string, params []interface{}, transaction interface{}) ([]IM, error) //Executes a SQL query
-	QueryKey(options SM, transaction interface{}) ([]IM, error)                             //Complex data queries
+	QueryKey(options IM, transaction interface{}) ([]IM, error)                             //Complex data queries
 	Update(options Update) (int, error)                                                     //Update is a basic nosql friendly update/insert/delete and returns the update/insert id
 	BeginTransaction() (interface{}, error)                                                 //Begins a transaction and returns an it
 	CommitTransaction(trans interface{}) error                                              //Commit a transaction

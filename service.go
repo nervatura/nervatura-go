@@ -169,7 +169,7 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 //getPriceValue - get product price
 func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	results = IM{"price": float64(0), "discount": float64(0)}
-	params := SM{"qkey": "listprice", "curr": "", "product_id": "", "vendorprice": "0",
+	params := IM{"qkey": "listprice", "curr": "", "product_id": "", "vendorprice": "0",
 		"posdate": time.Now().Format("2006-01-02"), "qty": "0", "customer_id": ""}
 	if _, found := options["curr"]; found && GetIType(options["curr"]) == "string" {
 		params["curr"] = options["curr"].(string)
@@ -369,7 +369,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 
 				if _, found := options["reportkey"]; !found {
 					if _, found := options["report_id"]; !found {
-						params := SM{
+						params := IM{
 							"qkey":      "default_report",
 							"nervatype": options["nervatype"].(string)}
 						if _, found := refValues["transtype"]; found && GetIType(refValues["transtype"]) == "string" {
@@ -398,7 +398,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 				return results, errors.New(GetMessage("missing_required_field") + ": report_id or reportkey")
 			}
 		}
-		params := SM{"qkey": "default_report"}
+		params := IM{"qkey": "default_report"}
 		if _, found := options["report_id"]; found {
 			switch options["report_id"].(type) {
 			case int:
@@ -431,7 +431,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 		return results, err
 	}
 
-	params := SM{"qkey": "reportfields", "report_id": strconv.Itoa(results["report"].(IM)["id"].(int))}
+	params := IM{"qkey": "reportfields", "report_id": results["report"].(IM)["id"]}
 	fields, err := nstore.ds.QueryKey(params, nil)
 	if err != nil {
 		return results, err

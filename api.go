@@ -62,7 +62,7 @@ func (api *API) authUser(options IM) error {
 		return errors.New(GetMessage("missing_user"))
 	}
 
-	rows, err := api.NStore.ds.QueryKey(SM{"qkey": "user", "username": options["username"].(string)}, nil)
+	rows, err := api.NStore.ds.QueryKey(IM{"qkey": "user", "username": options["username"]}, nil)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (api *API) authUser(options IM) error {
 		}
 		if len(rows) > 0 {
 			api.NStore.Customer = rows[0]
-			rows, err = api.NStore.ds.QueryKey(SM{"qkey": "user_guest"}, nil)
+			rows, err = api.NStore.ds.QueryKey(IM{"qkey": "user_guest"}, nil)
 			if err != nil {
 				return err
 			}
@@ -1095,7 +1095,7 @@ func (api *API) APIGet(options IM) (results []IM, err error) {
 				ids += "," + strconv.Itoa(results[index]["id"].(int))
 			}
 			ids = ids[1:]
-			metadata, err := api.NStore.ds.QueryKey(SM{"qkey": "metadata", "nervatype": nervatype, "ids": ids}, nil)
+			metadata, err := api.NStore.ds.QueryKey(IM{"qkey": "metadata", "nervatype": nervatype, "ids": ids}, nil)
 			if err != nil {
 				return results, err
 			}
@@ -1298,7 +1298,7 @@ func (api *API) APIPost(nervatype string, data []IM) (results []int, err error) 
 				_, fcustomer = data[index]["keys"].(IM)["customer_id"]
 			}
 			if !(fkeys && ftranstype && fcustomer) {
-				options := SM{"qkey": "post_transtype"}
+				options := IM{"qkey": "post_transtype"}
 				if _, found := data[index]["transtype"]; found && GetIType(data[index]["transtype"]) == "int" {
 					options["transtype_id"] = strconv.Itoa(data[index]["transtype"].(int))
 				} else {

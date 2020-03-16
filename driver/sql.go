@@ -989,7 +989,7 @@ func (ds *SQLDriver) RollbackTransaction(trans interface{}) error {
 	return trans.(*sql.Tx).Rollback()
 }
 
-func (ds *SQLDriver) getQueryKeyOption(options SM, keys SL, sqlString string, params IL) (string, IL) {
+func (ds *SQLDriver) getQueryKeyOption(options IM, keys SL, sqlString string, params IL) (string, IL) {
 	queryParams := make([]interface{}, 0)
 	fieldParams := make([]interface{}, 0)
 	for _, key := range keys {
@@ -1017,9 +1017,9 @@ func (ds *SQLDriver) splitInParams(inString string, start int) (IL, SL) {
 	return params, inPrm
 }
 
-func (ds *SQLDriver) getQueryKeySplit(options SM, key, sqlString string, params IL) (string, IL) {
+func (ds *SQLDriver) getQueryKeySplit(options IM, key, sqlString string, params IL) (string, IL) {
 	if _, found := options[key]; found {
-		values, fieldParams := ds.splitInParams(options[key], len(params))
+		values, fieldParams := ds.splitInParams(options[key].(string), len(params))
 		params = append(params, values...)
 		sqlString = fmt.Sprintf(sqlString, strings.Join(fieldParams, ","))
 		return sqlString, params
@@ -1027,12 +1027,12 @@ func (ds *SQLDriver) getQueryKeySplit(options SM, key, sqlString string, params 
 	return "", params
 }
 
-func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
+func (ds *SQLDriver) getID2Refnumber(options IM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
 	const whereDelete = " and deleted = 0"
-	useDeleted := func(value, whereString string) string {
+	useDeleted := func(value interface{}, whereString string) string {
 		if value == "false" {
 			return whereString
 		}
@@ -1141,21 +1141,21 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 	}
 }
 
-func filterValue(filter, value, trueResult, falseResult string) string {
+func filterValue(filter, value interface{}, trueResult, falseResult string) string {
 	if value == filter {
 		return trueResult
 	}
 	return falseResult
 }
 
-func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
+func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
 	const whereDelete = " and deleted = 0"
 
-	keys := map[string]func(options SM) (string, IL, error){
-		"barcode": func(options SM) (string, IL, error) {
+	keys := map[string]func(options IM) (string, IL, error){
+		"barcode": func(options IM) (string, IL, error) {
 			sqlString = filterValue("false", options["useDeleted"],
 				`select barcode.id from barcode 
 				inner join product on barcode.product_id = product.id
@@ -1166,7 +1166,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"customer": func(options SM) (string, IL, error) {
+		"customer": func(options IM) (string, IL, error) {
 			sqlString = filterValue("true", options["extraInfo"],
 				fmt.Sprintf(`select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
 						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
@@ -1196,7 +1196,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"event": func(options SM) (string, IL, error) {
+		"event": func(options IM) (string, IL, error) {
 			sqlString = `select e.id as id, ntype.groupvalue as ref_nervatype 
 				from event e inner join groups ntype on e.nervatype = ntype.id  `
 			whereString, params = ds.getQueryKeyOption(options,
@@ -1206,7 +1206,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"groups": func(options SM) (string, IL, error) {
+		"groups": func(options IM) (string, IL, error) {
 			sqlString = `select id from groups  `
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refType", "refnumber"}, ` where groupname = %s and groupvalue = %s `, params)
@@ -1215,7 +1215,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"deffield": func(options SM) (string, IL, error) {
+		"deffield": func(options IM) (string, IL, error) {
 			sqlString = `select df.id, nt.groupvalue as ref_nervatype from deffield df 
 			  inner join groups nt on df.nervatype = nt.id  `
 			whereString, params = ds.getQueryKeyOption(options,
@@ -1225,7 +1225,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"fieldvalue": func(options SM) (string, IL, error) {
+		"fieldvalue": func(options IM) (string, IL, error) {
 			sqlString = `select id from fieldvalue  `
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refID", "refnumber"}, ` where ref_id = %s and fieldname = %s `, params)
@@ -1234,7 +1234,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"item": func(options SM) (string, IL, error) {
+		"item": func(options IM) (string, IL, error) {
 			sqlString = fmt.Sprintf(
 				`select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit, 
 					it.qty as qty, it.discount as discount, it.tax_id as tax_id, ta.rate as rate 
@@ -1249,7 +1249,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"payment": func(options SM) (string, IL, error) {
+		"payment": func(options IM) (string, IL, error) {
 			sqlString = fmt.Sprintf(
 				`select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction 
 				from payment it 
@@ -1260,7 +1260,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"movement": func(options SM) (string, IL, error) {
+		"movement": func(options IM) (string, IL, error) {
 			sqlString = fmt.Sprintf(
 				`select it.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, mt.groupvalue as movetype 
 				from movement it 
@@ -1272,7 +1272,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"price": func(options SM) (string, IL, error) {
+		"price": func(options IM) (string, IL, error) {
 			sqlString = `select pr.id as id from price pr 
 			inner join product p on pr.product_id = p.id   `
 			whereString, params = ds.getQueryKeyOption(options,
@@ -1285,7 +1285,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"product": func(options SM) (string, IL, error) {
+		"product": func(options IM) (string, IL, error) {
 			sqlString =
 				`select p.id as id, p.description as description, p.unit as unit, p.tax_id as tax_id, t.rate as rate 
 			from product p left join tax t on p.tax_id = t.id `
@@ -1296,7 +1296,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"place": func(options SM) (string, IL, error) {
+		"place": func(options IM) (string, IL, error) {
 			sqlString =
 				`select p.id as id, pt.groupvalue as placetype 
 			  from place p inner join groups pt on p.placetype = pt.id `
@@ -1307,7 +1307,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"tax": func(options SM) (string, IL, error) {
+		"tax": func(options IM) (string, IL, error) {
 			sqlString = `select id, rate from tax `
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where taxcode = %s `, params)
@@ -1315,7 +1315,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"trans": func(options SM) (string, IL, error) {
+		"trans": func(options IM) (string, IL, error) {
 			sqlString = filterValue("false", options["useDeleted"],
 				`select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
 				from trans t 
@@ -1333,7 +1333,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"setting": func(options SM) (string, IL, error) {
+		"setting": func(options IM) (string, IL, error) {
 			sqlString = `select id from fieldvalue `
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where ref_id is null and fieldname = %s `, params)
@@ -1342,7 +1342,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"link": func(options SM) (string, IL, error) {
+		"link": func(options IM) (string, IL, error) {
 			sqlString = fmt.Sprintf(
 				`select l.id as id from link l 
 				inner join groups nt1 on l.nervatype_1 = nt1.id and nt1.groupname = 'nervatype' 
@@ -1357,7 +1357,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"rate": func(options SM) (string, IL, error) {
+		"rate": func(options IM) (string, IL, error) {
 			sqlString = fmt.Sprintf(
 				`select r.id as id from rate r 
 			  inner join groups rt on r.ratetype = rt.id and rt.groupvalue = '%s' 
@@ -1376,7 +1376,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"log": func(options SM) (string, IL, error) {
+		"log": func(options IM) (string, IL, error) {
 			sqlString = `select l.id as id from log l inner join employee e on l.employee_id = e.id `
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber", "crdate"}, ` where e.empnumber = %s and l.crdate = %s `, params)
@@ -1384,7 +1384,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"ui_audit": func(options SM) (string, IL, error) {
+		"ui_audit": func(options IM) (string, IL, error) {
 			sqlString = `select au.id as id from ui_audit au `
 			whereString, params = ds.getQueryKeyOption(options, SL{"usergroup"},
 				` inner join groups ug on au.usergroup = ug.id and ug.groupvalue = %s 
@@ -1411,7 +1411,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"ui_menufields": func(options SM) (string, IL, error) {
+		"ui_menufields": func(options IM) (string, IL, error) {
 			sqlString =
 				`select mf.id as id from ui_menufields mf 
 			  inner join ui_menu m on mf.menu_id = m.id `
@@ -1421,7 +1421,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"ui_reportfields": func(options SM) (string, IL, error) {
+		"ui_reportfields": func(options IM) (string, IL, error) {
 			sqlString =
 				`select rf.id as id from ui_reportfields rf 
 			  inner join ui_report r on rf.report_id = r.id `
@@ -1431,7 +1431,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"ui_reportsources": func(options SM) (string, IL, error) {
+		"ui_reportsources": func(options IM) (string, IL, error) {
 			sqlString =
 				`select rs.id as id from ui_reportsources rs 
 			  inner join ui_report r on rs.report_id = r.id `
@@ -1442,8 +1442,8 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 		},
 	}
 
-	if _, found := keys[options["nervatype"]]; found {
-		return keys[options["nervatype"]](options)
+	if _, found := keys[options["nervatype"].(string)]; found {
+		return keys[options["nervatype"].(string)](options)
 	}
 
 	switch options["nervatype"] {
@@ -1479,7 +1479,7 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 
 }
 
-func (ds *SQLDriver) getUpdateDeffields(options SM) (string, IL, error) {
+func (ds *SQLDriver) getUpdateDeffields(options IM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
@@ -1525,12 +1525,12 @@ func (ds *SQLDriver) getUpdateDeffields(options SM) (string, IL, error) {
 	return sqlString, params, errors.New(ntura.GetMessage("missing_fieldname"))
 }
 
-func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
+func (ds *SQLDriver) getIntegrity(options IM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
-	keys := map[string]func(options SM) (string, IL, error){
-		"currency": func(options SM) (string, IL, error) {
+	keys := map[string]func(options IM) (string, IL, error){
+		"currency": func(options IM) (string, IL, error) {
 			//(link), place,price,rate,trans
 			sqlString = `select sum(co) as sco from (
 				select count(place.id) as co from place
@@ -1560,7 +1560,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"customer": func(options SM) (string, IL, error) {
+		"customer": func(options IM) (string, IL, error) {
 			//(address,contact), event,project,trans,link
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co  from trans where `
@@ -1588,7 +1588,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"deffield": func(options SM) (string, IL, error) {
+		"deffield": func(options IM) (string, IL, error) {
 			//fieldvalue
 			sqlString = `select sum(co) as sco from (
 			  select count(fieldvalue.id) as co from fieldvalue
@@ -1600,7 +1600,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"employee": func(options SM) (string, IL, error) {
+		"employee": func(options IM) (string, IL, error) {
 			//(address,contact), event,trans,log,link,ui_printqueue,ui_userconfig
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from trans where `
@@ -1638,7 +1638,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"groups": func(options SM) (string, IL, error) {
+		"groups": func(options IM) (string, IL, error) {
 			//barcode,deffield,employee,event,rate,tool,trans,link
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from groups 
@@ -1688,7 +1688,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"place": func(options SM) (string, IL, error) {
+		"place": func(options IM) (string, IL, error) {
 			//"place":
 			//(address,contact), event,movement,place,rate,trans,link
 			sqlString = `select sum(co) as sco from (
@@ -1717,7 +1717,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"product": func(options SM) (string, IL, error) {
+		"product": func(options IM) (string, IL, error) {
 			//address,barcode,contact,event,item,movement,price,tool,link
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'product' 
@@ -1763,7 +1763,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"project": func(options SM) (string, IL, error) {
+		"project": func(options IM) (string, IL, error) {
 			//(address,contact), event,trans,link
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from trans where `
@@ -1783,7 +1783,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"tax": func(options SM) (string, IL, error) {
+		"tax": func(options IM) (string, IL, error) {
 			//item,product
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from item where item.deleted = 0 `
@@ -1796,7 +1796,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"tool": func(options SM) (string, IL, error) {
+		"tool": func(options IM) (string, IL, error) {
 			//(address,contact), event,movement,link
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from movement where `
@@ -1815,7 +1815,7 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 			return sqlString, params, nil
 		},
 
-		"trans": func(options SM) (string, IL, error) {
+		"trans": func(options IM) (string, IL, error) {
 			//(address,contact), event,link
 			sqlString = `select sum(co) as sco from (
 				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'trans' 
@@ -1832,22 +1832,22 @@ func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 		},
 	}
 
-	if _, found := keys[options["nervatype"]]; found {
+	if _, found := keys[options["nervatype"].(string)]; found {
 		if _, found := options["ref_id"]; found {
-			return keys[options["nervatype"]](options)
+			return keys[options["nervatype"].(string)](options)
 		}
 	}
 	return sqlString, params, errors.New(ntura.GetMessage("integrity_error"))
 }
 
 //QueryKey - complex data queries
-func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err error) {
+func (ds *SQLDriver) QueryKey(options IM, trans interface{}) (result []IM, err error) {
 	result = []IM{}
 	sqlString := ""
 	params := make(IL, 0)
 
-	keys := map[string]func(options SM) (string, IL, error){
-		"user": func(options SM) (string, IL, error) {
+	keys := map[string]func(options IM) (string, IL, error){
+		"user": func(options IM) (string, IL, error) {
 			params := IL{options["username"]}
 			sqlString =
 				`select e.id, e.username, e.empnumber, e.usergroup, ug.groupvalue as scope, dg.groupvalue as department
@@ -1858,7 +1858,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"user_guest": func(options SM) (string, IL, error) {
+		"user_guest": func(options IM) (string, IL, error) {
 			params := IL{}
 			sqlString =
 				`select e.id, e.username, e.empnumber, ug.id as usergroup, ug.groupvalue as scope, dg.groupvalue as department
@@ -1868,9 +1868,9 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"metadata": func(options SM) (string, IL, error) {
+		"metadata": func(options IM) (string, IL, error) {
 			params := IL{options["nervatype"]}
-			values, inPrm := ds.splitInParams(options["ids"], len(params))
+			values, inPrm := ds.splitInParams(options["ids"].(string), len(params))
 			params = append(params, values...)
 			sqlString =
 				`select fv.*, ft.groupvalue as fieldtype from fieldvalue fv 
@@ -1883,7 +1883,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"post_transtype": func(options SM) (string, IL, error) {
+		"post_transtype": func(options IM) (string, IL, error) {
 			params := IL{options["trans_id"], options["transtype_key"], options["transtype_id"],
 				options["customer_id"], options["custnumber"]}
 			sqlString =
@@ -1902,7 +1902,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"default_report": func(options SM) (string, IL, error) {
+		"default_report": func(options IM) (string, IL, error) {
 			params := IL{}
 			whereString := ""
 			sqlString =
@@ -1925,7 +1925,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"reportfields": func(options SM) (string, IL, error) {
+		"reportfields": func(options IM) (string, IL, error) {
 			params := IL{options["report_id"]}
 			sqlString =
 				`select rf.fieldname as fieldname, ft.groupvalue as fieldtype, rf.dataset as dataset, wt.groupvalue as wheretype, rf.sqlstr as sqlstr
@@ -1936,7 +1936,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"listprice": func(options SM) (string, IL, error) {
+		"listprice": func(options IM) (string, IL, error) {
 			params := IL{options["vendorprice"], options["product_id"], options["posdate"], options["posdate"], options["curr"], options["qty"]}
 			sqlString =
 				`select min(p.pricevalue) as mp 
@@ -1951,7 +1951,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"custprice": func(options SM) (string, IL, error) {
+		"custprice": func(options IM) (string, IL, error) {
 			params := IL{options["vendorprice"], options["product_id"], options["posdate"], options["posdate"],
 				options["curr"], options["qty"], options["customer_id"]}
 			sqlString =
@@ -1968,7 +1968,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"grouprice": func(options SM) (string, IL, error) {
+		"grouprice": func(options IM) (string, IL, error) {
 			params := IL{options["customer_id"], options["vendorprice"], options["product_id"], options["posdate"], options["posdate"],
 				options["curr"], options["qty"]}
 			sqlString =
@@ -1989,7 +1989,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"data_audit": func(options SM) (string, IL, error) {
+		"data_audit": func(options IM) (string, IL, error) {
 			params := IL{options["id"]}
 			sqlString =
 				`select tt.groupvalue as transfilter 
@@ -2000,7 +2000,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"object_audit": func(options SM) (string, IL, error) {
+		"object_audit": func(options IM) (string, IL, error) {
 			whereString := ""
 			params := IL{options["usergroup"]}
 			sqlString =
@@ -2028,7 +2028,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"dbs_settings": func(options SM) (string, IL, error) {
+		"dbs_settings": func(options IM) (string, IL, error) {
 			params := IL{}
 			sqlString =
 				`select 'setting' as stype, fieldname, value, notes as data, id as info 
@@ -2039,7 +2039,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"delete_deffields": func(options SM) (string, IL, error) {
+		"delete_deffields": func(options IM) (string, IL, error) {
 			sqlString =
 				`select fv.id as id from deffield df 
           inner join groups nt on ((df.nervatype=nt.id) 
@@ -2050,25 +2050,25 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return sqlString, params, nil
 		},
 
-		"id->refnumber": func(options SM) (string, IL, error) {
+		"id->refnumber": func(options IM) (string, IL, error) {
 			return ds.getID2Refnumber(options)
 		},
 
-		"refnumber->id": func(options SM) (string, IL, error) {
+		"refnumber->id": func(options IM) (string, IL, error) {
 			return ds.getRefnumber2ID(options)
 		},
 
-		"integrity": func(options SM) (string, IL, error) {
+		"integrity": func(options IM) (string, IL, error) {
 			return ds.getIntegrity(options)
 		},
 
-		"update_deffields": func(options SM) (string, IL, error) {
+		"update_deffields": func(options IM) (string, IL, error) {
 			return ds.getUpdateDeffields(options)
 		},
 	}
 
-	if _, found := keys[options["qkey"]]; found {
-		sqlString, params, err = keys[options["qkey"]](options)
+	if _, found := keys[options["qkey"].(string)]; found {
+		sqlString, params, err = keys[options["qkey"].(string)](options)
 		if err != nil {
 			return result, err
 		}
