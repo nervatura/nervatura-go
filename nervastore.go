@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	datetimeFmt string = "2006-01-02 15:04:05"
+	dateFmt     string = "2006-01-02"
+)
+
 // NervaStore is the core structure of the Nervatura
 type NervaStore struct {
 	ds       DataDriver
@@ -118,30 +123,30 @@ func checkFieldvalueFloat(value interface{}, fieldname string) (interface{}, err
 	}
 }
 
-func checkFieldvalueDate(value interface{}, fieldname string) (interface{}, error) {
+func checkFieldvalueDate(value interface{}, fieldname, fieldtype string) (interface{}, error) {
 	if value == nil {
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 	switch value.(type) {
 	case time.Time:
-		return value.(time.Time).Format("2006-01-02"), nil
+		return value.(time.Time).Format(dateFmt), nil
 	case string:
-		tm, err := time.Parse("2006-01-02", value.(string))
+		tm, err := time.Parse(dateFmt, value.(string))
 		if err != nil {
-			tm, err = time.Parse("2006.01.02", value.(string))
+			tm, err = time.Parse(dateFmt, value.(string))
 		}
 		if err != nil {
-			return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+			return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 		}
-		return tm.Format("2006-01-02"), nil
+		return tm.Format(dateFmt), nil
 	default:
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 }
 
-func checkFieldvalueTime(value interface{}, fieldname string) (interface{}, error) {
+func checkFieldvalueTime(value interface{}, fieldname, fieldtype string) (interface{}, error) {
 	if value == nil {
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (time)")
+		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 	switch value.(type) {
 	case time.Time:
@@ -152,11 +157,11 @@ func checkFieldvalueTime(value interface{}, fieldname string) (interface{}, erro
 			tm, err = time.Parse("15:04", value.(string))
 		}
 		if err != nil {
-			return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (time)")
+			return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 		}
 		return tm.Format("15:04"), nil
 	default:
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (time)")
+		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 }
 
@@ -211,7 +216,7 @@ func (nstore *NervaStore) checkFieldvalue(fieldname string, value, trans interfa
 	if len(rows) == 0 {
 		return value, errors.New(GetMessage("missing_fieldname"))
 	}
-	fieldtype := rows[0]["fieldtype"]
+	fieldtype := rows[0]["fieldtype"].(string)
 
 	switch fieldtype {
 	case "bool":
@@ -224,16 +229,16 @@ func (nstore *NervaStore) checkFieldvalue(fieldname string, value, trans interfa
 		return checkFieldvalueFloat(value, fieldname)
 
 	case "date":
-		return checkFieldvalueDate(value, fieldname)
+		return checkFieldvalueDate(value, fieldname, fieldtype)
 
 	case "time":
-		return checkFieldvalueTime(value, fieldname)
+		return checkFieldvalueTime(value, fieldname, fieldtype)
 
 	case "string", "password", "valuelist", "notes", "urlink":
 		return value, nil
 
 	case "customer", "tool", "product", "project", "employee", "place", "transitem", "transmovement", "transpayment":
-		return nstore.checkFieldvalueNervatype(value, fieldname, fieldtype.(string), trans)
+		return nstore.checkFieldvalueNervatype(value, fieldname, fieldtype, trans)
 
 	default:
 		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname)
@@ -574,18 +579,18 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 				} else {
 					switch value.(type) {
 					case time.Time:
-						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format("2006-01-02")
+						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
 					case string:
-						tm, err := time.Parse("2006-01-02", value.(string))
+						tm, err := time.Parse(dateFmt, value.(string))
 						if err != nil {
-							tm, err = time.Parse("2006.01.02", value.(string))
+							tm, err = time.Parse(dateFmt, value.(string))
 						}
 						if err != nil {
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 						}
-						checkValues["values"].(IM)[fieldname] = tm.Format("2006-01-02")
+						checkValues["values"].(IM)[fieldname] = tm.Format(dateFmt)
 					default:
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 					}
 				}
 
@@ -595,7 +600,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 				} else {
 					switch value.(type) {
 					case time.Time:
-						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format("2006-01-02")
+						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
 					case string:
 						tm, err := time.Parse("2006-01-02T15:04:05-0700", value.(string))
 						if err != nil {
@@ -608,23 +613,20 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 							tm, err = time.Parse("2006-01-02 15:04", value.(string))
 						}
 						if err != nil {
-							tm, err = time.Parse("2006-01-02", value.(string))
+							tm, err = time.Parse(dateFmt, value.(string))
 						}
 						if err != nil {
-							tm, err = time.Parse("2006.01.02 15:04:05", value.(string))
+							tm, err = time.Parse("2006-01-02 15:04:05", value.(string))
 						}
 						if err != nil {
-							tm, err = time.Parse("2006.01.02 15:04", value.(string))
+							tm, err = time.Parse(dateFmt, value.(string))
 						}
 						if err != nil {
-							tm, err = time.Parse("2006.01.02", value.(string))
-						}
-						if err != nil {
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 						}
 						checkValues["values"].(IM)[fieldname] = tm.Format("2006-01-02T15:04:05-0700")
 					default:
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (date)")
+						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 					}
 				}
 
