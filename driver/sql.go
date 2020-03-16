@@ -1479,6 +1479,52 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 
 }
 
+func (ds *SQLDriver) getUpdateDeffields(options SM) (string, IL, error) {
+	var sqlString, whereString string
+	params := make(IL, 0)
+
+	if _, found := options["fieldname"]; found {
+		sqlString = `select ft.groupvalue as fieldtype from deffield df
+        inner join groups ft on (df.fieldtype=ft.id) `
+		whereString, params = ds.getQueryKeyOption(options,
+			SL{"fieldname"}, ` where df.fieldname = %s `, params)
+		sqlString += whereString
+		return sqlString, params, nil
+	}
+	if _, found := options["nervatype"]; found {
+		if _, found := options["ref_id"]; found {
+			if options["ref_id"] == "" {
+				options["ref_id"] = "null"
+			}
+			sqlString = `select df.fieldname as fieldname, fv.id as fieldvalue_id
+						from deffield df
+						inner join groups nt on ((df.nervatype=nt.id) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"nervatype", "ref_id"}, ` and (nt.groupvalue=%s))
+						left join fieldvalue fv on ((df.fieldname=fv.fieldname) and (fv.deleted = 0) and (fv.ref_id = %s)) `, params)
+			sqlString += whereString
+			sqlString += `union select 'fieldtype_string' as fieldname, id as fieldvalue_id 
+						from groups where (groupname='fieldtype') and (groupvalue='string')
+					union select 'nervatype_id' as fieldname, id as fieldvalue_id 
+						from groups where (groupname='nervatype') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"nervatype"}, ` and (groupvalue = %s) `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		}
+		sqlString = `select df.fieldname, ft.groupvalue as fieldtype, df.addnew, df.visible
+						from deffield df
+						inner join groups nt on (df.nervatype=nt.id) `
+		whereString, params = ds.getQueryKeyOption(options,
+			SL{"nervatype"}, ` and (nt.groupvalue = %s )
+						inner join groups ft on (df.fieldtype=ft.id)
+						where df.deleted=0 `, params)
+		sqlString += whereString
+		return sqlString, params, nil
+	}
+	return sqlString, params, errors.New(ntura.GetMessage("missing_fieldname"))
+}
+
 func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
@@ -2015,6 +2061,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 		"integrity": func(options SM) (string, IL, error) {
 			return ds.getIntegrity(options)
 		},
+
+		"update_deffields": func(options SM) (string, IL, error) {
+			return ds.getUpdateDeffields(options)
+		},
 	}
 
 	if _, found := keys[options["qkey"]]; found {
@@ -2023,41 +2073,7 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 			return result, err
 		}
 	} else {
-		switch options["qkey"] {
-
-		case "update_deffields":
-			if _, found := options["fieldname"]; found {
-				sqlString = `select ft.groupvalue as fieldtype from deffield df
-        inner join groups ft on (df.fieldtype=ft.id)
-        where df.fieldname='` + options["fieldname"] + `'`
-			} else {
-				if _, found := options["nervatype"]; found {
-					if _, found := options["ref_id"]; found {
-						if options["ref_id"] == "" {
-							options["ref_id"] = "null"
-						}
-						sqlString = `select df.fieldname as fieldname, fv.id as fieldvalue_id
-						from deffield df
-						inner join groups nt on ((df.nervatype=nt.id) and (nt.groupvalue='` + options["nervatype"] + `'))
-						left join fieldvalue fv on ((df.fieldname=fv.fieldname) and (fv.deleted=0) and (fv.ref_id=` + options["ref_id"] + `))
-					union select 'fieldtype_string' as fieldname, id as fieldvalue_id 
-						from groups where (groupname='fieldtype') and (groupvalue='string')
-					union select 'nervatype_id' as fieldname, id as fieldvalue_id 
-						from groups where (groupname='nervatype') and (groupvalue='` + options["nervatype"] + `')`
-					} else {
-						sqlString = `select df.fieldname, ft.groupvalue as fieldtype, df.addnew, df.visible
-						from deffield df
-						inner join groups nt on (df.nervatype=nt.id)
-							and (nt.groupvalue='` + options["nervatype"] + `')
-						inner join groups ft on (df.fieldtype=ft.id)
-						where df.deleted=0`
-					}
-				}
-			}
-
-		default:
-			return result, errors.New(ntura.GetMessage("missing_fieldname"))
-		}
+		return result, errors.New(ntura.GetMessage("missing_fieldname"))
 	}
 
 	//print(sqlString)
