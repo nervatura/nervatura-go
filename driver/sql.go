@@ -1141,17 +1141,18 @@ func (ds *SQLDriver) getID2Refnumber(options SM) (string, IL, error) {
 	}
 }
 
+func filterValue(filter, value, trueResult, falseResult string) string {
+	if value == filter {
+		return trueResult
+	}
+	return falseResult
+}
+
 func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 	var sqlString, whereString string
 	params := make(IL, 0)
 
 	const whereDelete = " and deleted = 0"
-	filterValue := func(filter, value, trueResult, falseResult string) string {
-		if value == filter {
-			return trueResult
-		}
-		return falseResult
-	}
 
 	keys := map[string]func(options SM) (string, IL, error){
 		"barcode": func(options SM) (string, IL, error) {
@@ -1478,6 +1479,321 @@ func (ds *SQLDriver) getRefnumber2ID(options SM) (string, IL, error) {
 
 }
 
+func (ds *SQLDriver) getIntegrity(options SM) (string, IL, error) {
+	var sqlString, whereString string
+	params := make(IL, 0)
+
+	keys := map[string]func(options SM) (string, IL, error){
+		"currency": func(options SM) (string, IL, error) {
+			//(link), place,price,rate,trans
+			sqlString = `select sum(co) as sco from (
+				select count(place.id) as co from place
+				inner join currency on (place.curr=currency.curr)
+				where ((place.deleted=0) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (currency.id=%s)) `, params)
+			sqlString += whereString
+			sqlString += `union select count(price.id) as co from price
+				inner join currency on (price.curr=currency.curr) 
+				where ((price.deleted=0) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (currency.id=%s)) `, params)
+			sqlString += whereString
+			sqlString += `union select count(rate.id) as co from rate 
+				inner join currency on (rate.curr=currency.curr)
+				where ((rate.deleted=0) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (currency.id=%s)) `, params)
+			sqlString += whereString
+			sqlString += `union select count(trans.id) as co from trans
+				inner join currency on (trans.curr=currency.curr)
+				where ((trans.deleted=0) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (currency.id=%s))) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"customer": func(options SM) (string, IL, error) {
+			//(address,contact), event,project,trans,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co  from trans where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (customer_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co  from project where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (customer_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co  from event
+				inner join groups nt on ((event.nervatype=nt.id) and (nt.groupvalue='customer'))
+				where (event.deleted=0) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (event.ref_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co  from link
+				where nervatype_2=(
+					select id  from groups 
+					where (groupname='nervatype') and (groupvalue='customer') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (ref_id_2=%s))
+				) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"deffield": func(options SM) (string, IL, error) {
+			//fieldvalue
+			sqlString = `select sum(co) as sco from (
+			  select count(fieldvalue.id) as co from fieldvalue
+				inner join deffield on (deffield.fieldname=fieldvalue.fieldname)
+				where (fieldvalue.deleted=0) `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (deffield.id=%s)) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"employee": func(options SM) (string, IL, error) {
+			//(address,contact), event,trans,log,link,ui_printqueue,ui_userconfig
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from trans where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (employee_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from trans where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (cruser_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from log where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (employee_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from ui_printqueue where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (employee_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from ui_userconfig where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (employee_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from event
+				  inner join groups nt on ((event.nervatype=nt.id) and (nt.groupvalue='employee'))
+				  where (event.deleted=0) and `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` (event.ref_id=%s) `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from link 
+					where (nervatype_2=(select id from groups 
+						where (groupname='nervatype') and (groupvalue='employee') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and (ref_id_2=%s)))) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"groups": func(options SM) (string, IL, error) {
+			//barcode,deffield,employee,event,rate,tool,trans,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from groups 
+				where groupname in ('nervatype', 'custtype', 'fieldtype', 'logstate', 'movetype', 'transtype', 
+					'placetype', 'calcmode', 'protype', 'ratetype', 'direction', 'transtate', 
+					'inputfilter', 'filetype', 'wheretype', 'aggretype') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and id = %s  `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from link 
+				where nervatype_2 = ( select id from groups where groupname = 'nervatype' and groupvalue = 'groups') and `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` ref_id_2 = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from barcode where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` barcode.barcodetype = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from deffield where deffield.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and deffield.subtype = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from employee where employee.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and employee.usergroup = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from employee where employee.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and employee.department = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from event where event.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and event.eventgroup = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from rate where rate.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and rate.rategroup = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from tool where tool.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and tool.toolgroup = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) from trans where trans.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and trans.department = %s ) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"place": func(options SM) (string, IL, error) {
+			//"place":
+			//(address,contact), event,movement,place,rate,trans,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'place' 
+				where event.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and event.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from link where nervatype_2 = ( 
+					select id from groups where groupname = 'nervatype' and groupvalue = 'place') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and ref_id_2 = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from movement where movement.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and movement.place_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from rate where rate.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and rate.place_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from trans where trans.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and trans.place_id = %s ) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"product": func(options SM) (string, IL, error) {
+			//address,barcode,contact,event,item,movement,price,tool,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'product' 
+				where event.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and event.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from address inner join groups nt on address.nervatype = nt.id and nt.groupvalue = 'product' 
+				where address.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and address.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from contact inner join groups nt on contact.nervatype = nt.id and nt.groupvalue = 'product' 
+				where contact.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and contact.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from link where nervatype_2 = ( 
+					select id from groups where groupname = 'nervatype' and groupvalue = 'product') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and ref_id_2 = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from barcode where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` barcode.product_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from movement where movement.deleted = 0  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and movement.product_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from item where item.deleted = 0  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and item.product_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from price where price.deleted = 0  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and price.product_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from tool where tool.deleted = 0  `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and tool.product_id = %s ) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"project": func(options SM) (string, IL, error) {
+			//(address,contact), event,trans,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from trans where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` project_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'project' 
+				where event.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and event.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from link where nervatype_2 = ( 
+					select id from groups where groupname = 'nervatype' and groupvalue = 'project') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and ref_id_2 = %s ) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"tax": func(options SM) (string, IL, error) {
+			//item,product
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from item where item.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and item.tax_id = %s `, params)
+			sqlString += `union select count(*) as co from product where product.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and product.tax_id = %s) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"tool": func(options SM) (string, IL, error) {
+			//(address,contact), event,movement,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from movement where `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` tool_id = %s `, params)
+			sqlString += `union select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'tool' 
+				where event.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and event.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString += `union select count(*) as co from link where nervatype_2 = ( 
+					select id from groups where groupname = 'nervatype' and groupvalue = 'tool') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and ref_id_2 = %s) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+
+		"trans": func(options SM) (string, IL, error) {
+			//(address,contact), event,link
+			sqlString = `select sum(co) as sco from (
+				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'trans' 
+				where event.deleted = 0 `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and event.ref_id = %s `, params)
+			sqlString += whereString
+			sqlString = `union select count(*) as co from link where nervatype_2 = ( 
+					select id from groups where groupname = 'nervatype' and groupvalue = 'trans') `
+			whereString, params = ds.getQueryKeyOption(options,
+				SL{"ref_id"}, ` and ref_id_2 = %s) foo `, params)
+			sqlString += whereString
+			return sqlString, params, nil
+		},
+	}
+
+	if _, found := keys[options["nervatype"]]; found {
+		if _, found := options["ref_id"]; found {
+			return keys[options["nervatype"]](options)
+		}
+	}
+	return sqlString, params, errors.New(ntura.GetMessage("integrity_error"))
+}
+
 //QueryKey - complex data queries
 func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err error) {
 	result = []IM{}
@@ -1695,6 +2011,10 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 		"refnumber->id": func(options SM) (string, IL, error) {
 			return ds.getRefnumber2ID(options)
 		},
+
+		"integrity": func(options SM) (string, IL, error) {
+			return ds.getIntegrity(options)
+		},
 	}
 
 	if _, found := keys[options["qkey"]]; found {
@@ -1733,176 +2053,6 @@ func (ds *SQLDriver) QueryKey(options SM, trans interface{}) (result []IM, err e
 						where df.deleted=0`
 					}
 				}
-			}
-
-		case "integrity":
-			switch options["nervatype"] {
-			case "currency":
-				//(link), place,price,rate,trans
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(place.id) as co from place
-				inner join currency on (place.curr=currency.curr)
-				where ((place.deleted=0) and (currency.id=` + options["ref_id"] + `))
-				union select count(price.id) as co from price
-				inner join currency on (price.curr=currency.curr) 
-				where ((price.deleted=0) and (currency.id=` + options["ref_id"] + `)) 
-				union select count(rate.id) as co from rate 
-				inner join currency on (rate.curr=currency.curr)
-				where ((rate.deleted=0) and (currency.id=` + options["ref_id"] + `))
-				union select count(trans.id) as co from trans
-				inner join currency on (trans.curr=currency.curr)
-				where ((trans.deleted=0) and (currency.id=` + options["ref_id"] + `))) foo`
-				}
-
-			case "customer":
-				//(address,contact), event,project,trans,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co  from trans where (customer_id=` + options["ref_id"] + `)
-				union select count(*) as co  from project where (customer_id=` + options["ref_id"] + `)
-				union select count(*) as co  from event
-				inner join groups nt on ((event.nervatype=nt.id) and (nt.groupvalue='customer'))
-				where (event.deleted=0) and (event.ref_id=` + options["ref_id"] + `)
-				union select count(*) as co  from link
-				where nervatype_2=(
-					select id  from groups 
-					where (groupname='nervatype') and (groupvalue='customer')
-						and (ref_id_2=` + options["ref_id"] + `))
-				) foo`
-				}
-
-			case "deffield":
-				//fieldvalue
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-			  select count(fieldvalue.id) as co from fieldvalue
-				inner join deffield on (deffield.fieldname=fieldvalue.fieldname)
-				where (fieldvalue.deleted=0) and (deffield.id=` + options["ref_id"] + `)
-				) foo`
-				}
-
-			case "employee":
-				//(address,contact), event,trans,log,link,ui_printqueue,ui_userconfig
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from trans where (employee_id=` + options["ref_id"] + `)
-				union select count(*) as co from trans where (cruser_id=` + options["ref_id"] + `)
-				union select count(*) as co from log where (employee_id=` + options["ref_id"] + `)
-				union select count(*) as co from ui_printqueue where (employee_id=` + options["ref_id"] + `)
-				union select count(*) as co from ui_userconfig where (employee_id=` + options["ref_id"] + `)
-				union select count(*) as co from event
-				  inner join groups nt on ((event.nervatype=nt.id) and (nt.groupvalue='employee'))
-				  where (event.deleted=0) and (event.ref_id=` + options["ref_id"] + `)
-				union select count(*) as co from link 
-					where (nervatype_2=(select id from groups 
-						where (groupname='nervatype') and (groupvalue='employee') 
-						  and (ref_id_2=` + options["ref_id"] + `)))
-				) foo`
-				}
-
-			case "groups":
-				//barcode,deffield,employee,event,rate,tool,trans,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from groups 
-				where groupname in ('nervatype', 'custtype', 'fieldtype', 'logstate', 'movetype', 'transtype', 
-					'placetype', 'calcmode', 'protype', 'ratetype', 'direction', 'transtate', 
-					'inputfilter', 'filetype', 'wheretype', 'aggretype') and id = ` + options["ref_id"] + `  
-				union select count(*) as co from link 
-				where nervatype_2 = ( select id from groups where groupname = 'nervatype' and groupvalue = 'groups') and ref_id_2 = ` + options["ref_id"] + `  
-				union select count(*) from barcode where barcode.barcodetype = ` + options["ref_id"] + `  
-				union select count(*) from deffield where deffield.deleted = 0 and deffield.subtype = ` + options["ref_id"] + `  
-				union select count(*) from employee where employee.deleted = 0 and employee.usergroup = ` + options["ref_id"] + `  
-				union select count(*) from employee where employee.deleted = 0 and employee.department = ` + options["ref_id"] + `  
-				union select count(*) from event where event.deleted = 0 and event.eventgroup = ` + options["ref_id"] + `  
-				union select count(*) from rate where rate.deleted = 0 and rate.rategroup = ` + options["ref_id"] + `  
-				union select count(*) from tool where tool.deleted = 0 and tool.toolgroup = ` + options["ref_id"] + `  
-				union select count(*) from trans where trans.deleted = 0 and trans.department = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			case "place":
-				//(address,contact), event,movement,place,rate,trans,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'place' 
-				where event.deleted = 0 and event.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from link where nervatype_2 = ( 
-					select id from groups where groupname = 'nervatype' and groupvalue = 'place') and ref_id_2 = ` + options["ref_id"] + `  
-				union select count(*) as co from movement where movement.deleted = 0 and movement.place_id = ` + options["ref_id"] + `    
-				union select count(*) as co from rate where rate.deleted = 0 and rate.place_id = ` + options["ref_id"] + `  
-				union select count(*) as co from trans where trans.deleted = 0 and trans.place_id = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			case "product":
-				//address,barcode,contact,event,item,movement,price,tool,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'product' 
-				where event.deleted = 0 and event.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from address inner join groups nt on address.nervatype = nt.id and nt.groupvalue = 'product' 
-				where address.deleted = 0 and address.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from contact inner join groups nt on contact.nervatype = nt.id and nt.groupvalue = 'product' 
-				where contact.deleted = 0 and contact.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from link where nervatype_2 = ( 
-					select id from groups where groupname = 'nervatype' and groupvalue = 'product') and ref_id_2 = ` + options["ref_id"] + `  
-				union select count(*) as co from barcode where barcode.product_id = ` + options["ref_id"] + `  
-				union select count(*) as co from movement where movement.deleted = 0 and movement.product_id = ` + options["ref_id"] + `  
-				union select count(*) as co from item where item.deleted = 0 and item.product_id = ` + options["ref_id"] + `  
-				union select count(*) as co from price where price.deleted = 0 and price.product_id = ` + options["ref_id"] + `  
-				union select count(*) as co from tool where tool.deleted = 0 and tool.product_id = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			case "project":
-				//(address,contact), event,trans,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from trans where project_id = ` + options["ref_id"] + `  
-				union select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'project' 
-				where event.deleted = 0 and event.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from link where nervatype_2 = ( 
-					select id from groups where groupname = 'nervatype' and groupvalue = 'project') and ref_id_2 = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			case "tax":
-				//item,product
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from item where item.deleted = 0 and item.tax_id = ` + options["ref_id"] + `  
-				union select count(*) as co from product where product.deleted = 0 and product.tax_id = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			case "tool":
-				//(address,contact), event,movement,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from movement where tool_id = ` + options["ref_id"] + `  
-				union select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'tool' 
-				where event.deleted = 0 and event.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from link where nervatype_2 = ( 
-					select id from groups where groupname = 'nervatype' and groupvalue = 'tool') and ref_id_2 = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			case "trans":
-				//(address,contact), event,link
-				if _, found := options["ref_id"]; found {
-					sqlString = `select sum(co) as sco from (
-				select count(*) as co from event inner join groups nt on event.nervatype = nt.id and nt.groupvalue = 'trans' 
-				where event.deleted = 0 and event.ref_id = ` + options["ref_id"] + `  
-				union select count(*) as co from link where nervatype_2 = ( 
-					select id from groups where groupname = 'nervatype' and groupvalue = 'trans') and ref_id_2 = ` + options["ref_id"] + `
-			) foo`
-				}
-
-			default:
-				return nil, errors.New(ntura.GetMessage("integrity_error"))
-
 			}
 
 		default:
