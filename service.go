@@ -169,70 +169,33 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 //getPriceValue - get product price
 func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	results = IM{"price": float64(0), "discount": float64(0)}
-	params := IM{"qkey": "listprice", "curr": "", "product_id": "", "vendorprice": "0",
-		"posdate": time.Now().Format("2006-01-02"), "qty": "0", "customer_id": ""}
-	if _, found := options["curr"]; found && GetIType(options["curr"]) == "string" {
-		params["curr"] = options["curr"].(string)
-	} else {
+	params := IM{
+		"qkey":        "listprice",
+		"curr":        options["curr"],
+		"product_id":  options["product_id"],
+		"vendorprice": options["vendorprice"],
+		"posdate":     options["posdate"],
+		"qty":         options["qty"],
+		"customer_id": options["customer_id"],
+	}
+	if _, found := options["curr"]; !found {
 		return results, errors.New(GetMessage("missing_required_field") + ": curr")
 	}
 
-	if _, found := options["product_id"]; found {
-		switch options["product_id"].(type) {
-		case int:
-			params["product_id"] = strconv.Itoa(options["product_id"].(int))
-		case int64:
-			params["product_id"] = strconv.Itoa(int(options["product_id"].(int64)))
-		case float64:
-			params["product_id"] = strconv.Itoa(int(options["product_id"].(float64)))
-		case string:
-			params["product_id"] = options["product_id"].(string)
-		}
-	} else {
+	if _, found := options["product_id"]; !found {
 		return results, errors.New(GetMessage("missing_required_field") + ": product_id")
 	}
 
-	if _, found := options["vendorprice"]; found {
-		switch options["vendorprice"].(type) {
-		case int:
-			params["vendorprice"] = strconv.Itoa(options["vendorprice"].(int))
-		case int64:
-			params["vendorprice"] = strconv.Itoa(int(options["vendorprice"].(int64)))
-		case float64:
-			params["vendorprice"] = strconv.Itoa(int(options["vendorprice"].(float64)))
-		case string:
-			params["vendorprice"] = options["vendorprice"].(string)
-		}
+	if _, found := options["vendorprice"]; !found {
+		params["vendorprice"] = 0
 	}
 
-	if _, found := options["posdate"]; found && GetIType(options["posdate"]) == "string" {
-		params["posdate"] = options["posdate"].(string)
+	if _, found := options["posdate"]; !found {
+		params["posdate"] = time.Now().Format("2006-01-02")
 	}
 
-	if _, found := options["qty"]; found {
-		switch options["qty"].(type) {
-		case int:
-			params["qty"] = strconv.Itoa(options["qty"].(int))
-		case int64:
-			params["qty"] = strconv.Itoa(int(options["qty"].(int64)))
-		case float64:
-			params["qty"] = strconv.Itoa(int(options["qty"].(float64)))
-		case string:
-			params["qty"] = options["qty"].(string)
-		}
-	}
-
-	if _, found := options["customer_id"]; found {
-		switch options["customer_id"].(type) {
-		case int:
-			params["customer_id"] = strconv.Itoa(options["customer_id"].(int))
-		case int64:
-			params["customer_id"] = strconv.Itoa(int(options["customer_id"].(int64)))
-		case float64:
-			params["customer_id"] = strconv.Itoa(int(options["customer_id"].(float64)))
-		case string:
-			params["customer_id"] = options["customer_id"].(string)
-		}
+	if _, found := options["qty"]; !found {
+		params["qty"] = 0
 	}
 
 	//best_listprice
@@ -258,7 +221,7 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 	}
 
-	if params["customer_id"] != "" {
+	if _, found := options["customer_id"]; found {
 		//customer discount
 		query := []Query{Query{
 			Fields: []string{"*"}, From: "customer", Filters: []Filter{
@@ -275,7 +238,7 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 	}
 
-	if params["customer_id"] != "" {
+	if _, found := options["customer_id"]; found {
 		//best_custprice
 		params["qkey"] = "custprice"
 		pdata, err := nstore.ds.QueryKey(params, nil)
@@ -306,7 +269,7 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 	}
 
-	if params["customer_id"] != "" {
+	if _, found := options["customer_id"]; found {
 		//best_grouprice
 		params["qkey"] = "grouprice"
 		pdata, err := nstore.ds.QueryKey(params, nil)

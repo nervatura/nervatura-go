@@ -237,22 +237,32 @@ func (nstore *NervaStore) checkFieldvalue(fieldname string, value, trans interfa
 	}
 }
 
+func stringValue(options IM, key string) (string, error) {
+	if _, found := options[key]; found && GetIType(options[key]) == "string" {
+		return options[key].(string), nil
+	}
+	return "", errors.New(GetMessage("invalid_value"))
+}
+
 func (nstore *NervaStore) insertLog(options IM) error {
 
-	nervatype := ""
-	if _, found := options["nervatype"]; found && GetIType(options["nervatype"]) == "string" {
-		nervatype = options["nervatype"].(string)
-	} else {
+	nervatype, err := stringValue(options, "nervatype")
+	if err != nil {
 		return errors.New("missing_nervatype")
 	}
-	logstate := ""
-	if _, found := options["logstate"]; found && GetIType(options["logstate"]) == "string" {
-		logstate = options["logstate"].(string)
-	}
+	//if _, found := options["nervatype"]; found && GetIType(options["nervatype"]) == "string" {
+	//	nervatype = options["nervatype"].(string)
+	//} else {
+	//	return errors.New("missing_nervatype")
+	//}
+	logstate, _ := stringValue(options, "logstate")
+	//if _, found := options["logstate"]; found && GetIType(options["logstate"]) == "string" {
+	//	logstate = options["logstate"].(string)
+	//}
 	if ok, err := nstore.connected(); ok == false || err != nil {
-		if err != nil {
-			return err
-		}
+		//if err != nil {
+		//	return err
+		//}
 		return errors.New(GetMessage("not_connect"))
 	}
 
