@@ -166,6 +166,28 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 	return retnumber, nil
 }
 
+func defaultValue(key string, options IM, defValue interface{}) interface{} {
+	if _, found := options[key]; found {
+		return options[key]
+	}
+	return defValue
+}
+
+func getFloatValue(value interface{}) (float64, error) {
+
+	switch value.(type) {
+	case int:
+		return float64(value.(int)), nil
+	case int64:
+		return float64(value.(int64)), nil
+	case float64:
+		return value.(float64), nil
+	case string:
+		return strconv.ParseFloat(value.(string), 64)
+	}
+	return 0, nil
+}
+
 //getPriceValue - get product price
 func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	results = IM{"price": float64(0), "discount": float64(0)}
@@ -186,17 +208,9 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		return results, errors.New(GetMessage("missing_required_field") + ": product_id")
 	}
 
-	if _, found := options["vendorprice"]; !found {
-		params["vendorprice"] = 0
-	}
-
-	if _, found := options["posdate"]; !found {
-		params["posdate"] = time.Now().Format("2006-01-02")
-	}
-
-	if _, found := options["qty"]; !found {
-		params["qty"] = 0
-	}
+	params["vendorprice"] = defaultValue("vendorprice", options, 0)
+	params["posdate"] = defaultValue("posdate", options, time.Now().Format("2006-01-02"))
+	params["qty"] = defaultValue("qty", options, 0)
 
 	//best_listprice
 	pdata, err := nstore.ds.QueryKey(params, nil)
@@ -205,18 +219,9 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	}
 	if len(pdata) > 0 {
 		if pdata[0]["mp"] != nil {
-			switch pdata[0]["mp"].(type) {
-			case int:
-				results["price"] = float64(pdata[0]["mp"].(int))
-			case int64:
-				results["price"] = float64(pdata[0]["mp"].(int64))
-			case float64:
-				results["price"] = pdata[0]["mp"].(float64)
-			case string:
-				results["price"], err = strconv.ParseFloat(pdata[0]["mp"].(string), 64)
-				if err != nil {
-					return results, err
-				}
+			results["price"], err = getFloatValue(pdata[0]["mp"])
+			if err != nil {
+				return results, err
 			}
 		}
 	}
@@ -247,19 +252,9 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 		if len(pdata) > 0 {
 			if pdata[0]["mp"] != nil {
-				price := float64(0)
-				switch pdata[0]["mp"].(type) {
-				case int:
-					price = float64(pdata[0]["mp"].(int))
-				case int64:
-					price = float64(pdata[0]["mp"].(int64))
-				case float64:
-					price = pdata[0]["mp"].(float64)
-				case string:
-					price, err = strconv.ParseFloat(pdata[0]["mp"].(string), 64)
-					if err != nil {
-						return results, err
-					}
+				price, err := getFloatValue(pdata[0]["mp"])
+				if err != nil {
+					return results, err
 				}
 				if results["price"].(float64) > price || results["price"] == 0 {
 					results["price"] = price
@@ -278,19 +273,9 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 		if len(pdata) > 0 {
 			if pdata[0]["mp"] != nil {
-				price := float64(0)
-				switch pdata[0]["mp"].(type) {
-				case int:
-					price = float64(pdata[0]["mp"].(int))
-				case int64:
-					price = float64(pdata[0]["mp"].(int64))
-				case float64:
-					price = pdata[0]["mp"].(float64)
-				case string:
-					price, err = strconv.ParseFloat(pdata[0]["mp"].(string), 64)
-					if err != nil {
-						return results, err
-					}
+				price, err := getFloatValue(pdata[0]["mp"])
+				if err != nil {
+					return results, err
 				}
 				if results["price"].(float64) > price || results["price"] == 0 {
 					results["price"] = price
