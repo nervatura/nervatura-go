@@ -477,15 +477,16 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	}
 
 	trows := 0
+	const whereKey = "@where_str"
 	for index := 0; index < len(results["sources"].([]IM)); index++ {
 		ds := results["sources"].([]IM)[index]
 		if _, found := results["where_str"].(IM)[ds["dataset"].(string)]; found {
-			ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@where_str", results["where_str"].(IM)[ds["dataset"].(string)].(string))
+			ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), whereKey, results["where_str"].(IM)[ds["dataset"].(string)].(string))
 		}
 		if _, found := results["where_str"].(IM)["nods"]; found {
-			ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@where_str", results["where_str"].(IM)["nods"].(string))
+			ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), whereKey, results["where_str"].(IM)["nods"].(string))
 		}
-		ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@where_str", "")
+		ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), whereKey, "")
 		params := make([]interface{}, 0)
 		results["datarows"].(IM)[ds["dataset"].(string)], err = nstore.ds.QuerySQL(ds["sqlstr"].(string), params, nil)
 		if err != nil {
