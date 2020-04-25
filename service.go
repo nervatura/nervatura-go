@@ -528,7 +528,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 						if _, found := template[key].(IM)["sheetName"]; found && GetIType(template[key].(IM)["sheetName"]) == "string" {
 							sname = template[key].(IM)["sheetName"].(string)
 						}
-						if _, found := template[key].(IM)["columns"]; found && GetIType(template[key].(IM)["columns"]) == "[]interface{}" {
+						if _, found := template[key].(IM)["columns"]; found && GetIType(template[key].(IM)["columns"]) == IList {
 							columns = template[key].(IM)["columns"].(IL)
 						}
 					} else {
@@ -691,7 +691,7 @@ func (nstore *NervaStore) sendEmail(options IM) (results IM, err error) {
 			e.From = options["email"].(IM)["from"].(string)
 		}
 	}
-	if _, found := options["email"].(IM)["recipients"]; found && GetIType(options["email"].(IM)["recipients"]) == "[]interface{}" {
+	if _, found := options["email"].(IM)["recipients"]; found && GetIType(options["email"].(IM)["recipients"]) == IList {
 		recipients := options["email"].(IM)["recipients"].([]interface{})
 		for index := 0; index < len(recipients); index++ {
 			if _, found := recipients[index].(IM)["email"]; found && GetIType(recipients[index].(IM)["email"]) == "string" {
@@ -709,7 +709,7 @@ func (nstore *NervaStore) sendEmail(options IM) (results IM, err error) {
 		e.HTML = []byte(options["email"].(IM)["html"].(string))
 	}
 
-	if _, found := options["email"].(IM)["attachments"]; found && GetIType(options["email"].(IM)["attachments"]) == "[]interface{}" {
+	if _, found := options["email"].(IM)["attachments"]; found && GetIType(options["email"].(IM)["attachments"]) == IList {
 		attachments := options["email"].(IM)["attachments"].([]interface{})
 		for index := 0; index < len(attachments); index++ {
 			attachment := attachments[index].(IM)

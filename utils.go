@@ -61,7 +61,7 @@ func GetIType(value interface{}) string {
 	case []map[string]interface{}:
 		return "[]map[string]interface{}"
 	case []interface{}:
-		return "[]interface{}"
+		return IList
 	case []Filter:
 		return "[]Filter"
 	}

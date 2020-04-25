@@ -1166,7 +1166,7 @@ func (api *API) APIView(options []IM) (results IM, err error) {
 		if _, found := options[index]["text"]; !found || GetIType(options[index]["text"]) != "string" {
 			return results, errors.New(GetMessage("missing_required_field") + ": text")
 		}
-		if _, found := options[index]["values"]; !found || GetIType(options[index]["values"]) != "[]interface{}" {
+		if _, found := options[index]["values"]; !found || GetIType(options[index]["values"]) != IList {
 			return results, errors.New(GetMessage("missing_required_field") + ": values")
 		}
 		result, err := api.NStore.ds.QuerySQL(
@@ -1411,7 +1411,7 @@ func (api *API) APIPost(nervatype string, data []IM) (results []int, err error) 
 								info["numberkey"] = key
 								info["step"] = true
 								info["insert_key"] = false
-							} else if GetIType(value) == "[]interface{}" {
+							} else if GetIType(value) == IList {
 								info["reftype"] = "numberdef"
 								if len(value.(IL)) > 1 {
 									info["numberkey"] = value.(IL)[1]

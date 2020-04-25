@@ -314,7 +314,7 @@ Example:
 func (npi *Npi) LoadDataset(options IM) (IM, error) {
 	results := IM{"data": []IM{}}
 
-	if _, found := options["dataSetInfo"]; !found || GetIType(options["dataSetInfo"]) != "[]interface{}" {
+	if _, found := options["dataSetInfo"]; !found || GetIType(options["dataSetInfo"]) != IList {
 		return results, errors.New(GetMessage("missing_required_field") + ": dataSetInfo")
 	}
 
@@ -358,7 +358,7 @@ Example:
 func (npi *Npi) UpdateRecordset(options IM) (results IM, err error) {
 	results = IM{"data": []IM{}}
 
-	if _, found := options["recordSet"]; !found || GetIType(options["recordSet"]) != "[]interface{}" {
+	if _, found := options["recordSet"]; !found || GetIType(options["recordSet"]) != IList {
 		return results, errors.New(GetMessage("missing_required_field") + ": recordSet")
 	}
 	if _, found := options["method"]; !found || GetIType(options["method"]) != "string" {
@@ -432,7 +432,7 @@ Example:
 func (npi *Npi) SaveDataset(options IM) (results IM, err error) {
 	results = IM{"data": []IM{}}
 
-	if _, found := options["dataSetInfo"]; !found || GetIType(options["dataSetInfo"]) != "[]interface{}" {
+	if _, found := options["dataSetInfo"]; !found || GetIType(options["dataSetInfo"]) != IList {
 		return results, errors.New(GetMessage("missing_required_field") + ": dataSetInfo")
 	}
 
@@ -466,7 +466,7 @@ func (npi *Npi) SaveDataset(options IM) (results IM, err error) {
 		info := options["dataSetInfo"].([]interface{})[index].(IM)
 		switch info["updateType"] {
 		case "update":
-			if _, found := info["recordSet"]; found && GetIType(info["recordSet"]) != "[]interface{}" {
+			if _, found := info["recordSet"]; found && GetIType(info["recordSet"]) != IList {
 				for index := 0; index < len(options["recordSet"].([]interface{})); index++ {
 					params := IM{
 						"trans":  trans,
@@ -481,7 +481,7 @@ func (npi *Npi) SaveDataset(options IM) (results IM, err error) {
 			}
 
 		case "delete":
-			if _, found := info["recordSet"]; found && GetIType(info["recordSet"]) != "[]interface{}" {
+			if _, found := info["recordSet"]; found && GetIType(info["recordSet"]) != IList {
 				for index := 0; index < len(options["recordSet"].([]interface{})); index++ {
 					params := IM{
 						"trans":  trans,

@@ -765,7 +765,7 @@ func (ds *SQLDriver) QueryParams(options IM, trans interface{}) ([]IM, error) {
 	if _, found := options["orderStr"]; found && ntura.GetIType(options["orderStr"]) == "string" {
 		orderStr = options["orderStr"].(string)
 	}
-	if _, found := options["paramList"]; found && ntura.GetIType(options["paramList"]) == "[]interface{}" {
+	if _, found := options["paramList"]; found && ntura.GetIType(options["paramList"]) == IList {
 		whereStr, havingStr, sqlString = setParamList(options["paramList"].([]interface{}), whereStr, havingStr, sqlString)
 	}
 
