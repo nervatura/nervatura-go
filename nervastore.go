@@ -1070,16 +1070,8 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				return nil, errors.New(GetMessage("invalid_refnumber"))
 			}
 
-		case "ui_menufields":
+		case "ui_menufields", "ui_reportfields":
 			//menukey~fieldname
-			if len(strings.Split(infoData["refnumber"].(string), "~")) > 1 {
-				infoData["fieldname"] = strings.Split(infoData["refnumber"].(string), "~")[1]
-				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
-			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
-			}
-
-		case "ui_reportfields":
 			//reportkey~fieldname
 			if len(strings.Split(infoData["refnumber"].(string), "~")) > 1 {
 				infoData["fieldname"] = strings.Split(infoData["refnumber"].(string), "~")[1]
