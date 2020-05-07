@@ -15,7 +15,7 @@ func getAPI() *nt.API {
 func getLogin() (string, *nt.API, error) {
 	api := getAPI()
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	token, err := api.AuthUserLogin(options)
+	token, _, err := api.AuthUserLogin(options)
 	return token, api, err
 }
 
@@ -29,7 +29,7 @@ func TestDatabaseCreate(t *testing.T) {
 
 func TestApiAuthUserLogin(t *testing.T) {
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, err := getAPI().AuthUserLogin(options)
+	_, _, err := getAPI().AuthUserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}

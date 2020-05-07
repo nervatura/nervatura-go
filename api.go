@@ -266,7 +266,7 @@ Returns a access token and the type of database.
     "database": "alias_name",
     "username": "username",
     "password": "password"}
-  token, err := getAPI().AuthUserLogin(options)
+  token, engine, err := getAPI().AuthUserLogin(options)
 
 */
 func (api *API) AuthUserLogin(options IM) (string, string, error) {

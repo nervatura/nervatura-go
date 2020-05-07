@@ -465,27 +465,12 @@ func (npi *Npi) SaveDataset(options IM) (results IM, err error) {
 	for index := 0; index < len(options["dataSetInfo"].([]interface{})); index++ {
 		info := options["dataSetInfo"].([]interface{})[index].(IM)
 		switch info["updateType"] {
-		case "update":
+		case "update", "delete":
 			if _, found := info["recordSet"]; found && GetIType(info["recordSet"]) != IList {
 				for index := 0; index < len(options["recordSet"].([]interface{})); index++ {
 					params := IM{
 						"trans":  trans,
-						"method": "update",
-						"record": info["recordSet"].([]interface{})[index]}
-					result, err := npi.SetData(params)
-					if err != nil {
-						return results, err
-					}
-					info["recordSet"].([]interface{})[index] = result["data"].(IM)
-				}
-			}
-
-		case "delete":
-			if _, found := info["recordSet"]; found && GetIType(info["recordSet"]) != IList {
-				for index := 0; index < len(options["recordSet"].([]interface{})); index++ {
-					params := IM{
-						"trans":  trans,
-						"method": "delete",
+						"method": info["updateType"],
 						"record": info["recordSet"].([]interface{})[index]}
 					result, err := npi.SetData(params)
 					if err != nil {

@@ -56,6 +56,7 @@ type SM = map[string]string
 //IL is a []interface{} type short alias
 type IL = []interface{}
 
+//IList is a []interface{} string const
 const IList = "[]interface{}"
 
 //SL is a []string type short alias
