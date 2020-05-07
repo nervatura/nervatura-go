@@ -19,11 +19,11 @@ func (app *App) apiAuthLogin(c echo.Context) error {
 	if nstore == nil {
 		return echo.ErrUnauthorized
 	}
-	tokenStr, err := (&ntura.API{NStore: nstore}).AuthUserLogin(data)
+	tokenStr, engine, err := (&ntura.API{NStore: nstore}).AuthUserLogin(data)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, ntura.SM{"code": "400", "message": err.Error()})
 	}
-	return c.JSON(http.StatusOK, ntura.SM{"token": tokenStr})
+	return c.JSON(http.StatusOK, ntura.SM{"token": tokenStr, "engine": engine})
 }
 
 func (app *App) apiAuthPassword(c echo.Context) error {

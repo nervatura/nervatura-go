@@ -41,7 +41,7 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 		login = options["login"].(IM)
 	}
 
-	tokenString, err := (&API{NStore: npi.NStore}).AuthUserLogin(login)
+	tokenString, engine, err := (&API{NStore: npi.NStore}).AuthUserLogin(login)
 	if err != nil {
 		return IM{"valid": false, "message": err.Error()}, err
 	}
@@ -49,7 +49,7 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 		"valid":    true,
 		"employee": npi.NStore.User,
 		"token":    SM{"token": tokenString},
-		"engine":   npi.NStore.ds.Connection().Engine,
+		"engine":   engine,
 	}
 
 	groups, err := npi.NStore.GetGroups(IM{

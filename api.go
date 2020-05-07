@@ -260,7 +260,7 @@ func (api *API) AuthPassword(options IM) error {
 /*
 AuthUserLogin - database user login
 
-Returns a access token.
+Returns a access token and the type of database.
 
   options := map[string]interface{}{
     "database": "alias_name",
@@ -269,11 +269,11 @@ Returns a access token.
   token, err := getAPI().AuthUserLogin(options)
 
 */
-func (api *API) AuthUserLogin(options IM) (string, error) {
+func (api *API) AuthUserLogin(options IM) (string, string, error) {
 
 	if _, found := options["database"]; !found {
 		if _, found := api.NStore.settings.Alias["default"]; !found {
-			return "", errors.New(GetMessage("missing_database"))
+			return "", "", errors.New(GetMessage("missing_database"))
 		}
 		options["database"] = api.NStore.settings.Alias["default"]
 	}
@@ -284,7 +284,7 @@ func (api *API) AuthUserLogin(options IM) (string, error) {
 
 	err := api.authUser(options)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	refname := "employee" + strconv.Itoa(api.NStore.User["id"].(int))
@@ -294,22 +294,23 @@ func (api *API) AuthUserLogin(options IM) (string, error) {
 	refname = getMD5Hash(refname)
 	hash, err := api.getHashvalue(refname)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if password != "" && hash != "" {
 		match, err := argon2id.ComparePasswordAndHash(password, hash)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		if match == false {
-			return "", errors.New(GetMessage("wrong_password"))
+			return "", "", errors.New(GetMessage("wrong_password"))
 		}
 	} else if password != hash {
-		return "", errors.New(GetMessage("wrong_password"))
+		return "", "", errors.New(GetMessage("wrong_password"))
 	}
 
-	return api.AuthToken()
+	token, err := api.AuthToken()
+	return token, api.NStore.ds.Connection().Engine, err
 }
 
 /*
