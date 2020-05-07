@@ -379,8 +379,16 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	var err error
 	logData := options["logData"].([]SM)
 	data := demoData()
+	type item struct {
+		section, datatype string
+		data              []IM
+	}
 
-	writeLog := func(section, datatype string, result []int) {
+	postData := func(pdata item) error {
+		result, err := api.APIPost(pdata.datatype, pdata.data)
+		if err != nil {
+			return err
+		}
 		resultStr := ""
 		for index := 0; index < len(result); index++ {
 			resultStr += "," + strconv.Itoa(result[index])
@@ -388,240 +396,94 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		log := SM{
 			"stamp":    time.Now().Format(TimeLayout),
 			"state":    "demo",
-			"datatype": datatype,
+			"datatype": pdata.datatype,
 			"result":   resultStr[1:],
 		}
-		if section != "" {
-			log["section"] = section
+		if pdata.section != "" {
+			log["section"] = pdata.section
 		}
 		logData = append(logData, log)
+		return nil
 	}
 
-	//create 3 departments and 3 eventgroups
-	result, err := api.APIPost("groups", data["groups"].([]IM))
-	if err != nil {
-		return logData, err
+	items := []item{
+		//create 3 departments and 3 eventgroups
+		item{section: "", datatype: "groups", data: data["groups"].([]IM)},
+		//customer
+		//-> def. 4 customer additional data (float,date,valuelist,customer types),
+		//-> create 3 customers,
+		//-> and more create and link to contacts, addresses and events
+		item{section: "customer", datatype: "deffield", data: data["customer"].(IM)["deffield"].([]IM)},
+		item{section: "customer", datatype: "customer", data: data["customer"].(IM)["customer"].([]IM)},
+		item{section: "customer", datatype: "address", data: data["customer"].(IM)["address"].([]IM)},
+		item{section: "customer", datatype: "contact", data: data["customer"].(IM)["contact"].([]IM)},
+		item{section: "customer", datatype: "event", data: data["customer"].(IM)["event"].([]IM)},
+		//employee
+		//-> def. 1 employee additional data (integer type),
+		//->create 1 employee,
+		//->and more create and link to contact, address and event
+		item{section: "employee", datatype: "deffield", data: data["employee"].(IM)["deffield"].([]IM)},
+		item{section: "employee", datatype: "employee", data: data["employee"].(IM)["employee"].([]IM)},
+		item{section: "employee", datatype: "address", data: data["employee"].(IM)["address"].([]IM)},
+		item{section: "employee", datatype: "contact", data: data["employee"].(IM)["contact"].([]IM)},
+		item{section: "employee", datatype: "event", data: data["employee"].(IM)["event"].([]IM)},
+		//product
+		//-> def. 3 product additional data (product,integer and valulist types),
+		//->create 13 products,
+		//->and more create and link to barcodes, events, prices, additional data
+		item{section: "product", datatype: "deffield", data: data["product"].(IM)["deffield"].([]IM)},
+		item{section: "product", datatype: "product", data: data["product"].(IM)["product"].([]IM)},
+		item{section: "product", datatype: "barcode", data: data["product"].(IM)["barcode"].([]IM)},
+		item{section: "product", datatype: "price", data: data["product"].(IM)["price"].([]IM)},
+		item{section: "product", datatype: "event", data: data["product"].(IM)["event"].([]IM)},
+		//project
+		//-> def. 2 project additional data,
+		//->create 1 project,
+		//->and more create and link to contact, address and event
+		item{section: "project", datatype: "deffield", data: data["project"].(IM)["deffield"].([]IM)},
+		item{section: "project", datatype: "project", data: data["project"].(IM)["project"].([]IM)},
+		item{section: "project", datatype: "address", data: data["project"].(IM)["address"].([]IM)},
+		item{section: "project", datatype: "contact", data: data["project"].(IM)["contact"].([]IM)},
+		item{section: "project", datatype: "event", data: data["project"].(IM)["event"].([]IM)},
+		//tool
+		//-> def. 2 tool additional data,
+		//->create 3 tools,
+		//->and more create and link to event and additional data
+		item{section: "tool", datatype: "deffield", data: data["tool"].(IM)["deffield"].([]IM)},
+		item{section: "tool", datatype: "tool", data: data["tool"].(IM)["tool"].([]IM)},
+		item{section: "tool", datatype: "event", data: data["tool"].(IM)["event"].([]IM)},
+		//create +1 warehouse
+		item{section: "", datatype: "place", data: data["place"].([]IM)},
+		//documents
+		//offer, order, invoice, worksheet, rent
+		item{section: "document(offer,order,invoice,rent,worksheet)",
+			datatype: "trans", data: data["trans_item"].(IM)["trans"].([]IM)},
+		item{section: "", datatype: "item", data: data["trans_item"].(IM)["item"].([]IM)},
+		item{section: "", datatype: "link", data: data["trans_item"].(IM)["link"].([]IM)},
+		//payments
+		//bank and petty cash
+		item{section: "payment(bank,petty cash)",
+			datatype: "trans", data: data["trans_payment"].(IM)["trans"].([]IM)},
+		item{section: "", datatype: "payment", data: data["trans_payment"].(IM)["payment"].([]IM)},
+		item{section: "", datatype: "link", data: data["trans_payment"].(IM)["link"].([]IM)},
+		//stock control
+		//tool movement (for employee)
+		//create delivery,stock transfer,correction
+		//formula and production
+		item{section: "pstock control(tool movement,delivery,stock transfer,correction,formula,production)",
+			datatype: "trans", data: data["trans_movement"].(IM)["trans"].([]IM)},
+		item{section: "", datatype: "movement", data: data["trans_movement"].(IM)["movement"].([]IM)},
+		item{section: "", datatype: "link", data: data["trans_movement"].(IM)["link"].([]IM)},
+		//sample menus and menufields
+		item{section: "sample menus", datatype: "ui_menu", data: data["menu"].(IM)["ui_menu"].([]IM)},
+		item{section: "", datatype: "ui_menufields", data: data["menu"].(IM)["ui_menufields"].([]IM)},
 	}
-	writeLog("", "groups", result)
-
-	//customer
-	//-> def. 4 customer additional data (float,date,valuelist,customer types),
-	//-> create 3 customers,
-	//-> and more create and link to contacts, addresses and events
-	result, err = api.APIPost("deffield", data["customer"].(IM)["deffield"].([]IM))
-	if err != nil {
-		return logData, err
+	for _, item := range items {
+		err = postData(item)
+		if err != nil {
+			return logData, err
+		}
 	}
-	writeLog("customer", "deffield", result)
-
-	result, err = api.APIPost("customer", data["customer"].(IM)["customer"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("customer", "customer", result)
-
-	result, err = api.APIPost("address", data["customer"].(IM)["address"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("customer", "address", result)
-
-	result, err = api.APIPost("contact", data["customer"].(IM)["contact"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("customer", "contact", result)
-
-	result, err = api.APIPost("event", data["customer"].(IM)["event"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("customer", "event", result)
-
-	//employee
-	//-> def. 1 employee additional data (integer type),
-	//->create 1 employee,
-	//->and more create and link to contact, address and event
-	result, err = api.APIPost("deffield", data["employee"].(IM)["deffield"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("employee", "deffield", result)
-	result, err = api.APIPost("employee", data["employee"].(IM)["employee"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("employee", "employee", result)
-	result, err = api.APIPost("address", data["employee"].(IM)["address"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("employee", "address", result)
-	result, err = api.APIPost("contact", data["employee"].(IM)["contact"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("employee", "contact", result)
-	result, err = api.APIPost("event", data["employee"].(IM)["event"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("employee", "event", result)
-
-	//product
-	//-> def. 3 product additional data (product,integer and valulist types),
-	//->create 13 products,
-	//->and more create and link to barcodes, events, prices, additional data
-	result, err = api.APIPost("deffield", data["product"].(IM)["deffield"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("product", "deffield", result)
-	result, err = api.APIPost("product", data["product"].(IM)["product"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("product", "product", result)
-	result, err = api.APIPost("barcode", data["product"].(IM)["barcode"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("product", "barcode", result)
-	result, err = api.APIPost("price", data["product"].(IM)["price"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("product", "price", result)
-	result, err = api.APIPost("event", data["product"].(IM)["event"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("product", "event", result)
-
-	//project
-	//-> def. 2 project additional data,
-	//->create 1 project,
-	//->and more create and link to contact, address and event
-	result, err = api.APIPost("deffield", data["project"].(IM)["deffield"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("project", "deffield", result)
-	result, err = api.APIPost("project", data["project"].(IM)["project"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("project", "project", result)
-	result, err = api.APIPost("address", data["project"].(IM)["address"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("project", "address", result)
-	result, err = api.APIPost("contact", data["project"].(IM)["contact"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("project", "contact", result)
-	result, err = api.APIPost("event", data["project"].(IM)["event"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("project", "event", result)
-
-	//tool
-	//-> def. 2 tool additional data,
-	//->create 3 tools,
-	//->and more create and link to event and additional data
-	result, err = api.APIPost("deffield", data["tool"].(IM)["deffield"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("tool", "deffield", result)
-	result, err = api.APIPost("tool", data["tool"].(IM)["tool"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("tool", "tool", result)
-	result, err = api.APIPost("event", data["tool"].(IM)["event"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("tool", "event", result)
-
-	//create +1 warehouse
-	result, err = api.APIPost("place", data["place"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "place", result)
-
-	//documents
-	//offer, order, invoice, worksheet, rent
-	result, err = api.APIPost("trans", data["trans_item"].(IM)["trans"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("document(offer,order,invoice,rent,worksheet)", "trans", result)
-	result, err = api.APIPost("item", data["trans_item"].(IM)["item"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "item", result)
-	result, err = api.APIPost("link", data["trans_item"].(IM)["link"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "link", result)
-
-	//payments
-	//bank and petty cash
-	result, err = api.APIPost("trans", data["trans_payment"].(IM)["trans"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("payment(bank,petty cash)", "trans", result)
-	result, err = api.APIPost("payment", data["trans_payment"].(IM)["payment"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "payment", result)
-	result, err = api.APIPost("link", data["trans_payment"].(IM)["link"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "link", result)
-
-	//stock control
-	//tool movement (for employee)
-	//create delivery,stock transfer,correction
-	//formula and production
-	result, err = api.APIPost("trans", data["trans_movement"].(IM)["trans"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("stock control(tool movement,delivery,stock transfer,correction,formula,production)", "trans", result)
-	result, err = api.APIPost("movement", data["trans_movement"].(IM)["movement"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "movement", result)
-	result, err = api.APIPost("link", data["trans_movement"].(IM)["link"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "link", result)
-
-	//sample menus and menufields
-	result, err = api.APIPost("ui_menu", data["menu"].(IM)["ui_menu"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("sample menus", "ui_menu", result)
-	result, err = api.APIPost("ui_menufields", data["menu"].(IM)["ui_menufields"].([]IM))
-	if err != nil {
-		return logData, err
-	}
-	writeLog("", "ui_menufields", result)
 
 	//load general reports and other templates
 	reports, err := api.ReportList(options)
