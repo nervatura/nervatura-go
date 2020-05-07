@@ -380,21 +380,29 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	logData := options["logData"].([]SM)
 	data := demoData()
 
+	writeLog := func(section, datatype string, result []int) {
+		resultStr := ""
+		for index := 0; index < len(result); index++ {
+			resultStr += "," + strconv.Itoa(result[index])
+		}
+		log := SM{
+			"stamp":    time.Now().Format(TimeLayout),
+			"state":    "demo",
+			"datatype": datatype,
+			"result":   resultStr[1:],
+		}
+		if section != "" {
+			log["section"] = section
+		}
+		logData = append(logData, log)
+	}
+
 	//create 3 departments and 3 eventgroups
 	result, err := api.APIPost("groups", data["groups"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr := ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "groups",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "groups", result)
 
 	//customer
 	//-> def. 4 customer additional data (float,date,valuelist,customer types),
@@ -404,81 +412,31 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "customer",
-		"datatype": "deffield",
-		"result":   resultStr[1:],
-	})
+	writeLog("customer", "deffield", result)
 
 	result, err = api.APIPost("customer", data["customer"].(IM)["customer"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "customer",
-		"datatype": "customer",
-		"result":   resultStr[1:],
-	})
+	writeLog("customer", "customer", result)
 
 	result, err = api.APIPost("address", data["customer"].(IM)["address"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "customer",
-		"datatype": "address",
-		"result":   resultStr[1:],
-	})
+	writeLog("customer", "address", result)
 
 	result, err = api.APIPost("contact", data["customer"].(IM)["contact"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "customer",
-		"datatype": "contact",
-		"result":   resultStr[1:],
-	})
+	writeLog("customer", "contact", result)
 
 	result, err = api.APIPost("event", data["customer"].(IM)["event"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "customer",
-		"datatype": "event",
-		"result":   resultStr[1:],
-	})
+	writeLog("customer", "event", result)
 
 	//employee
 	//-> def. 1 employee additional data (integer type),
@@ -488,77 +446,27 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "employee",
-		"datatype": "deffield",
-		"result":   resultStr[1:],
-	})
+	writeLog("employee", "deffield", result)
 	result, err = api.APIPost("employee", data["employee"].(IM)["employee"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "employee",
-		"datatype": "employee",
-		"result":   resultStr[1:],
-	})
+	writeLog("employee", "employee", result)
 	result, err = api.APIPost("address", data["employee"].(IM)["address"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "employee",
-		"datatype": "address",
-		"result":   resultStr[1:],
-	})
+	writeLog("employee", "address", result)
 	result, err = api.APIPost("contact", data["employee"].(IM)["contact"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "employee",
-		"datatype": "contact",
-		"result":   resultStr[1:],
-	})
+	writeLog("employee", "contact", result)
 	result, err = api.APIPost("event", data["employee"].(IM)["event"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "employee",
-		"datatype": "event",
-		"result":   resultStr[1:],
-	})
+	writeLog("employee", "event", result)
 
 	//product
 	//-> def. 3 product additional data (product,integer and valulist types),
@@ -568,77 +476,27 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "product",
-		"datatype": "deffield",
-		"result":   resultStr[1:],
-	})
+	writeLog("product", "deffield", result)
 	result, err = api.APIPost("product", data["product"].(IM)["product"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "product",
-		"datatype": "product",
-		"result":   resultStr[1:],
-	})
+	writeLog("product", "product", result)
 	result, err = api.APIPost("barcode", data["product"].(IM)["barcode"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "product",
-		"datatype": "barcode",
-		"result":   resultStr[1:],
-	})
+	writeLog("product", "barcode", result)
 	result, err = api.APIPost("price", data["product"].(IM)["price"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "product",
-		"datatype": "price",
-		"result":   resultStr[1:],
-	})
+	writeLog("product", "price", result)
 	result, err = api.APIPost("event", data["product"].(IM)["event"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "product",
-		"datatype": "event",
-		"result":   resultStr[1:],
-	})
+	writeLog("product", "event", result)
 
 	//project
 	//-> def. 2 project additional data,
@@ -648,77 +506,27 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "project",
-		"datatype": "deffield",
-		"result":   resultStr[1:],
-	})
+	writeLog("project", "deffield", result)
 	result, err = api.APIPost("project", data["project"].(IM)["project"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "project",
-		"datatype": "project",
-		"result":   resultStr[1:],
-	})
+	writeLog("project", "project", result)
 	result, err = api.APIPost("address", data["project"].(IM)["address"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "project",
-		"datatype": "address",
-		"result":   resultStr[1:],
-	})
+	writeLog("project", "address", result)
 	result, err = api.APIPost("contact", data["project"].(IM)["contact"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "project",
-		"datatype": "contact",
-		"result":   resultStr[1:],
-	})
+	writeLog("project", "contact", result)
 	result, err = api.APIPost("event", data["project"].(IM)["event"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "project",
-		"datatype": "event",
-		"result":   resultStr[1:],
-	})
+	writeLog("project", "event", result)
 
 	//tool
 	//-> def. 2 tool additional data,
@@ -728,63 +536,24 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "tool",
-		"datatype": "deffield",
-		"result":   resultStr[1:],
-	})
+	writeLog("tool", "deffield", result)
 	result, err = api.APIPost("tool", data["tool"].(IM)["tool"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "tool",
-		"datatype": "tool",
-		"result":   resultStr[1:],
-	})
+	writeLog("tool", "tool", result)
 	result, err = api.APIPost("event", data["tool"].(IM)["event"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "tool",
-		"datatype": "event",
-		"result":   resultStr[1:],
-	})
+	writeLog("tool", "event", result)
 
 	//create +1 warehouse
 	result, err = api.APIPost("place", data["place"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "place",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "place", result)
 
 	//documents
 	//offer, order, invoice, worksheet, rent
@@ -792,45 +561,17 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "document(offer,order,invoice,rent,worksheet)",
-		"datatype": "trans",
-		"result":   resultStr[1:],
-	})
+	writeLog("document(offer,order,invoice,rent,worksheet)", "trans", result)
 	result, err = api.APIPost("item", data["trans_item"].(IM)["item"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "item",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "item", result)
 	result, err = api.APIPost("link", data["trans_item"].(IM)["link"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "link",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "link", result)
 
 	//payments
 	//bank and petty cash
@@ -838,45 +579,17 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "payment(bank,petty cash)",
-		"datatype": "trans",
-		"result":   resultStr[1:],
-	})
+	writeLog("payment(bank,petty cash)", "trans", result)
 	result, err = api.APIPost("payment", data["trans_payment"].(IM)["payment"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "payment",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "payment", result)
 	result, err = api.APIPost("link", data["trans_payment"].(IM)["link"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "link",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "link", result)
 
 	//stock control
 	//tool movement (for employee)
@@ -886,83 +599,36 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "stock control(tool movement,delivery,stock transfer,correction,formula,production)",
-		"datatype": "trans",
-		"result":   resultStr[1:],
-	})
+	writeLog("stock control(tool movement,delivery,stock transfer,correction,formula,production)", "trans", result)
 	result, err = api.APIPost("movement", data["trans_movement"].(IM)["movement"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "movement",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "movement", result)
 	result, err = api.APIPost("link", data["trans_movement"].(IM)["link"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "link",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "link", result)
 
 	//sample menus and menufields
 	result, err = api.APIPost("ui_menu", data["menu"].(IM)["ui_menu"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"section":  "sample menus",
-		"datatype": "ui_menu",
-		"result":   resultStr[1:],
-	})
+	writeLog("sample menus", "ui_menu", result)
 	result, err = api.APIPost("ui_menufields", data["menu"].(IM)["ui_menufields"].([]IM))
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
-	for index := 0; index < len(result); index++ {
-		resultStr += "," + strconv.Itoa(result[index])
-	}
-	logData = append(logData, SM{
-		"stamp":    time.Now().Format(TimeLayout),
-		"state":    "demo",
-		"datatype": "ui_menufields",
-		"result":   resultStr[1:],
-	})
+	writeLog("", "ui_menufields", result)
 
 	//load general reports and other templates
 	reports, err := api.ReportList(options)
 	if err != nil {
 		return logData, err
 	}
-	resultStr = ""
+	resultStr := ""
 	for index := 0; index < len(reports); index++ {
 		params := IM{"reportkey": reports[index]["reportkey"]}
 		if _, found := options["report_dir"]; found {
