@@ -1,0 +1,54 @@
+---
+# Environment variables prefix: NT (prefix + "_" + the key name)
+# e.q. NT_API_KEY, NT_ALIAS_DEMO
+lang: en
+report_dir: ../../report-templates/templates
+start_page: default
+
+api_key: APISECRETKEY
+token_iss: nervatura
+token_kid: 8BD0E02509482F58CEFD3C0ECD41FF0E
+token_key: TOKENSECRETKEY
+# JWT expiration time (hours)
+token_exp: 6
+jwk_x509: https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com
+hashtable: ref17890714
+
+# EMAIL SMTP SETTINGS:
+smtp:
+  host:
+  port: 465
+  secure: true
+  user:
+  password:
+
+# SQLDriver settings
+# Sets the maximum number of open connections to the database.
+# If n <= 0, then there is no limit on the number of open connections.
+# If this value is set, new queries will be blocked until a connection becomes available.
+# You’ll always want to set this value in production!
+# The maximum number of connections is based on database memory.
+sql_max_open_conns: 10
+# Sets the maximum number of connections in the idle connection pool
+# If n <= 0, no idle connections are retained.
+# You’ll want to set this value to be a fraction of the MaxConnections. 
+# Whether it’s 25%, 50% or 75% (or sometimes even 100%) will depend on your expected load patterns
+sql_max_idle_conns: 3
+# Sets the maximum amount of time a connection may be reused.
+# Configuration values are in minutes!
+# Expired connections may be closed lazily before reuse. If d <= 0, connections are reused forever.
+# You’ll want to set this if you’re also setting the max idle connections.
+sql_conn_max_lifetime: 15
+
+alias:
+  # Default value: single (permanent data connection) or multiple database usage (data connection on request)
+  # Value: a valid database alias name (e.q. demo) or empty (multiple database)
+  default: demo
+  # Database alias list
+  demo: sqlite3://file:data/demo.db?cache=shared&mode=rwc
+  test: sqlite3://file:test.db?cache=shared&mode=rwc
+  pgdemo: postgres://postgres:admin@localhost:5432/nervatura?sslmode=disable
+  mydemo: mysql://root:admin@tcp(localhost:3306)/nervatura?allowOldPasswords=true&allowCleartextPasswords=true
+  msdemo: mssql://sa:admin@localhost:1433/nervatura
+
+...

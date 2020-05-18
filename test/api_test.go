@@ -3,8 +3,8 @@ package test
 import (
 	"testing"
 
-	nt "github.com/nervatura/nervatura-go"
-	driver "github.com/nervatura/nervatura-go/driver"
+	driver "github.com/nervatura/nervatura-go/pkg/driver"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 )
 
 func getAPI() *nt.API {

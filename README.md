@@ -52,7 +52,7 @@ Later, to receive updates, run
 
     go get -u -v github.com/nervatura/nervatura-go/...
 
-Compile and run the demo/server/app.go file and open https://localhost:8080/
+Compile and run the cmd/main.go file and open https://localhost:8080/
 
 More golang examples: test/api_test.go, test/nervastore_test.go, test/npi_test.go
 
