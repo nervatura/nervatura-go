@@ -828,46 +828,33 @@ func (api *API) APIPost(nervatype string, data []IM) (results []int, err error) 
 			}
 			if !(fkeys && ftranstype && fcustomer) {
 				options := IM{"qkey": "post_transtype"}
+				options["transtype_id"] = nil
 				if _, found := data[index]["transtype"]; found && GetIType(data[index]["transtype"]) == "int" {
 					options["transtype_id"] = strconv.Itoa(data[index]["transtype"].(int))
-				} else {
-					options["transtype_id"] = nil
 				}
+				options["transtype_key"] = nil
 				if fkeys && ftranstype {
 					if GetIType(data[index]["keys"].(IM)["transtype"]) == "string" {
 						options["transtype_key"] = data[index]["keys"].(IM)["transtype"].(string)
-					} else {
-						options["transtype_key"] = nil
 					}
-				} else {
-					options["transtype_key"] = nil
 				}
+				options["customer_id"] = nil
 				if _, found := data[index]["customer_id"]; found {
 					if GetIType(data[index]["customer_id"]) == "int" {
 						options["customer_id"] = strconv.Itoa(data[index]["customer_id"].(int))
-					} else {
-						options["customer_id"] = nil
 					}
-				} else {
-					options["customer_id"] = nil
 				}
+				options["custnumber"] = nil
 				if fkeys && fcustomer {
 					if GetIType(data[index]["keys"].(IM)["customer_id"]) == "string" {
 						options["custnumber"] = data[index]["keys"].(IM)["customer_id"].(string)
-					} else {
-						options["custnumber"] = nil
 					}
-				} else {
-					options["custnumber"] = nil
 				}
+				options["trans_id"] = nil
 				if _, found := data[index]["id"]; found {
 					if GetIType(data[index]["id"]) == "int" {
 						options["trans_id"] = strconv.Itoa(data[index]["id"].(int))
-					} else {
-						options["trans_id"] = nil
 					}
-				} else {
-					options["trans_id"] = nil
 				}
 				info, err := api.NStore.ds.QueryKey(options, nil)
 				if err != nil {
