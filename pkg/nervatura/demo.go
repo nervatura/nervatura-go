@@ -19,7 +19,7 @@ func demoData() IM {
 					"keys": IM{"nervatype": "customer", "fieldtype": "float"}},
 				{"fieldname": "sample_customer_date", "description": "Sample date", "visible": 1,
 					"keys": IM{"nervatype": "customer", "fieldtype": "date"}},
-				{"fieldname": "sample_customer_valuelist", "description": "Sample valuelist", "valuelist": "blue~yellow~white~brown~red", "visible": 1,
+				{"fieldname": "sample_customer_valuelist", "description": "Sample valuelist", "valuelist": "blue|yellow|white|brown|red", "visible": 1,
 					"keys": IM{"nervatype": "customer", "fieldtype": "valuelist"}},
 				{"fieldname": "sample_customer_reference", "description": "Sample customer", "visible": 1,
 					"keys": IM{"nervatype": "customer", "fieldtype": "customer"}},
@@ -105,7 +105,7 @@ func demoData() IM {
 				{"fieldname": "sample_product_integer", "description": "Sample integer", "visible": 1,
 					"keys": IM{"nervatype": "product", "fieldtype": "integer"}},
 				{"fieldname": "sample_product_valuelist", "description": "Sample valuelist",
-					"valuelist": "easy~heavy", "visible": 1,
+					"valuelist": "easy|heavy", "visible": 1,
 					"keys": IM{"nervatype": "product", "fieldtype": "valuelist"}}},
 			"product": []IM{
 				{"partnumber": "DMPROD/00001", "description": "Big product", "unit": "piece", "webitem": 1,
@@ -174,7 +174,7 @@ func demoData() IM {
 		"project": IM{
 			"deffield": []IM{
 				{"fieldname": "sample_project_state", "description": "Status",
-					"valuelist": "10%~20%~30%~40%~50%~60%~70%~80%~90%~100%", "visible": 1,
+					"valuelist": "10%|20%|30%|40%|50%|60%|70%|80%|90%|100%", "visible": 1,
 					"keys": IM{"nervatype": "project", "fieldtype": "valuelist"}},
 				{"fieldname": "sample_project_leader", "description": "Coordinator", "visible": 1,
 					"keys": IM{"nervatype": "project", "fieldtype": "employee"}}},
@@ -199,7 +199,7 @@ func demoData() IM {
 				{"fieldname": "sample_tool_vin", "description": "Vehicle id.No.", "visible": 1,
 					"keys": IM{"nervatype": "tool", "fieldtype": "string"}},
 				{"fieldname": "sample_tool_color", "description": "Car colors",
-					"valuelist": "blue~yellow~white~brown~red", "visible": 1,
+					"valuelist": "blue|yellow|white|brown|red", "visible": 1,
 					"keys": IM{"nervatype": "tool", "fieldtype": "valuelist"}}},
 			"tool": []IM{
 				{"serial": "ABC-123", "description": "Company car 1.",
