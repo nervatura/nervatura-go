@@ -63,10 +63,10 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 	validator["groups"] = groups["all"]
 
 	if validator["employee"] != nil {
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"*"}, From: "ui_audit",
 			Filters: []Filter{
-				Filter{Field: "usergroup", Comp: "==",
+				{Field: "usergroup", Comp: "==",
 					Value: validator["employee"].(IM)["usergroup"]},
 			}}}
 		results, err := npi.NStore.ds.Query(query, nil)
@@ -76,13 +76,13 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 		}
 		validator["audit"] = results
 
-		query = []Query{Query{
+		query = []Query{{
 			Fields: []string{"ref_id_2"}, From: "link",
 			Filters: []Filter{
-				Filter{Field: "deleted", Comp: "==", Value: 0},
-				Filter{Field: "nervatype_1", Comp: "==",
+				{Field: "deleted", Comp: "==", Value: 0},
+				{Field: "nervatype_1", Comp: "==",
 					Value: groups["nervatype"].(IM)["groups"]},
-				Filter{Field: "nervatype_2", Comp: "==",
+				{Field: "nervatype_2", Comp: "==",
 					Value: groups["nervatype"].(IM)["groups"]},
 			}}}
 		results, err = npi.NStore.ds.Query(query, nil)
@@ -97,7 +97,7 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 		}
 	}
 
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: "ui_menu"}}
 	results, err := npi.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -106,7 +106,7 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 	}
 	validator["menucmd"] = results
 
-	query = []Query{Query{
+	query = []Query{{
 		Fields: []string{"*"}, From: "ui_menufields"}}
 	results, err = npi.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -115,11 +115,11 @@ func (npi *Npi) GetLogin(options IM) (IM, error) {
 	}
 	validator["menufields"] = results
 
-	query = []Query{Query{
+	query = []Query{{
 		Fields: []string{"value"}, From: "fieldvalue",
 		Filters: []Filter{
-			Filter{Field: "ref_id", Comp: "is", Value: "null"},
-			Filter{Field: "fieldname", Comp: "==", Value: "log_login"},
+			{Field: "ref_id", Comp: "is", Value: "null"},
+			{Field: "fieldname", Comp: "==", Value: "log_login"},
 		}}}
 	results, err = npi.NStore.ds.Query(query, nil)
 	if err != nil {

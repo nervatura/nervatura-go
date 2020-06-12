@@ -176,15 +176,15 @@ func (nstore *NervaStore) checkFieldvalueNervatype(value interface{}, fieldname,
 	switch value.(type) {
 	case int, int32, int64, float64:
 		query.Filters = []Filter{
-			Filter{Field: "id", Comp: "==", Value: value}}
+			{Field: "id", Comp: "==", Value: value}}
 	case string:
 		_, err := strconv.Atoi(value.(string))
 		if err == nil {
 			query.Filters = []Filter{
-				Filter{Field: "id", Comp: "==", Value: value}}
+				{Field: "id", Comp: "==", Value: value}}
 		} else {
 			query.Filters = []Filter{
-				Filter{Field: nstore.getTableKey(fieldtype), Comp: "like", Value: value}}
+				{Field: nstore.getTableKey(fieldtype), Comp: "like", Value: value}}
 		}
 	default:
 		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname)
@@ -267,21 +267,21 @@ func (nstore *NervaStore) insertLog(options IM) error {
 	}
 
 	if nstore.User != nil && nervatype != "log" && logstate != "" {
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"id", "groupname as fieldname", "groupvalue as value"},
 			From:   "groups", Filters: []Filter{
-				Filter{Field: "groupname", Comp: "==", Value: "logstate"},
-				Filter{Field: "groupvalue", Comp: "==", Value: logstate}}},
-			Query{
+				{Field: "groupname", Comp: "==", Value: "logstate"},
+				{Field: "groupvalue", Comp: "==", Value: logstate}}},
+			{
 				Fields: []string{"id", "fieldname", "value"},
 				From:   "fieldvalue", Filters: []Filter{
-					Filter{Field: "fieldname", Comp: "==", Value: "log_" + logstate},
-					Filter{Or: true, Field: "fieldname", Comp: "==", Value: "log_" + nervatype + "_" + logstate}}},
-			Query{
+					{Field: "fieldname", Comp: "==", Value: "log_" + logstate},
+					{Or: true, Field: "fieldname", Comp: "==", Value: "log_" + nervatype + "_" + logstate}}},
+			{
 				Fields: []string{"id", "groupname as fieldname", "groupvalue as value"},
 				From:   "groups", Filters: []Filter{
-					Filter{Field: "groupname", Comp: "==", Value: "nervatype"},
-					Filter{Field: "groupvalue", Comp: "==", Value: nervatype}}}}
+					{Field: "groupname", Comp: "==", Value: "nervatype"},
+					{Field: "groupvalue", Comp: "==", Value: nervatype}}}}
 		logdata, err := nstore.ds.Query(query, options["trans"])
 		if err != nil {
 			return err
@@ -419,9 +419,9 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 				return id, err
 			}
 		}
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"*"}, From: nervatype, Filters: []Filter{
-				Filter{Field: "id", Comp: "==", Value: id}}}}
+				{Field: "id", Comp: "==", Value: id}}}}
 		result, err = nstore.ds.Query(query, trans)
 		if err != nil {
 			return id, err
@@ -500,11 +500,11 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 
 	if len(checkValues["values"].(IM)) > 0 && validate {
 		//validate
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"g.id as id", "g.groupname as groupname", "g.groupvalue as groupvalue"},
 			From:   "groups g", Filters: []Filter{
-				Filter{Field: "g.deleted", Comp: "==", Value: 0}}},
-			Query{
+				{Field: "g.deleted", Comp: "==", Value: 0}}},
+			{
 				Fields: []string{"c.id as id", "'curr' as groupname", "c.curr as groupvalue"},
 				From:   "currency c"}}
 		result, err = nstore.ds.Query(query, trans)
@@ -1258,11 +1258,11 @@ func (nstore *NervaStore) DeleteData(options IM) (err error) {
 		logicalDelete = false
 	}
 	if logicalDelete {
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"value"},
 			From:   "fieldvalue", Filters: []Filter{
-				Filter{Field: "ref_id", Comp: "is", Value: "null"},
-				Filter{Field: "fieldname", Comp: "==", Value: "not_logical_delete"}}}}
+				{Field: "ref_id", Comp: "is", Value: "null"},
+				{Field: "fieldname", Comp: "==", Value: "not_logical_delete"}}}}
 		result, err := nstore.ds.Query(query, nil)
 		if err != nil {
 			return err
@@ -1678,7 +1678,7 @@ func (nstore *NervaStore) GetGroups(options IM) (IM, error) {
 
 	filters :=
 		[]Filter{
-			Filter{Field: "deleted", Comp: "==", Value: 0},
+			{Field: "deleted", Comp: "==", Value: 0},
 		}
 	if _, found := options["groupname"]; found {
 		switch options["groupname"].(type) {
@@ -1689,7 +1689,7 @@ func (nstore *NervaStore) GetGroups(options IM) (IM, error) {
 				Value: strings.Join(options["groupname"].([]string), ",")})
 		}
 	}
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: "groups",
 		Filters: filters}}
 	results, err := nstore.ds.Query(query, nil)
@@ -1733,7 +1733,7 @@ func (nstore *NervaStore) GetDatabaseSettings() (IM, error) {
 				settings["pattern"].(IM)[data] = []IM{}
 			}
 			if rows[index]["info"] == 1 {
-				settings["pattern"].(IM)[data] = append([]IM{IM{
+				settings["pattern"].(IM)[data] = append([]IM{{
 					"description": rows[index]["fieldname"], "notes": rows[index]["value"], "defpattern": false}},
 					settings["pattern"].(IM)[data].([]IM)...)
 			} else {

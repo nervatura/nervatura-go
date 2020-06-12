@@ -28,9 +28,9 @@ func (api *API) getHashvalue(refname string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: hashtable, Filters: []Filter{
-			Filter{Field: "refname", Comp: "==", Value: refname},
+			{Field: "refname", Comp: "==", Value: refname},
 		}}}
 	rows, err := api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -69,11 +69,11 @@ func (api *API) authUser(options IM) error {
 	if len(rows) > 0 {
 		api.NStore.User = rows[0]
 	} else {
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"*"}, From: "customer", Filters: []Filter{
-				Filter{Field: "inactive", Comp: "==", Value: 0},
-				Filter{Field: "deleted", Comp: "==", Value: 0},
-				Filter{Field: "custnumber", Comp: "==", Value: options["username"]}}}}
+				{Field: "inactive", Comp: "==", Value: 0},
+				{Field: "deleted", Comp: "==", Value: 0},
+				{Field: "custnumber", Comp: "==", Value: options["username"]}}}}
 		rows, err := api.NStore.ds.Query(query, nil)
 		if err != nil {
 			return err
@@ -224,18 +224,18 @@ func (api *API) AuthPassword(options IM) error {
 	if refname == "" {
 		var query []Query
 		if _, found := options["custnumber"]; found {
-			query = []Query{Query{
+			query = []Query{{
 				Fields: []string{"*"}, From: "customer", Filters: []Filter{
-					Filter{Field: "inactive", Comp: "==", Value: 0},
-					Filter{Field: "deleted", Comp: "==", Value: 0},
-					Filter{Field: "custnumber", Comp: "==", Value: options["custnumber"]},
+					{Field: "inactive", Comp: "==", Value: 0},
+					{Field: "deleted", Comp: "==", Value: 0},
+					{Field: "custnumber", Comp: "==", Value: options["custnumber"]},
 				}}}
 			refname = "customer"
 		} else {
-			query = []Query{Query{
+			query = []Query{{
 				Fields: []string{"*"}, From: "employee", Filters: []Filter{
-					Filter{Field: "deleted", Comp: "==", Value: 0},
-					Filter{Field: "username", Comp: "==", Value: options["username"]},
+					{Field: "deleted", Comp: "==", Value: 0},
+					{Field: "username", Comp: "==", Value: options["username"]},
 				}}}
 			refname = "employee"
 		}
@@ -408,75 +408,75 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 
 	items := []item{
 		//create 3 departments and 3 eventgroups
-		item{section: "", datatype: "groups", data: data["groups"].([]IM)},
+		{section: "", datatype: "groups", data: data["groups"].([]IM)},
 		//customer
 		//-> def. 4 customer additional data (float,date,valuelist,customer types),
 		//-> create 3 customers,
 		//-> and more create and link to contacts, addresses and events
-		item{section: "customer", datatype: "deffield", data: data["customer"].(IM)["deffield"].([]IM)},
-		item{section: "customer", datatype: "customer", data: data["customer"].(IM)["customer"].([]IM)},
-		item{section: "customer", datatype: "address", data: data["customer"].(IM)["address"].([]IM)},
-		item{section: "customer", datatype: "contact", data: data["customer"].(IM)["contact"].([]IM)},
-		item{section: "customer", datatype: "event", data: data["customer"].(IM)["event"].([]IM)},
+		{section: "customer", datatype: "deffield", data: data["customer"].(IM)["deffield"].([]IM)},
+		{section: "customer", datatype: "customer", data: data["customer"].(IM)["customer"].([]IM)},
+		{section: "customer", datatype: "address", data: data["customer"].(IM)["address"].([]IM)},
+		{section: "customer", datatype: "contact", data: data["customer"].(IM)["contact"].([]IM)},
+		{section: "customer", datatype: "event", data: data["customer"].(IM)["event"].([]IM)},
 		//employee
 		//-> def. 1 employee additional data (integer type),
 		//->create 1 employee,
 		//->and more create and link to contact, address and event
-		item{section: "employee", datatype: "deffield", data: data["employee"].(IM)["deffield"].([]IM)},
-		item{section: "employee", datatype: "employee", data: data["employee"].(IM)["employee"].([]IM)},
-		item{section: "employee", datatype: "address", data: data["employee"].(IM)["address"].([]IM)},
-		item{section: "employee", datatype: "contact", data: data["employee"].(IM)["contact"].([]IM)},
-		item{section: "employee", datatype: "event", data: data["employee"].(IM)["event"].([]IM)},
+		{section: "employee", datatype: "deffield", data: data["employee"].(IM)["deffield"].([]IM)},
+		{section: "employee", datatype: "employee", data: data["employee"].(IM)["employee"].([]IM)},
+		{section: "employee", datatype: "address", data: data["employee"].(IM)["address"].([]IM)},
+		{section: "employee", datatype: "contact", data: data["employee"].(IM)["contact"].([]IM)},
+		{section: "employee", datatype: "event", data: data["employee"].(IM)["event"].([]IM)},
 		//product
 		//-> def. 3 product additional data (product,integer and valulist types),
 		//->create 13 products,
 		//->and more create and link to barcodes, events, prices, additional data
-		item{section: "product", datatype: "deffield", data: data["product"].(IM)["deffield"].([]IM)},
-		item{section: "product", datatype: "product", data: data["product"].(IM)["product"].([]IM)},
-		item{section: "product", datatype: "barcode", data: data["product"].(IM)["barcode"].([]IM)},
-		item{section: "product", datatype: "price", data: data["product"].(IM)["price"].([]IM)},
-		item{section: "product", datatype: "event", data: data["product"].(IM)["event"].([]IM)},
+		{section: "product", datatype: "deffield", data: data["product"].(IM)["deffield"].([]IM)},
+		{section: "product", datatype: "product", data: data["product"].(IM)["product"].([]IM)},
+		{section: "product", datatype: "barcode", data: data["product"].(IM)["barcode"].([]IM)},
+		{section: "product", datatype: "price", data: data["product"].(IM)["price"].([]IM)},
+		{section: "product", datatype: "event", data: data["product"].(IM)["event"].([]IM)},
 		//project
 		//-> def. 2 project additional data,
 		//->create 1 project,
 		//->and more create and link to contact, address and event
-		item{section: "project", datatype: "deffield", data: data["project"].(IM)["deffield"].([]IM)},
-		item{section: "project", datatype: "project", data: data["project"].(IM)["project"].([]IM)},
-		item{section: "project", datatype: "address", data: data["project"].(IM)["address"].([]IM)},
-		item{section: "project", datatype: "contact", data: data["project"].(IM)["contact"].([]IM)},
-		item{section: "project", datatype: "event", data: data["project"].(IM)["event"].([]IM)},
+		{section: "project", datatype: "deffield", data: data["project"].(IM)["deffield"].([]IM)},
+		{section: "project", datatype: "project", data: data["project"].(IM)["project"].([]IM)},
+		{section: "project", datatype: "address", data: data["project"].(IM)["address"].([]IM)},
+		{section: "project", datatype: "contact", data: data["project"].(IM)["contact"].([]IM)},
+		{section: "project", datatype: "event", data: data["project"].(IM)["event"].([]IM)},
 		//tool
 		//-> def. 2 tool additional data,
 		//->create 3 tools,
 		//->and more create and link to event and additional data
-		item{section: "tool", datatype: "deffield", data: data["tool"].(IM)["deffield"].([]IM)},
-		item{section: "tool", datatype: "tool", data: data["tool"].(IM)["tool"].([]IM)},
-		item{section: "tool", datatype: "event", data: data["tool"].(IM)["event"].([]IM)},
+		{section: "tool", datatype: "deffield", data: data["tool"].(IM)["deffield"].([]IM)},
+		{section: "tool", datatype: "tool", data: data["tool"].(IM)["tool"].([]IM)},
+		{section: "tool", datatype: "event", data: data["tool"].(IM)["event"].([]IM)},
 		//create +1 warehouse
-		item{section: "", datatype: "place", data: data["place"].([]IM)},
+		{section: "", datatype: "place", data: data["place"].([]IM)},
 		//documents
 		//offer, order, invoice, worksheet, rent
-		item{section: "document(offer,order,invoice,rent,worksheet)",
+		{section: "document(offer,order,invoice,rent,worksheet)",
 			datatype: "trans", data: data["trans_item"].(IM)["trans"].([]IM)},
-		item{section: "", datatype: "item", data: data["trans_item"].(IM)["item"].([]IM)},
-		item{section: "", datatype: "link", data: data["trans_item"].(IM)["link"].([]IM)},
+		{section: "", datatype: "item", data: data["trans_item"].(IM)["item"].([]IM)},
+		{section: "", datatype: "link", data: data["trans_item"].(IM)["link"].([]IM)},
 		//payments
 		//bank and petty cash
-		item{section: "payment(bank,petty cash)",
+		{section: "payment(bank,petty cash)",
 			datatype: "trans", data: data["trans_payment"].(IM)["trans"].([]IM)},
-		item{section: "", datatype: "payment", data: data["trans_payment"].(IM)["payment"].([]IM)},
-		item{section: "", datatype: "link", data: data["trans_payment"].(IM)["link"].([]IM)},
+		{section: "", datatype: "payment", data: data["trans_payment"].(IM)["payment"].([]IM)},
+		{section: "", datatype: "link", data: data["trans_payment"].(IM)["link"].([]IM)},
 		//stock control
 		//tool movement (for employee)
 		//create delivery,stock transfer,correction
 		//formula and production
-		item{section: "pstock control(tool movement,delivery,stock transfer,correction,formula,production)",
+		{section: "pstock control(tool movement,delivery,stock transfer,correction,formula,production)",
 			datatype: "trans", data: data["trans_movement"].(IM)["trans"].([]IM)},
-		item{section: "", datatype: "movement", data: data["trans_movement"].(IM)["movement"].([]IM)},
-		item{section: "", datatype: "link", data: data["trans_movement"].(IM)["link"].([]IM)},
+		{section: "", datatype: "movement", data: data["trans_movement"].(IM)["movement"].([]IM)},
+		{section: "", datatype: "link", data: data["trans_movement"].(IM)["link"].([]IM)},
 		//sample menus and menufields
-		item{section: "sample menus", datatype: "ui_menu", data: data["menu"].(IM)["ui_menu"].([]IM)},
-		item{section: "", datatype: "ui_menufields", data: data["menu"].(IM)["ui_menufields"].([]IM)},
+		{section: "sample menus", datatype: "ui_menu", data: data["menu"].(IM)["ui_menu"].([]IM)},
+		{section: "", datatype: "ui_menufields", data: data["menu"].(IM)["ui_menufields"].([]IM)},
 	}
 	for _, item := range items {
 		err = postData(item)
@@ -582,9 +582,9 @@ func (api *API) APIGet(options IM) (results []IM, err error) {
 		}
 	}
 
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: nervatype, Filters: []Filter{
-			Filter{Field: "deleted", Comp: "==", Value: 0},
+			{Field: "deleted", Comp: "==", Value: 0},
 		}}}
 	if _, found := options["ids"]; found && GetIType(options["ids"]) == "string" {
 		query[0].Filters = append(query[0].Filters, Filter{Field: "id", Comp: "in", Value: options["ids"]})
@@ -1118,7 +1118,7 @@ Example:
 
 */
 func (api *API) ReportList(options IM) (results []IM, err error) {
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"id", "reportkey"}, From: "ui_report"}}
 	reports, err := api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1198,9 +1198,9 @@ func (api *API) ReportDelete(options IM) (err error) {
 		return errors.New(GetMessage("missing_required_field") + ": reportkey")
 	}
 
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: "ui_report", Filters: []Filter{
-			Filter{Field: "reportkey", Comp: "==", Value: options["reportkey"]},
+			{Field: "reportkey", Comp: "==", Value: options["reportkey"]},
 		}}}
 	rows, err := api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1233,9 +1233,9 @@ func (api *API) ReportDelete(options IM) (err error) {
 		}
 	}()
 
-	query = []Query{Query{
+	query = []Query{{
 		Fields: []string{"*"}, From: "ui_reportfields", Filters: []Filter{
-			Filter{Field: "report_id", Comp: "==", Value: refID},
+			{Field: "report_id", Comp: "==", Value: refID},
 		}}}
 	rows, err = api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1248,9 +1248,9 @@ func (api *API) ReportDelete(options IM) (err error) {
 		}
 	}
 
-	query = []Query{Query{
+	query = []Query{{
 		Fields: []string{"*"}, From: "ui_reportsources", Filters: []Filter{
-			Filter{Field: "report_id", Comp: "==", Value: refID},
+			{Field: "report_id", Comp: "==", Value: refID},
 		}}}
 	rows, err = api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1263,9 +1263,9 @@ func (api *API) ReportDelete(options IM) (err error) {
 		}
 	}
 
-	query = []Query{Query{
+	query = []Query{{
 		Fields: []string{"*"}, From: "ui_message", Filters: []Filter{
-			Filter{Field: "secname", Comp: "==", Value: options["reportkey"]},
+			{Field: "secname", Comp: "==", Value: options["reportkey"]},
 		}}}
 	rows, err = api.NStore.ds.Query(query, nil)
 	if err != nil {
@@ -1316,9 +1316,9 @@ func (api *API) ReportInstall(options IM) (result int, err error) {
 	if xreport != nil {
 		if attr := xreport.SelectAttr("reportkey"); attr != nil {
 			report["reportkey"] = attr.Value
-			query := []Query{Query{
+			query := []Query{{
 				Fields: []string{"*"}, From: "ui_report", Filters: []Filter{
-					Filter{Field: "reportkey", Comp: "==", Value: attr.Value},
+					{Field: "reportkey", Comp: "==", Value: attr.Value},
 				}}}
 			rows, err := api.NStore.ds.Query(query, nil)
 			if err != nil {
@@ -1335,9 +1335,9 @@ func (api *API) ReportInstall(options IM) (result int, err error) {
 	}
 
 	groups := IM{}
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: "groups", Filters: []Filter{
-			Filter{Field: "groupname", Comp: "in",
+			{Field: "groupname", Comp: "in",
 				Value: "nervatype,transtype,direction,filetype,fieldtype,wheretype"},
 		}}}
 	rows, err := api.NStore.ds.Query(query, nil)

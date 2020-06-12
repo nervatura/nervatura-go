@@ -103,9 +103,9 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 		}
 	}()
 
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: "numberdef", Filters: []Filter{
-			Filter{Field: "numberkey", Comp: "==", Value: numberkey}}}}
+			{Field: "numberkey", Comp: "==", Value: numberkey}}}}
 	result, err := nstore.ds.Query(query, trans)
 	if err != nil {
 		return retnumber, err
@@ -139,10 +139,10 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 	}
 	if values["isyear"] == 1 || values["isyear"] == "1" {
 		transyear := time.Now().Format("2006")
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"value"}, From: "fieldvalue", Filters: []Filter{
-				Filter{Field: "fieldname", Comp: "==", Value: "transyear"},
-				Filter{Field: "ref_id", Comp: "is", Value: "null"}}}}
+				{Field: "fieldname", Comp: "==", Value: "transyear"},
+				{Field: "ref_id", Comp: "is", Value: "null"}}}}
 		result, err = nstore.ds.Query(query, trans)
 		if err != nil {
 			return retnumber, err
@@ -154,7 +154,8 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 	}
 	value := strings.Repeat("0", length)
 	value += strconv.Itoa(curvalue + 1)
-	retnumber += value[len(value)-length : len(value)]
+	vlen := len(value)
+	retnumber += value[vlen-length : vlen]
 	if step {
 		data := Update{Values: IM{"curvalue": curvalue + 1}, Model: "numberdef",
 			IDKey: id, Trans: trans}
@@ -228,9 +229,9 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 
 	if _, found := options["customer_id"]; found {
 		//customer discount
-		query := []Query{Query{
+		query := []Query{{
 			Fields: []string{"*"}, From: "customer", Filters: []Filter{
-				Filter{Field: "id", Comp: "==", Value: params["customer_id"]},
+				{Field: "id", Comp: "==", Value: params["customer_id"]},
 			}}}
 		discount, err := nstore.ds.Query(query, nil)
 		if err != nil {
@@ -370,9 +371,9 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	}
 	reportkey := results["report"].(IM)["reportkey"].(string)
 
-	query := []Query{Query{
+	query := []Query{{
 		Fields: []string{"*"}, From: "ui_reportsources", Filters: []Filter{
-			Filter{Field: "report_id", Comp: "==", Value: results["report"].(IM)["id"]},
+			{Field: "report_id", Comp: "==", Value: results["report"].(IM)["id"]},
 		}}}
 	results["sources"], err = nstore.ds.Query(query, nil)
 	if err != nil {
@@ -400,9 +401,9 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	for index := 0; index < len(results["sources"].([]IM)); index++ {
 		secname = append(secname, results["sources"].([]IM)[index]["dataset"].(string))
 	}
-	query = []Query{Query{
+	query = []Query{{
 		Fields: []string{"*"}, From: "ui_message", Filters: []Filter{
-			Filter{Field: "secname", Comp: "in", Value: strings.Join(secname, ",")},
+			{Field: "secname", Comp: "in", Value: strings.Join(secname, ",")},
 		}}}
 	labels, err := nstore.ds.Query(query, nil)
 	if err != nil {

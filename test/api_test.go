@@ -101,12 +101,12 @@ func TestAPIView(t *testing.T) {
 		t.Fatal(err)
 	}
 	options := []nt.IM{
-		nt.IM{
+		{
 			"key":    "customers",
 			"text":   "select c.id, ct.groupvalue as custtype, c.custnumber, c.custname from customer c inner join groups ct on c.custtype = ct.id where c.deleted = 0 and c.custnumber <> 'HOME'",
 			"values": []interface{}{},
 		},
-		nt.IM{
+		{
 			"key":    "invoices",
 			"text":   "select t.id, t.transnumber, tt.groupvalue as transtype, td.groupvalue as direction, t.transdate, c.custname, t.curr, items.amount from trans t inner join groups tt on t.transtype = tt.id inner join groups td on t.direction = td.id inner join customer c on t.customer_id = c.id inner join ( select trans_id, sum(amount) amount from item where deleted = 0 group by trans_id) items on t.id = items.trans_id where t.deleted = 0 and tt.groupvalue = 'invoice'",
 			"values": []interface{}{},
@@ -243,7 +243,7 @@ func TestAPIPost(t *testing.T) {
 		t.Fatal(err)
 	}
 	addressData := []nt.IM{
-		nt.IM{
+		{
 			"nervatype":         10,
 			"ref_id":            2,
 			"zipcode":           "12345",
@@ -251,12 +251,12 @@ func TestAPIPost(t *testing.T) {
 			"notes":             "Create a new item by IDs",
 			"address_metadata1": "value1",
 			"address_metadata2": "value2~note2"},
-		nt.IM{
+		{
 			"id":      6,
 			"zipcode": "54321",
 			"city":    "BigCity",
 			"notes":   "Update an item by IDs"},
-		nt.IM{
+		{
 			"keys": nt.IM{
 				"nervatype": "customer",
 				"ref_id":    "customer/DMCUST/00001"},
@@ -265,14 +265,14 @@ func TestAPIPost(t *testing.T) {
 			"notes":             "Create a new item by Keys",
 			"address_metadata1": "value1",
 			"address_metadata2": "value2~note2"},
-		nt.IM{
+		{
 			"keys": nt.IM{
 				"id": "customer/DMCUST/00001~1"},
 			"zipcode": "54321",
 			"city":    "BigCity",
 			"notes":   "Update an item by Keys"}}
 	transData := []nt.IM{
-		nt.IM{
+		{
 			"transtype":   57,
 			"direction":   70,
 			"crdate":      "2019-09-01",
@@ -287,7 +287,7 @@ func TestAPIPost(t *testing.T) {
 			"transtate":   105,
 			"keys": nt.IM{
 				"transnumber": nt.IL{"numberdef", "invoice_out"}}},
-		nt.IM{
+		{
 			"crdate":    "2019-09-03",
 			"transdate": "2019-09-04",
 			"duedate":   "2019-09-08T00:00:00",
@@ -301,7 +301,7 @@ func TestAPIPost(t *testing.T) {
 				"department":  "sales",
 				"paidtype":    "transfer",
 				"transtate":   "ok"}},
-		nt.IM{
+		{
 			"paid":   1,
 			"closed": 1,
 			"notes":  "Update an item by Keys",
