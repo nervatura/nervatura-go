@@ -65,7 +65,7 @@ func checkFieldvalueBool(value interface{}) (interface{}, error) {
 		return "false", nil
 	}
 	switch value {
-	case "true", "True", "TRUE", "t", "T", "y", "YES", "yes", 1, "1", true:
+	case "true", "True", "TRUE", "t", "T", "y", "YES", "yes", float64(1), int(1), "1", true:
 		return "true", nil
 	default:
 		return "false", nil
@@ -688,7 +688,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 					}
 				} else if _, found := field.Requires["bool"]; found {
 					switch value {
-					case "true", "True", "TRUE", "t", "T", "y", "YES", "yes", 1, "1":
+					case "true", "True", "TRUE", "t", "T", "y", "YES", "yes", float64(1), int(1), "1":
 						checkValues["values"].(IM)[fieldname] = 1
 					default:
 						checkValues["values"].(IM)[fieldname] = 0
