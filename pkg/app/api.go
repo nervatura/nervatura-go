@@ -128,10 +128,8 @@ func (app *App) apiPost(c echo.Context) error {
 }
 
 func (app *App) apiDelete(c echo.Context) error {
-	data := ntura.IM{}
-	if err := c.Bind(&data); err != nil {
-		return c.JSON(http.StatusBadRequest, ntura.SM{"code": "400", "message": err.Error()})
-	}
+	data := ntura.IM{"nervatype": c.ParamValues()[0],
+		"id": c.QueryParam("id"), "key": c.QueryParam("key")}
 	err := (&ntura.API{NStore: c.Get("nstore").(*ntura.NervaStore)}).APIDelete(data)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, ntura.SM{"code": "400", "message": err.Error()})

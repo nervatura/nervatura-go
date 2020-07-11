@@ -22,13 +22,13 @@ require (
 	github.com/nervatura/nervatura-docs v0.0.0-20200505122116-b13b40eee748
 	github.com/nervatura/report-templates v0.0.0-20191022221859-51b8178c3de4
 	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/spf13/afero v1.2.2 // indirect
+	github.com/spf13/afero v1.3.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.0
 	github.com/unrolled/secure v1.0.8
-	github.com/valyala/fasttemplate v1.1.0 // indirect
-	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
+	github.com/valyala/fasttemplate v1.2.0 // indirect
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
