@@ -1825,7 +1825,7 @@ func (ds *SQLDriver) getIntegrity(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"ref_id"}, ` and event.ref_id = %s `, params)
 			sqlString += whereString
-			sqlString = `union select {CAS_INT}count(*){CAE_INT} as co from link where nervatype_2 = ( 
+			sqlString += `union select {CAS_INT}count(*){CAE_INT} as co from link where nervatype_2 = ( 
 					select id from groups where groupname = 'nervatype' and groupvalue = 'trans') `
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"ref_id"}, ` and ref_id_2 = %s) foo `, params)

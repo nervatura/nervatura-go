@@ -19,7 +19,7 @@ func getReportResult(results ntura.IM, err error, options ntura.IM, c echo.Conte
 	if results["filetype"] == "xlsx" {
 		return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", results["template"].([]uint8))
 	}
-	if results["filetype"] == "ntr" && options["output"] == "xml" {
+	if results["filetype"] == "xml" {
 		return c.XML(http.StatusOK, results["template"])
 	}
 	return c.Blob(http.StatusOK, "application/pdf", results["template"].([]uint8))

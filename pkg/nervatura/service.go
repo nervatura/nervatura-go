@@ -314,7 +314,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 				if err != nil {
 					return results, err
 				}
-				filters["@id"] = refValues["id"]
+				filters["@id"] = strconv.Itoa(int(refValues["id"].(int)))
 
 				if _, found := options["reportkey"]; !found {
 					if _, found := options["report_id"]; !found {
@@ -348,17 +348,8 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 			}
 		}
 		params := IM{"qkey": "default_report"}
-		if _, found := options["report_id"]; found {
-			switch options["report_id"].(type) {
-			case int:
-				params["report_id"] = strconv.Itoa(options["report_id"].(int))
-			case int64:
-				params["report_id"] = strconv.Itoa(int(options["report_id"].(int64)))
-			case float64:
-				params["report_id"] = strconv.Itoa(int(options["report_id"].(float64)))
-			}
-		} else {
-			params["reportkey"] = options["reportkey"].(string)
+		if _, found := options["report_id"]; !found {
+			params["reportkey"] = options["reportkey"]
 		}
 		rdata, err := nstore.ds.QueryKey(params, nil)
 		if err != nil {
@@ -399,7 +390,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 	secname := make([]string, 0)
 	secname = append(secname, reportkey+"_report")
 	for index := 0; index < len(results["sources"].([]IM)); index++ {
-		secname = append(secname, results["sources"].([]IM)[index]["dataset"].(string))
+		secname = append(secname, reportkey+"_"+results["sources"].([]IM)[index]["dataset"].(string))
 	}
 	query = []Query{{
 		Fields: []string{"*"}, From: "ui_message", Filters: []Filter{
@@ -429,7 +420,7 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 			if fieldname == "@id" {
 				for index := 0; index < len(results["sources"].([]IM)); index++ {
 					ds := results["sources"].([]IM)[index]
-					ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@id", strconv.Itoa(value.(int)))
+					ds["sqlstr"] = strings.ReplaceAll(ds["sqlstr"].(string), "@id", value.(string))
 				}
 			} else {
 				return results, errors.New(GetMessage("invalid_fieldname") + ": " + fieldname)
