@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	datetimeISOFmt string = "2006-01-02T15:04:05-0700"
+	datetimeISOFmt string = "2006-01-02T15:04:05-07:00"
 	datetimeFmt    string = "2006-01-02 15:04:05"
 	dateFmt        string = "2006-01-02"
 )
@@ -827,7 +827,11 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 				return id, err
 			}
 			fieldvalue["value"] = value
-			values := Update{Values: fieldvalue, Model: "fieldvalue", Trans: trans}
+			fID := 0
+			if _, found := fieldvalue["id"]; found && GetIType(fieldvalue["id"]) == "int" {
+				fID = fieldvalue["id"].(int)
+			}
+			values := Update{Values: fieldvalue, Model: "fieldvalue", IDKey: fID, Trans: trans}
 			_, err = nstore.ds.Update(values)
 			if err != nil {
 				return id, err
@@ -1127,14 +1131,14 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				if rows[index]["custtype"] == "own" {
 					info["compname"] = rows[index]["custname"]
 					info["comptax"] = rows[index]["taxnumber"]
-					info["compaddress"] = zipcode + city + street
+					info["compaddress"] = strings.Join([]string{zipcode, city, street}, " ")
 				} else {
 					info["id"] = rows[index]["id"]
 					info["custtype"] = rows[index]["custtype"]
 					info["terms"] = rows[index]["terms"]
 					info["custname"] = rows[index]["custname"]
 					info["custtax"] = rows[index]["taxnumber"]
-					info["custaddress"] = zipcode + city + street
+					info["custaddress"] = strings.Join([]string{zipcode, city, street}, " ")
 				}
 			}
 		} else {

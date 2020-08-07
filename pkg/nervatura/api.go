@@ -980,7 +980,7 @@ func (api *API) APIPost(nervatype string, data []IM) (results []int, err error) 
 		if _, found := data[index]["keys"]; found {
 			delete(data[index], "keys")
 		}
-		if _, found := data[index]["id"]; !found {
+		if _, found := data[index]["id"]; !found || (data[index]["id"] == nil) {
 			for ikey, ifield := range model {
 				switch ikey {
 				case "_access", "_key", "_fields", "id":
