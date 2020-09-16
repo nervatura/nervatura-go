@@ -606,7 +606,13 @@ func (nstore *NervaStore) UpdateData(options IM) (id int, err error) {
 					case string:
 						tm, err := time.Parse(datetimeISOFmt, value.(string))
 						if err != nil {
+							tm, err = time.Parse("2006-01-02T15:04:05-0700", value.(string))
+						}
+						if err != nil {
 							tm, err = time.Parse("2006-01-02T15:04:05", value.(string))
+						}
+						if err != nil {
+							tm, err = time.Parse("2006-01-02T15:04:05Z", value.(string))
 						}
 						if err != nil {
 							tm, err = time.Parse(TimeLayout, value.(string))

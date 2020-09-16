@@ -469,7 +469,6 @@ func demoData() IM {
 					"keys": IM{"trans_id": "DMMAKE/00001", "movetype": "inventory", "product_id": "DMPROD/00008", "place_id": "material"}}},
 			"link": []IM{
 				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDEL/00001~1", "nervatype_2": "item", "ref_id_2": "item/DMORD/00001~1"}},
-				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDEL/00001~1", "nervatype_2": "item", "ref_id_2": "item/DMORD/00001~1"}},
 				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDEL/00001~2", "nervatype_2": "item", "ref_id_2": "item/DMORD/00001~2"}},
 				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDEL/00001~3", "nervatype_2": "item", "ref_id_2": "item/DMORD/00001~3"}},
 				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDEL/00001~4", "nervatype_2": "item", "ref_id_2": "item/DMORD/00001~4"}},
