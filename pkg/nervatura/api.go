@@ -583,9 +583,10 @@ func (api *API) APIGet(options IM) (results []IM, err error) {
 	}
 
 	query := []Query{{
-		Fields: []string{"*"}, From: nervatype, Filters: []Filter{
-			{Field: "deleted", Comp: "==", Value: 0},
-		}}}
+		Fields: []string{"*"}, From: nervatype, Filters: []Filter{}}}
+	if _, found := api.NStore.models[nervatype].(IM)["deleted"]; found {
+    query[0].Filters = append(query[0].Filters, Filter{Field: "deleted", Comp: "==", Value: 0})
+	}
 	if _, found := options["ids"]; found && GetIType(options["ids"]) == "string" {
 		query[0].Filters = append(query[0].Filters, Filter{Field: "id", Comp: "in", Value: options["ids"]})
 	} else if _, found := options["filter"]; found && GetIType(options["filter"]) == "string" {
