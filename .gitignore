@@ -13,3 +13,5 @@
 
 .vscode
 cmd/nervatura
+vendor
+build

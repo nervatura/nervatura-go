@@ -23,7 +23,7 @@ The framework is based on Nervatura [Object Model](https://nervatura.github.io/n
 
 The Nervatura Framework is a set of open source applications and documentations. It enables to easily create a basic open-data business management system. Its key elements are:
   * [Nervatura DOCS](https://nervatura.github.io/nervatura-docs) for a quick start
-  * [Nervatura API](https://nervatura.github.io/nervatura-docs/#/api) for applications that would use the data
+  * [Nervatura API](https://nervatura.github.io/nervatura/api) for applications that would use the data
   * [Nervatura Client](https://github.com/nervatura/nervatura-client) is a free PWA Client
   * [Client- and server-side data reporting](https://nervatura.github.io/nervatura-demo/)
   * and other documents, resources, sample code and demo programs

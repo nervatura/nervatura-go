@@ -1,18 +1,18 @@
 package nervatura
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/tls"
-	"encoding/json"
+	"encoding/base64"
+	"encoding/csv"
 	"errors"
+	"fmt"
 	"net/smtp"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
-	"github.com/jordan-wright/email"
 	"github.com/nervatura/go-report"
 )
 
@@ -42,36 +42,23 @@ func (nstore *NervaStore) GetService(key string, options IM) (interface{}, error
 //callMenuCmd - sample service function code
 func (nstore *NervaStore) callMenuCmd(options IM) (IM, error) {
 
-	var fnum1 float64
-	if _, found := options["number_1"]; found && GetIType(options["number_1"]) == "float64" {
-		fnum1 = options["number_1"].(float64)
-	}
-	var fnum2 float64
-	if _, found := options["number_2"]; found && GetIType(options["number_2"]) == "float64" {
-		fnum2 = options["number_2"].(float64)
-	}
-	return IM{"result": "Successfully processed: " + strconv.FormatFloat(fnum1+fnum2, 'f', -1, 64)}, nil
+	fnum1 := ToFloat(options["number_1"])
+	fnum2 := ToFloat(options["number_2"])
+	result := ToString(fnum1+fnum2, "")
+	return IM{"result": "Successfully processed: " + result}, nil
 }
 
 //nextNumber - get the next value from the numberdef table (transnumber, custnumber, partnumber etc.)
 func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 
-	if _, found := options["numberkey"]; !found || GetIType(options["numberkey"]) != "string" {
+	numberkey := ToString(options["numberkey"], "")
+	if numberkey == "" {
 		return retnumber, errors.New(GetMessage("missing_required_field") + ": numberkey")
 	}
-	numberkey := options["numberkey"].(string)
+	step := ToBoolean(options["step"], true)
+	insertKey := ToBoolean(options["insert_key"], true)
 
-	step := true
-	if _, found := options["step"]; found && GetIType(options["step"]) == "bool" {
-		step = options["step"].(bool)
-	}
-
-	insertKey := true
-	if _, found := options["insert_key"]; found && GetIType(options["insert_key"]) == "bool" {
-		insertKey = options["insert_key"].(bool)
-	}
-
-	if ok, err := nstore.connected(); ok == false || err != nil {
+	if ok, err := nstore.connected(); !ok || err != nil {
 		if err != nil {
 			return retnumber, err
 		}
@@ -112,7 +99,7 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 	}
 
 	var values IM
-	id, curvalue, length := 0, 0, 5
+	id, curvalue, length := int64(0), int64(0), 5
 	if len(result) == 0 {
 		if insertKey {
 			values = IM{"numberkey": numberkey,
@@ -128,9 +115,9 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 			return retnumber, errors.New(GetMessage("invalid_value") + ": refnumber")
 		}
 	} else {
-		id = result[0]["id"].(int)
-		curvalue = result[0]["curvalue"].(int)
-		length = result[0]["len"].(int)
+		id = result[0]["id"].(int64)
+		curvalue = result[0]["curvalue"].(int64)
+		length = int(result[0]["len"].(int64))
 		values = result[0]
 	}
 
@@ -153,7 +140,7 @@ func (nstore *NervaStore) nextNumber(options IM) (retnumber string, err error) {
 		retnumber += transyear + values["sep"].(string)
 	}
 	value := strings.Repeat("0", length)
-	value += strconv.Itoa(curvalue + 1)
+	value += strconv.FormatInt((curvalue + 1), 10)
 	vlen := len(value)
 	retnumber += value[vlen-length : vlen]
 	if step {
@@ -176,15 +163,15 @@ func defaultValue(key string, options IM, defValue interface{}) interface{} {
 
 func getFloatValue(value interface{}) (float64, error) {
 
-	switch value.(type) {
+	switch v := value.(type) {
 	case int:
-		return float64(value.(int)), nil
+		return float64(v), nil
 	case int64:
-		return float64(value.(int64)), nil
+		return float64(v), nil
 	case float64:
-		return value.(float64), nil
+		return v, nil
 	case string:
-		return strconv.ParseFloat(value.(string), 64)
+		return strconv.ParseFloat(v, 64)
 	}
 	return 0, nil
 }
@@ -289,43 +276,37 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	return results, nil
 }
 
-//getReport - server-side PDF and Excel report generation
+//getReport - server-side PDF and CSV report generation
 func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 
-	orientation := "p"
-	if _, found := options["orientation"]; found && GetIType(options["orientation"]) == "string" {
-		orientation = options["orientation"].(string)
-	}
-	size := "a4"
-	if _, found := options["size"]; found && GetIType(options["size"]) == "string" {
-		size = options["size"].(string)
-	}
+	orientation := ToString(options["orientation"], "p")
+	size := ToString(options["size"], "a4")
 
 	results = IM{}
 	filters := IM{}
-	if _, found := options["filters"]; found && GetIType(options["filters"]) == "map[string]interface{}" {
-		filters = options["filters"].(IM)
+	if ofilters, valid := options["filters"].(IM); valid {
+		filters = ofilters
 	}
 
-	if _, found := options["nervatype"]; found && GetIType(options["nervatype"]) == "string" {
-		if _, found := options["refnumber"]; found && GetIType(options["refnumber"]) == "string" {
+	if nervatype, valid := options["nervatype"].(string); valid {
+		if _, found := options["refnumber"]; found {
 			if _, found := filters["@id"]; !found {
 				refValues, err := nstore.GetInfofromRefnumber(options)
 				if err != nil {
 					return results, err
 				}
-				filters["@id"] = strconv.Itoa(int(refValues["id"].(int)))
+				filters["@id"] = strconv.FormatInt(refValues["id"].(int64), 10)
 
 				if _, found := options["reportkey"]; !found {
 					if _, found := options["report_id"]; !found {
 						params := IM{
 							"qkey":      "default_report",
-							"nervatype": options["nervatype"].(string)}
-						if _, found := refValues["transtype"]; found && GetIType(refValues["transtype"]) == "string" {
-							params["transtype"] = refValues["transtype"].(string)
+							"nervatype": nervatype}
+						if _, found := refValues["transtype"]; found {
+							params["transtype"] = ToString(refValues["transtype"], "")
 						}
-						if _, found := refValues["direction"]; found && GetIType(refValues["direction"]) == "string" {
-							params["direction"] = refValues["direction"].(string)
+						if _, found := refValues["direction"]; found {
+							params["direction"] = ToString(refValues["direction"], "")
 						}
 						rdata, err := nstore.ds.QueryKey(params, nil)
 						if err != nil {
@@ -427,12 +408,13 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 			}
 		} else {
 			rel := " = "
-			if results["fields"].(IM)[fieldname].(IM)["fieldtype"] == "date" && GetIType(filters[fieldname]) == "string" {
-				filters[fieldname] = "'" + filters[fieldname].(string) + "'"
+			if results["fields"].(IM)[fieldname].(IM)["fieldtype"] == "date" {
+				filters[fieldname] = "'" + ToString(filters[fieldname], "") + "'"
 			}
-			if results["fields"].(IM)[fieldname].(IM)["fieldtype"] == "string" && GetIType(filters[fieldname]) == "string" {
-				if !strings.HasPrefix(filters[fieldname].(string), "'") {
-					filters[fieldname] = "'" + filters[fieldname].(string) + "'"
+			if results["fields"].(IM)[fieldname].(IM)["fieldtype"] == "string" {
+				fieldtype := ToString(filters[fieldname], "")
+				if !strings.HasPrefix(fieldtype, "'") {
+					filters[fieldname] = "'" + fieldtype + "'"
 				}
 				rel = " like "
 			}
@@ -504,12 +486,12 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 			"data":     results["datarows"]}, nil
 	}
 	switch results["report"].(IM)["reptype"] {
-	case "xls":
+	case "xls", "csv":
 		template := IM{}
-		if err := json.Unmarshal([]byte(results["report"].(IM)["report"].(string)), &template); err != nil {
+		if err := ConvertFromByte([]byte(results["report"].(IM)["report"].(string)), &template); err != nil {
 			return results, err
 		}
-		xlsx := excelize.NewFile()
+		rows := make([][]string, 0)
 		for key, value := range results["datarows"].(IM) {
 			switch value.(type) {
 			case []IM:
@@ -517,62 +499,72 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 					sname := key
 					columns := IL{}
 					if _, found := template[key]; found {
-						if _, found := template[key].(IM)["sheetName"]; found && GetIType(template[key].(IM)["sheetName"]) == "string" {
-							sname = template[key].(IM)["sheetName"].(string)
+						if _, found := template[key].(IM)["sheetName"]; found {
+							sname = ToString(template[key].(IM)["sheetName"], sname)
 						}
-						if _, found := template[key].(IM)["columns"]; found && GetIType(template[key].(IM)["columns"]) == IList {
-							columns = template[key].(IM)["columns"].(IL)
+						if icolumns, valid := template[key].(IM)["columns"].(IL); valid {
+							columns = icolumns
 						}
 					} else {
 						for colname := range value.([]IM)[0] {
 							columns = append(columns, IM{"name": colname})
 						}
 					}
-					xlsx.NewSheet(sname)
+					rows = append(rows, []string{sname})
 					if _, found := results["datarows"].(IM)["labels"]; found {
+						row := make([]string, 0)
 						for index := 0; index < len(columns); index++ {
-							if index <= 25 {
-								colname := columns[index].(IM)["name"].(string)
-								cell, err := excelize.CoordinatesToCellName(index+1, 1)
-								if err != nil {
-									return results, err
-								}
-								if _, found := results["datarows"].(IM)["labels"].(IM)[colname]; found {
-									xlsx.SetCellValue(sname, cell, results["datarows"].(IM)["labels"].(IM)[colname])
-								} else {
-									xlsx.SetCellValue(sname, cell, colname)
-								}
+							colname := columns[index].(IM)["name"].(string)
+							if _, found := results["datarows"].(IM)["labels"].(IM)[colname]; found {
+								row = append(row, results["datarows"].(IM)["labels"].(IM)[colname].(string))
+							} else {
+								row = append(row, colname)
 							}
 						}
+						rows = append(rows, row)
 					}
-					if _, found := results["datarows"].(IM)[key]; found && GetIType(results["datarows"].(IM)[key]) == "[]map[string]interface{}" {
-						for index := 0; index < len(results["datarows"].(IM)[key].([]IM)); index++ {
-							drow := results["datarows"].(IM)[key].([]IM)[index]
+					if datarows, valid := results["datarows"].(IM)[key].([]IM); valid {
+						for index := 0; index < len(datarows); index++ {
+							row := make([]string, 0)
+							drow := datarows[index]
 							for c := 0; c < len(columns); c++ {
 								colname := columns[c].(IM)["name"].(string)
-								cell, err := excelize.CoordinatesToCellName(c+1, index+2)
-								if err != nil {
-									return results, err
-								}
 								if _, found := drow[colname]; found {
-									xlsx.SetCellValue(sname, cell, drow[colname])
+									switch v := drow[colname].(type) {
+									case bool:
+										row = append(row, strconv.FormatBool(v))
+									case int64:
+										row = append(row, strconv.FormatInt(v, 10))
+									case float64:
+										row = append(row, strconv.FormatFloat(drow[colname].(float64), 'f', -1, 64))
+									case time.Time:
+										row = append(row, drow[colname].(time.Time).String())
+									default:
+										row = append(row, drow[colname].(string))
+									}
 								}
 							}
+							rows = append(rows, row)
 						}
 					}
 				}
 			}
 		}
-		xlsx.DeleteSheet("Sheet1")
 		var b bytes.Buffer
-		writr := bufio.NewWriter(&b)
-		xlsx.Write(writr)
-		writr.Flush()
-		return IM{"filetype": "xlsx", "template": b.Bytes(), "data": nil}, nil
+		writr := csv.NewWriter(&b)
+		writr.WriteAll(rows)
+		if err := writr.Error(); err != nil {
+			return results, err
+		}
+		if options["output"] == "base64" {
+			return IM{"filetype": "csv",
+				"template": base64.URLEncoding.EncodeToString(b.Bytes()), "data": nil}, nil
+		}
+		return IM{"filetype": "csv", "template": b.String(), "data": nil}, nil
 
 	case "ntr":
 		rpt := report.New(orientation, size)
-		rpt.ImagePath = nstore.settings.ReportDir
+		rpt.ImagePath = os.Getenv("NT_REPORT_DIR")
 		_, err := rpt.LoadDefinition(results["report"].(IM)["report"].(string))
 		if err != nil {
 			return results, err
@@ -590,15 +582,15 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 					if ivalue == nil {
 						values[skey] = ""
 					} else {
-						switch ivalue.(type) {
+						switch v := ivalue.(type) {
 						case bool:
-							values[skey] = strconv.FormatBool(ivalue.(bool))
-						case int:
-							values[skey] = strconv.Itoa(ivalue.(int))
+							values[skey] = strconv.FormatBool(v)
+						case int64:
+							values[skey] = strconv.FormatInt(v, 10)
 						case float64:
-							values[skey] = strconv.FormatFloat(ivalue.(float64), 'f', -1, 64)
+							values[skey] = strconv.FormatFloat(v, 'f', -1, 64)
 						case time.Time:
-							values[skey] = ivalue.(time.Time).Format("2006-01-02 15:04")
+							values[skey] = v.Format("2006-01-02 15:04")
 						default:
 							values[skey] = ivalue.(string)
 						}
@@ -616,15 +608,15 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 						if ivalue == nil {
 							values[skey] = ""
 						} else {
-							switch ivalue.(type) {
+							switch v := ivalue.(type) {
 							case bool:
-								values[skey] = strconv.FormatBool(ivalue.(bool))
-							case int:
-								values[skey] = strconv.Itoa(ivalue.(int))
+								values[skey] = strconv.FormatBool(v)
+							case int64:
+								values[skey] = strconv.FormatInt(v, 10)
 							case float64:
-								values[skey] = strconv.FormatFloat(ivalue.(float64), 'f', -1, 64)
+								values[skey] = strconv.FormatFloat(v, 'f', -1, 64)
 							case time.Time:
-								values[skey] = ivalue.(time.Time).Format("2006-01-02 15:04")
+								values[skey] = v.Format("2006-01-02 15:04")
 							default:
 								values[skey] = ivalue.(string)
 							}
@@ -665,44 +657,83 @@ func (nstore *NervaStore) getReport(options IM) (results IM, err error) {
 }
 
 func (nstore *NervaStore) sendEmail(options IM) (results IM, err error) {
-	results = IM{}
-	if _, found := options["email"]; !found || GetIType(options["email"]) != "map[string]interface{}" {
+	results = IM{"result": "OK"}
+
+	emailOpt, valid := options["email"].(IM)
+	if !valid {
 		return results, errors.New(GetMessage("missing_required_field") + ": email")
 	}
-	if _, found := options["provider"]; !found || GetIType(options["provider"]) != "string" {
-		return results, errors.New(GetMessage("missing_required_field") + ": provider")
-	} else if options["provider"] != "smtp" {
+	if ToString(options["provider"], "smtp") != "smtp" {
 		return results, errors.New(GetMessage("invalid_provider"))
 	}
 
-	e := email.NewEmail()
-	if _, found := options["email"].(IM)["from"]; found && GetIType(options["email"].(IM)["from"]) == "string" {
-		if _, found := options["email"].(IM)["name"]; found && GetIType(options["email"].(IM)["name"]) == "string" {
-			e.From = options["email"].(IM)["name"].(string) + " <" + options["email"].(IM)["from"].(string) + ">"
-		} else {
-			e.From = options["email"].(IM)["from"].(string)
-		}
-	}
-	if _, found := options["email"].(IM)["recipients"]; found && GetIType(options["email"].(IM)["recipients"]) == IList {
-		recipients := options["email"].(IM)["recipients"].([]interface{})
-		for index := 0; index < len(recipients); index++ {
-			if _, found := recipients[index].(IM)["email"]; found && GetIType(recipients[index].(IM)["email"]) == "string" {
-				e.To = append(e.To, recipients[index].(IM)["email"].(string))
-			}
-		}
-	}
-	if _, found := options["email"].(IM)["subject"]; found && GetIType(options["email"].(IM)["subject"]) == "string" {
-		e.Subject = options["email"].(IM)["subject"].(string)
-	}
-	if _, found := options["email"].(IM)["text"]; found && GetIType(options["email"].(IM)["text"]) == "string" {
-		e.Text = []byte(options["email"].(IM)["text"].(string))
-	}
-	if _, found := options["email"].(IM)["html"]; found && GetIType(options["email"].(IM)["html"]) == "string" {
-		e.HTML = []byte(options["email"].(IM)["html"].(string))
+	delimeter := "**=myohmy689407924327"
+	username := os.Getenv("NT_SMTP_USER")
+	password := os.Getenv("NT_SMTP_PASSWORD")
+	host := os.Getenv("NT_SMTP_HOST")
+	port := os.Getenv("NT_SMTP_PORT")
+	if port == "" {
+		port = "465"
 	}
 
-	if _, found := options["email"].(IM)["attachments"]; found && GetIType(options["email"].(IM)["attachments"]) == IList {
-		attachments := options["email"].(IM)["attachments"].([]interface{})
+	tlsConfig := tls.Config{ServerName: host, InsecureSkipVerify: true}
+	conn, connErr := tls.Dial("tcp", fmt.Sprintf("%s:%s", host, port), &tlsConfig)
+	if connErr != nil {
+		return results, connErr
+	}
+	defer conn.Close()
+
+	client, clientErr := smtp.NewClient(conn, host)
+	if clientErr != nil {
+		return results, clientErr
+	}
+	defer client.Close()
+
+	auth := smtp.PlainAuth("", username, password, host)
+	if err := client.Auth(auth); err != nil {
+		return results, err
+	}
+
+	from := ToString(emailOpt["from"], username)
+	if err := client.Mail(from); err != nil {
+		return results, err
+	}
+	emailTo := []string{}
+	if recipients, valid := emailOpt["recipients"].([]interface{}); valid {
+		for index := 0; index < len(recipients); index++ {
+			if email, valid := recipients[index].(IM)["email"].(string); valid {
+				emailTo = append(emailTo, email)
+				if err := client.Rcpt(email); err != nil {
+					return results, err
+				}
+			}
+		}
+	} else {
+		return results, errors.New(GetMessage("missing_required_field") + ": recipients")
+	}
+
+	writer, writerErr := client.Data()
+	if writerErr != nil {
+		return results, writerErr
+	}
+
+	emailMsg := fmt.Sprintf("From: %s\r\n", from)
+	emailMsg += fmt.Sprintf("To: %s\r\n", strings.Join(emailTo, ";"))
+	emailMsg += fmt.Sprintf("Subject: %s\r\n", ToString(emailOpt["subject"], ""))
+
+	emailMsg += "MIME-Version: 1.0\r\n"
+	emailMsg += fmt.Sprintf("Content-Type: multipart/mixed; boundary=\"%s\"\r\n", delimeter)
+
+	emailMsg += fmt.Sprintf("\r\n--%s\r\n", delimeter)
+	emailMsg += "Content-Type: text/html; charset=\"utf-8\"\r\n"
+	emailMsg += "Content-Transfer-Encoding: 7bit\r\n"
+	if _, found := emailOpt["html"]; found {
+		emailMsg += fmt.Sprintf("\r\n%s\r\n", ToString(emailOpt["html"], ""))
+	} else {
+		emailMsg += fmt.Sprintf("\r\n%s\r\n", ToString(emailOpt["text"], ""))
+	}
+
+	if attachments, withAttachments := emailOpt["attachments"].([]interface{}); withAttachments {
 		for index := 0; index < len(attachments); index++ {
 			attachment := attachments[index].(IM)
 			params := IM{"output": "pdf"}
@@ -722,44 +753,31 @@ func (nstore *NervaStore) sendEmail(options IM) (results IM, err error) {
 				params["filters"] = IM{"@id": attachment["ref_id"]}
 			}
 			filename := "docs_" + strconv.Itoa(index+1) + ".pdf"
-			if _, found := attachment["filename"]; found && GetIType(attachment["filename"]) == "string" {
-				filename = attachment["filename"].(string)
+			if _, found := attachment["filename"]; found {
+				filename = ToString(attachment["filename"], "")
 			}
 			report, err := nstore.getReport(params)
 			if err != nil {
 				return results, err
 			}
-			_, err = e.Attach(bytes.NewReader(report["template"].([]uint8)), filename, "application/pdf")
-			if err != nil {
-				return results, err
-			}
+
+			emailMsg += fmt.Sprintf("\r\n--%s\r\n", delimeter)
+			emailMsg += "Content-Type: application/pdf; charset=\"utf-8\"\r\n"
+			emailMsg += "Content-Transfer-Encoding: base64\r\n"
+			emailMsg += "Content-Disposition: attachment;filename=\"" + filename + "\"\r\n"
+			emailMsg += "\r\n" + base64.StdEncoding.EncodeToString(report["template"].([]uint8))
 		}
 	}
-	username := ""
-	if _, found := nstore.settings.SMTP["user"]; found && GetIType(nstore.settings.SMTP["user"]) == "string" {
-		username = nstore.settings.SMTP["user"].(string)
-	}
-	var password string
-	if _, found := nstore.settings.SMTP["password"]; found && GetIType(nstore.settings.SMTP["password"]) == "string" {
-		password = nstore.settings.SMTP["password"].(string)
-	}
-	host := ""
-	if _, found := nstore.settings.SMTP["host"]; found && GetIType(nstore.settings.SMTP["host"]) == "string" {
-		host = nstore.settings.SMTP["host"].(string)
-	}
-	port := 465
-	if _, found := nstore.settings.SMTP["port"]; found && GetIType(nstore.settings.SMTP["port"]) == "int" {
-		port = nstore.settings.SMTP["port"].(int)
-	}
-	if nstore.settings.SMTP["secure"] == true {
-		err = e.SendWithTLS(host+":"+strconv.Itoa(port), smtp.PlainAuth("", username, password, host),
-			&tls.Config{ServerName: host, InsecureSkipVerify: true})
-	} else {
-		err = e.Send(host+":"+strconv.Itoa(port), smtp.PlainAuth("", username, password, host))
-	}
-	if err == nil {
-		results["result"] = "OK"
+
+	if _, err := writer.Write([]byte(emailMsg)); err != nil {
+		return results, err
 	}
 
-	return results, err
+	if closeErr := writer.Close(); closeErr != nil {
+		return results, closeErr
+	}
+
+	client.Quit()
+
+	return results, nil
 }

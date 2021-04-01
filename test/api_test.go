@@ -3,19 +3,18 @@ package test
 import (
 	"testing"
 
-	driver "github.com/nervatura/nervatura-go/pkg/driver"
+	db "github.com/nervatura/nervatura-go/pkg/database"
 	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 )
 
 func getAPI() *nt.API {
-	config, _ := nt.ReadConfig(confPath)
-	return &nt.API{NStore: nt.New(config, &driver.SQLDriver{})}
+	return &nt.API{NStore: nt.New(&db.SQLDriver{})}
 }
 
 func getLogin() (string, *nt.API, error) {
 	api := getAPI()
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	token, _, err := api.AuthUserLogin(options)
+	token, _, err := api.UserLogin(options)
 	return token, api, err
 }
 
@@ -27,75 +26,75 @@ func TestDatabaseCreate(t *testing.T) {
 	}
 }
 
-func TestApiAuthUserLogin(t *testing.T) {
+func TestApiUserLogin(t *testing.T) {
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := getAPI().AuthUserLogin(options)
+	_, _, err := getAPI().UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//print(token)
 }
 
-func TestApiAuthTokenLogin(t *testing.T) {
+func TestApiTokenLogin(t *testing.T) {
 	token, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
 	options := nt.IM{"token": token}
-	err = api.AuthTokenLogin(options)
+	err = api.TokenLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestApiAuthPassword(t *testing.T) {
+func TestApiUserPassword(t *testing.T) {
 	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
 	options := nt.IM{"username": "demo", "password": "321", "confirm": "321"}
-	err = api.AuthPassword(options)
+	err = api.UserPassword(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestAPIDelete(t *testing.T) {
+func TestDelete(t *testing.T) {
 	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
 	options := nt.IM{"nervatype": "address", "id": 2}
-	err = api.APIDelete(options)
+	err = api.Delete(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 	options = nt.IM{"nervatype": "address", "key": "customer/DMCUST/00001~1"}
-	err = api.APIDelete(options)
+	err = api.Delete(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestAPIGet(t *testing.T) {
+func TestGet(t *testing.T) {
 	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
 	options := nt.IM{"nervatype": "customer", "metadata": true,
 		"filter": "custname;==;First Customer Co.|custnumber;in;DMCUST/00001,DMCUST/00002"}
-	_, err = api.APIGet(options)
+	_, err = api.Get(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 	options = nt.IM{"nervatype": "customer", "metadata": true, "ids": "2,4"}
-	_, err = api.APIGet(options)
+	_, err = api.Get(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestAPIView(t *testing.T) {
+func TestView(t *testing.T) {
 	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
@@ -112,17 +111,39 @@ func TestAPIView(t *testing.T) {
 			"values": []interface{}{},
 		},
 	}
-	_, err = api.APIView(options)
+	_, err = api.View(options)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestAPIFunction(t *testing.T) {
+func TestFunction(t *testing.T) {
 	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	/*
+		options := map[string]interface{}{
+			"key": "sendEmail",
+			"values": map[string]interface{}{
+				"provider": "smtp",
+				"email": map[string]interface{}{
+					"from": "info@nervatura.com", "name": "Nervatura",
+					"recipients": []interface{}{
+						map[string]interface{}{"email": "sample@company.com"}},
+					"subject": "Demo Invoice",
+					"text":    "Email sending with attached invoice",
+					"attachments": []interface{}{
+						map[string]interface{}{
+							"reportkey": "ntr_invoice_en",
+							"nervatype": "trans",
+							"refnumber": "DMINV/00001"}},
+				},
+			},
+		}
+	*/
+
 	options := nt.IM{
 		"key": "nextNumber",
 		"values": nt.IM{
@@ -130,7 +151,7 @@ func TestAPIFunction(t *testing.T) {
 			"step":      false,
 		},
 	}
-	_, err = api.APIFunction(options)
+	_, err = api.Function(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,10 +164,11 @@ func TestAPIFunction(t *testing.T) {
 			"customer_id": 2,
 		},
 	}
-	_, err = api.APIFunction(options)
+	_, err = api.Function(options)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 }
 
 func TestAPIReport(t *testing.T) {
@@ -237,22 +259,22 @@ func TestAPIReportInstall(t *testing.T) {
 	}
 }
 
-func TestAPIPost(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	_, api, err := getLogin()
 	if err != nil {
 		t.Fatal(err)
 	}
 	addressData := []nt.IM{
 		{
-			"nervatype":         10,
-			"ref_id":            2,
+			"nervatype":         int64(10),
+			"ref_id":            int64(2),
 			"zipcode":           "12345",
 			"city":              "BigCity",
 			"notes":             "Create a new item by IDs",
 			"address_metadata1": "value1",
 			"address_metadata2": "value2~note2"},
 		{
-			"id":      6,
+			"id":      int64(6),
 			"zipcode": "54321",
 			"city":    "BigCity",
 			"notes":   "Update an item by IDs"},
@@ -273,18 +295,18 @@ func TestAPIPost(t *testing.T) {
 			"notes":   "Update an item by Keys"}}
 	transData := []nt.IM{
 		{
-			"transtype":   57,
-			"direction":   70,
+			"transtype":   int64(57),
+			"direction":   int64(70),
 			"crdate":      "2019-09-01",
 			"transdate":   "2019-09-02",
 			"duedate":     "2019-09-08T00:00:00",
-			"customer_id": 2,
-			"department":  149,
-			"paidtype":    135,
+			"customer_id": int64(2),
+			"department":  int64(149),
+			"paidtype":    int64(135),
 			"curr":        "EUR",
 			"notes":       "Create a new item by IDs",
 			"fnote":       "A long and <b><i>rich text</b></i> at the bottom of the invoice...<br><br>Can be multiple lines ...",
-			"transtate":   105,
+			"transtate":   int64(105),
 			"keys": nt.IM{
 				"transnumber": nt.IL{"numberdef", "invoice_out"}}},
 		{
@@ -306,13 +328,16 @@ func TestAPIPost(t *testing.T) {
 			"closed": 1,
 			"notes":  "Update an item by Keys",
 			"keys": nt.IM{
-				"id": "DMINV/00003"}}}
-	_, err = api.APIPost("address", addressData)
+				"id": "DMINV/00003"}},
+	}
+
+	_, err = api.Update("address", addressData)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = api.APIPost("trans", transData)
+	_, err = api.Update("trans", transData)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 }

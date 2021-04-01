@@ -3,20 +3,19 @@ package test
 import (
 	"testing"
 
-	driver "github.com/nervatura/nervatura-go/pkg/driver"
+	db "github.com/nervatura/nervatura-go/pkg/database"
 	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 )
 
 func getNstore() *nt.NervaStore {
-	config, _ := nt.ReadConfig(confPath)
-	return nt.New(config, &driver.SQLDriver{})
+	return nt.New(&db.SQLDriver{})
 }
 
 func TestUpdateData(t *testing.T) {
 
 	nstore := getNstore()
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +34,7 @@ func TestDeleteData(t *testing.T) {
 
 	nstore := getNstore()
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +52,7 @@ func TestGetInfofromRefnumber(t *testing.T) {
 	nstore := getNstore()
 
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +95,7 @@ func TestGetRefnumber(t *testing.T) {
 	nstore := getNstore()
 
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +129,7 @@ func TestGetDataAudit(t *testing.T) {
 	nstore := getNstore()
 
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +144,7 @@ func TestGetObjectAudit(t *testing.T) {
 	nstore := getNstore()
 
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +162,7 @@ func TestGetGroups(t *testing.T) {
 	nstore := getNstore()
 
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +181,7 @@ func TestGetDatabaseSettings(t *testing.T) {
 	nstore := getNstore()
 
 	options := nt.IM{"database": alias, "username": username, "password": password}
-	_, _, err := (&nt.API{NStore: nstore}).AuthUserLogin(options)
+	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
 	}

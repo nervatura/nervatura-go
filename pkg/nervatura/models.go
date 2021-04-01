@@ -39,8 +39,8 @@ func DataModel() IM {
 				"groupname":   MF{Type: "string", Length: 150, NotNull: true},
 				"groupvalue":  MF{Type: "string", Length: 150, NotNull: true},
 				"description": MF{Type: "text"},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"ui_language": IM{
 				"_access":     SL{"setting"},
@@ -60,7 +60,7 @@ func DataModel() IM {
 				"modul":       MF{Type: "string", Length: 255},
 				"icon":        MF{Type: "string", Length: 255},
 				"funcname":    MF{Type: "string", Length: 255, NotNull: true},
-				"url":         MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"url":         MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"address":     MF{Type: "text"}},
 
 			"ui_menufields": IM{
@@ -73,7 +73,7 @@ func DataModel() IM {
 				"description": MF{Type: "string", Length: 255, NotNull: true},
 				"fieldtype": MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true,
 					Requires: IM{"fieldtype": SL{"bool", "date", "integer", "float", "string"}}},
-				"orderby": MF{Type: "integer", Default: int(0), NotNull: true}},
+				"orderby": MF{Type: "integer", Default: int64(0), NotNull: true}},
 
 			"ui_message": IM{
 				"_access":   SL{"setting"},
@@ -110,9 +110,9 @@ func DataModel() IM {
 				"fieldtype":   MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"fieldtype": SL{}}},
 				"wheretype":   MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"wheretype": SL{}}},
 				"description": MF{Type: "string", Length: 255},
-				"orderby":     MF{Type: "integer", Default: int(0), NotNull: true},
+				"orderby":     MF{Type: "integer", Default: int64(0), NotNull: true},
 				"sqlstr":      MF{Type: "text"},
-				"parameter":   MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"parameter":   MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"dataset":     MF{Type: "string", Length: 150},
 				"defvalue":    MF{Type: "string", Length: 255},
 				"valuelist":   MF{Type: "text"}},
@@ -139,8 +139,8 @@ func DataModel() IM {
 				"department":       MF{References: SL{"groups", "RESTRICT", noAction}, Requires: IM{"department": SL{}}},
 				"password":         MF{Type: "password", Length: 512},
 				"registration_key": MF{Type: "string", Length: 512},
-				"inactive":         MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":          MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"inactive":         MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":          MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"ui_printqueue": IM{
 				"_access":     SL{"setting"},
@@ -164,7 +164,7 @@ func DataModel() IM {
 				"cfgroup":     MF{Type: "string", Length: 150, NotNull: true},
 				"cfname":      MF{Type: "string", Length: 150, NotNull: true},
 				"cfvalue":     MF{Type: "text"},
-				"orderby":     MF{Type: "integer", Default: int(0), NotNull: true}},
+				"orderby":     MF{Type: "integer", Default: int64(0), NotNull: true}},
 
 			"link": IM{
 				"_access": SL{"address", "barcode", "contact", "currency", "customer", "employee", "event", "groups", "item",
@@ -176,7 +176,7 @@ func DataModel() IM {
 				"ref_id_1":    MF{Type: "integer", NotNull: true, Refname: "refnumber1"},
 				"nervatype_2": MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"nervatype": SL{}}, Refname: "nervatype2"},
 				"ref_id_2":    MF{Type: "integer", NotNull: true, Refname: "refnumber2"},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"ui_audit": IM{
 				"_access":     SL{"setting"},
@@ -203,10 +203,10 @@ func DataModel() IM {
 				"fieldtype":   MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"fieldtype": SL{}}},
 				"description": MF{Type: "text", NotNull: true},
 				"valuelist":   MF{Type: "text"},
-				"addnew":      MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"addnew":      MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"visible":     MF{Type: "integer", Default: 1, NotNull: true, Requires: IM{"bool": true}},
-				"readonly":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"readonly":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"fieldvalue": IM{
 				"_access": SL{"address", "barcode", "contact", "currency", "customer", "employee",
@@ -219,7 +219,7 @@ func DataModel() IM {
 				"ref_id":    MF{Type: "integer", Refname: "refnumber"},
 				"value":     MF{Type: "text"},
 				"notes":     MF{Type: "text"},
-				"deleted":   MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted":   MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"log": IM{
 				"_access":     SL{"setting"},
@@ -241,14 +241,14 @@ func DataModel() IM {
 				"id":          MF{Type: "id"},
 				"numberkey":   MF{Type: "string", Length: 150, NotNull: true, Unique: true},
 				"prefix":      MF{Type: "string", Length: 150},
-				"curvalue":    MF{Type: "integer", Default: int(0), NotNull: true},
+				"curvalue":    MF{Type: "integer", Default: int64(0), NotNull: true},
 				"isyear":      MF{Type: "integer", Default: 1, NotNull: true, Requires: IM{"bool": true}},
 				"sep":         MF{Type: "string", Length: 1, Default: "'/'", NotNull: true},
 				"len":         MF{Type: "integer", Default: 5, NotNull: true},
 				"description": MF{Type: "text"},
 				"visible":     MF{Type: "integer", Default: 1, NotNull: true, Requires: IM{"bool": true}},
-				"readonly":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"orderby":     MF{Type: "integer", Default: int(0), NotNull: true}},
+				"readonly":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"orderby":     MF{Type: "integer", Default: int64(0), NotNull: true}},
 
 			"address": IM{
 				"_access": SL{"customer", "employee", "event", "place", "product", "project", "tool", "trans"},
@@ -264,7 +264,7 @@ func DataModel() IM {
 				"city":    MF{Type: "string", Length: 255},
 				"street":  MF{Type: "text"},
 				"notes":   MF{Type: "text"},
-				"deleted": MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted": MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"contact": IM{
 				"_access": SL{"customer", "employee", "event", "place", "product", "project", "tool", "trans"},
@@ -282,7 +282,7 @@ func DataModel() IM {
 				"mobil":     MF{Type: "string", Length: 255},
 				"email":     MF{Type: "string", Length: 255},
 				"notes":     MF{Type: "text"},
-				"deleted":   MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted":   MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"event": IM{
 				"_access":   SL{"customer", "employee", "place", "product", "project", "tool", "trans"},
@@ -300,7 +300,7 @@ func DataModel() IM {
 				"subject":     MF{Type: "string", Length: 255},
 				"place":       MF{Type: "string", Length: 255},
 				"description": MF{Type: "text"},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"customer": IM{
 				"_access":     SL{"customer"},
@@ -312,13 +312,13 @@ func DataModel() IM {
 				"custname":    MF{Type: "string", Length: 255, NotNull: true},
 				"taxnumber":   MF{Type: "string", Length: 255},
 				"account":     MF{Type: "string", Length: 255},
-				"notax":       MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"terms":       MF{Type: "integer", Default: int(0), NotNull: true},
+				"notax":       MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"terms":       MF{Type: "integer", Default: int64(0), NotNull: true},
 				"creditlimit": MF{Type: "float", Default: float64(0), NotNull: true},
 				"discount":    MF{Type: "float", Default: float64(0), NotNull: true},
 				"notes":       MF{Type: "text"},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true}},
 
 			"project": IM{
 				"_access":     SL{"project"},
@@ -331,8 +331,8 @@ func DataModel() IM {
 				"startdate":   MF{Type: "date"},
 				"enddate":     MF{Type: "date"},
 				"notes":       MF{Type: "text"},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"currency": IM{
 				"_access":     SL{"setting"},
@@ -341,9 +341,9 @@ func DataModel() IM {
 				"id":          MF{Type: "id"},
 				"curr":        MF{Type: "string", Length: 3, NotNull: true, Unique: true},
 				"description": MF{Type: "string", Length: 255, NotNull: true},
-				"digit":       MF{Type: "integer", Default: int(0), NotNull: true},
+				"digit":       MF{Type: "integer", Default: int64(0), NotNull: true},
 				"defrate":     MF{Type: "float", Default: float64(0), NotNull: true},
-				"cround":      MF{Type: "integer", Default: int(0), NotNull: true}},
+				"cround":      MF{Type: "integer", Default: int64(0), NotNull: true}},
 
 			"place": IM{
 				"_access":     SL{"setting"},
@@ -354,10 +354,10 @@ func DataModel() IM {
 				"placetype":   MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"placetype": SL{}}},
 				"description": MF{Type: "string", Length: 255, NotNull: true},
 				"curr":        MF{Type: "string", Length: 3, Requires: IM{"curr": SL{}}},
-				"defplace":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"defplace":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"notes":       MF{Type: "text"},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"rate": IM{
 				"_access":   SL{"setting"},
@@ -370,7 +370,7 @@ func DataModel() IM {
 				"place_id":  MF{References: SL{"place", "RESTRICT", "CASCADE"}, Refname: "planumber"},
 				"rategroup": MF{References: SL{"groups", "RESTRICT", noAction}, Requires: IM{"rategroup": SL{}}},
 				"ratevalue": MF{Type: "float", Default: float64(0), NotNull: true},
-				"deleted":   MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted":   MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"tax": IM{
 				"_access":     SL{"setting"},
@@ -380,7 +380,7 @@ func DataModel() IM {
 				"taxcode":     MF{Type: "string", Length: 150, NotNull: true, Unique: true},
 				"description": MF{Type: "string", Length: 255, NotNull: true},
 				"rate":        MF{Type: "float", Default: float64(0), NotNull: true},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"product": IM{
 				"_access":     SL{"product"},
@@ -393,9 +393,9 @@ func DataModel() IM {
 				"unit":        MF{Type: "string", Length: 150, NotNull: true},
 				"tax_id":      MF{References: SL{"tax", "RESTRICT", "CASCADE"}, Refname: "taxcode"},
 				"notes":       MF{Type: "text"},
-				"webitem":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"webitem":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"tool": IM{
 				"_access":     SL{"tool"},
@@ -407,8 +407,8 @@ func DataModel() IM {
 				"product_id":  MF{References: SL{"product", "RESTRICT", "CASCADE"}, Refname: "partnumber", NotNull: true},
 				"toolgroup":   MF{References: SL{"groups", "RESTRICT", noAction}, Requires: IM{"toolgroup": SL{}}},
 				"notes":       MF{Type: "text"},
-				"inactive":    MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"inactive":    MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"price": IM{
 				"_access":     SL{"product"},
@@ -423,8 +423,8 @@ func DataModel() IM {
 				"pricevalue":  MF{Type: "float", Default: float64(0), NotNull: true},
 				"discount":    MF{Type: "float"},
 				"calcmode":    MF{References: SL{"groups", "RESTRICT", noAction}, Requires: IM{"calcmode": SL{}}},
-				"vendorprice": MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"vendorprice": MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"barcode": IM{
 				"_access":     SL{"product"},
@@ -436,7 +436,7 @@ func DataModel() IM {
 				"description": MF{Type: "text"},
 				"barcodetype": MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"barcodetype": SL{}}},
 				"qty":         MF{Type: "float", Default: float64(0), NotNull: true},
-				"defcode":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"defcode":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"trans": IM{
 				"_access": SL{"transtype"},
@@ -458,15 +458,15 @@ func DataModel() IM {
 				"place_id":        MF{References: SL{"place", "RESTRICT", noAction}, Refname: "planumber"},
 				"paidtype":        MF{References: SL{"groups", "RESTRICT", noAction}, Requires: IM{"paidtype": SL{}}},
 				"curr":            MF{Type: "string", Length: 3, Requires: IM{"curr": SL{}}},
-				"notax":           MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"paid":            MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"notax":           MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"paid":            MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"acrate":          MF{Type: "float", Default: float64(0)},
 				"notes":           MF{Type: "text"},
 				"intnotes":        MF{Type: "text"},
 				"fnote":           MF{Type: "text"},
 				"transtate":       MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"transtate": SL{}}},
-				"closed":          MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":         MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"closed":          MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":         MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"cruser_id":       MF{References: SL{"employee", "RESTRICT", noAction}, Refname: "username"}},
 
 			"item": IM{
@@ -486,10 +486,10 @@ func DataModel() IM {
 				"vatamount":   MF{Type: "float", Default: float64(0), NotNull: true},
 				"amount":      MF{Type: "float", Default: float64(0), NotNull: true},
 				"description": MF{Type: "text", NotNull: true},
-				"deposit":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
+				"deposit":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
 				"ownstock":    MF{Type: "float", Default: float64(0), NotNull: true},
-				"actionprice": MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"actionprice": MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"payment": IM{
 				"_access":  SL{"transtype"},
@@ -500,7 +500,7 @@ func DataModel() IM {
 				"paiddate": MF{Type: "date", NotNull: true},
 				"amount":   MF{Type: "float", Default: float64(0), NotNull: true},
 				"notes":    MF{Type: "text"},
-				"deleted":  MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"deleted":  MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"movement": IM{
 				"_access":      SL{"transtype"},
@@ -515,8 +515,8 @@ func DataModel() IM {
 				"place_id":     MF{References: SL{"place", "RESTRICT", noAction}, Refname: "planumber"},
 				"qty":          MF{Type: "float", Default: float64(0), NotNull: true},
 				"notes":        MF{Type: "text"},
-				"shared":       MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":      MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}},
+				"shared":       MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":      MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}},
 
 			"pattern": IM{
 				"_access":     SL{"setting"},
@@ -526,8 +526,8 @@ func DataModel() IM {
 				"description": MF{Type: "string", Length: 150, NotNull: true, Unique: true},
 				"transtype":   MF{References: SL{"groups", "RESTRICT", noAction}, NotNull: true, Requires: IM{"transtype": SL{}}},
 				"notes":       MF{Type: "text"},
-				"defpattern":  MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}},
-				"deleted":     MF{Type: "integer", Default: int(0), NotNull: true, Requires: IM{"bool": true}}}},
+				"defpattern":  MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}},
+				"deleted":     MF{Type: "integer", Default: int64(0), NotNull: true, Requires: IM{"bool": true}}}},
 
 		"index": map[string]MI{
 			"groups_namevalue_idx":  {Model: "groups", Fields: SL{"groupname", "groupvalue"}, Unique: true},
@@ -749,7 +749,7 @@ func DataModel() IM {
 				//filetype
 				{"groupname": "filetype", "groupvalue": "xls", "description": "MsExcel workbook"},
 				{"groupname": "filetype", "groupvalue": "html", "description": "HTML document"},
-				{"groupname": "filetype", "groupvalue": "gshi", "description": "Genshi template"},
+				{"groupname": "filetype", "groupvalue": "csv", "description": "Comma-separated values"},
 				{"groupname": "filetype", "groupvalue": "ntr", "description": "Nervatura Report"},
 				//transtype
 				{"groupname": "transtype", "groupvalue": "invoice"},

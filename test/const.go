@@ -4,9 +4,9 @@ import (
 	"os"
 )
 
-const confPath = "../cmd/config"
 const reportDir = "../../report-templates/templates"
-const alias = "pgdemo"
+const alias = "test"
 const username = "admin"
 
 var password = os.Getenv("GO_TEST_USER_PASSWORD")
+var apiKey = os.Getenv("NT_API_KEY")
