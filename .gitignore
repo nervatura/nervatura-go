@@ -12,6 +12,7 @@
 *.out
 
 .vscode
-cmd/nervatura
+nervatura
 vendor
 build
+.scannerwork

@@ -56,7 +56,6 @@
     - [RequestDatabaseCreate](#requestdatabasecreate)
     - [RequestDelete](#requestdelete)
     - [RequestEmpty](#requestempty)
-    - [RequestField](#requestfield)
     - [RequestFunction](#requestfunction)
     - [RequestFunction.ValuesEntry](#requestfunctionvaluesentry)
     - [RequestGet](#requestget)
@@ -97,15 +96,13 @@
     - [Tool](#tool)
     - [Trans](#trans)
     - [UiAudit](#uiaudit)
-    - [UiLanguage](#uilanguage)
     - [UiMenu](#uimenu)
     - [UiMenufields](#uimenufields)
     - [UiMessage](#uimessage)
     - [UiPrintqueue](#uiprintqueue)
     - [UiReport](#uireport)
-    - [UiReportfields](#uireportfields)
-    - [UiReportsources](#uireportsources)
     - [UiUserconfig](#uiuserconfig)
+    - [Value](#value)
   
 
 
@@ -114,7 +111,7 @@
     - [ReportOrientation](#reportorientation)
     - [ReportOutput](#reportoutput)
     - [ReportSize](#reportsize)
-    - [RequestReport.ReportType](#requestreportreporttype)
+    - [ReportType](#reporttype)
   
 
 
@@ -273,7 +270,7 @@ RequestUpdate Key->ID keys:
 | id | [ int64](#int64) |  |
 | fieldname | [ string](#string) |  |
 | nervatype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
-| subtype | [ int64](#int64) | Reference to [Groups](#groups).id (where groupname in ('custtype','placetype','  protype','toolgroup','transtype')) |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _subtype.subtype | [optional int64](#int64) | Reference to [Groups](#groups).id (where groupname in ('custtype','placetype','  protype','toolgroup','transtype')) |
 | fieldtype | [ int64](#int64) | Reference to [Groups](#groups).id  (only where groupname = 'fieldtype') |
 | description | [ string](#string) |  |
 | valuelist | [ string](#string) | If fieldtype=valuelist: valid values are listed, separated by ~ |
@@ -299,11 +296,11 @@ RequestUpdate Key->ID keys:
 | ----- | ---- | ----------- |
 | id | [ int64](#int64) |  |
 | empnumber | [ string](#string) | Unique ID. If you set it to numberdef, it will be generated at the first data save. The format and value of the next data in row is taken from the numberdef (numberkey = empnumber) data series. |
-| username | [ string](#string) | Database login name. Should be unique on database level. |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _username.username | [optional string](#string) | Database login name. Should be unique on database level. |
 | usergroup | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'usergroup') |
-| startdate | [ string](#string) |  |
-| enddate | [ string](#string) |  |
-| department | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'department') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _startdate.startdate | [optional string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _enddate.enddate | [optional string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _department.department | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'department') |
 | registration_key | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Employee meta data |
@@ -331,9 +328,9 @@ RequestUpdate Key->ID keys:
 | nervatype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
 | ref_id | [ int64](#int64) | Reference to [Customer](#customer).id, [Employee](#employee).id, [Place](#place).id, [Product](#product).id, [Project](#project).id, [Tool](#tool).id, [Trans](#trans).id |
 | uid | [ string](#string) |  |
-| eventgroup | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'eventgroup') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _eventgroup.eventgroup | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'eventgroup') |
 | fromdate | [ string](#string) | Datetime |
-| todate | [ string](#string) | Datetime |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _todate.todate | [optional string](#string) | Datetime |
 | subject | [ string](#string) |  |
 | place | [ string](#string) |  |
 | description | [ string](#string) |  |
@@ -355,7 +352,7 @@ RequestUpdate Key->ID keys:
 | ----- | ---- | ----------- |
 | id | [ int64](#int64) |  |
 | fieldname | [ string](#string) | Reference to [Deffield](#deffield).fieldname. |
-| ref_id | [ int64](#int64) | Reference to any type.id where type = [Deffield](#deffield).nervatype. If it is null then nervatype = setting. |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _ref_id.ref_id | [optional int64](#int64) | Reference to any type.id where type = [Deffield](#deffield).nervatype. If it is null then nervatype = setting. |
 | value | [ string](#string) |  |
 | notes | [ string](#string) |  |
  <!-- end Fields -->
@@ -460,8 +457,8 @@ RequestUpdate Key->ID keys:
 | id | [ int64](#int64) |  |
 | employee_id | [ int64](#int64) | Reference to [Employee](#employee).id |
 | crdate | [ string](#string) | Date-time |
-| nervatype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
-| ref_id | [ int64](#int64) | Reference to {nervatype}.id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _nervatype.nervatype | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _ref_id.ref_id | [optional int64](#int64) | Reference to {nervatype}.id |
 | logstate | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'logstate') |
 | metadata | [repeated MetaData](#metadata) | Log meta data |
  <!-- end Fields -->
@@ -507,9 +504,9 @@ RequestUpdate Key->ID keys:
 | trans_id | [ int64](#int64) | Reference to [Trans](#trans).id |
 | shippingdate | [ string](#string) | Date-time |
 | movetype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'movetype') |
-| product_id | [ int64](#int64) | Reference to [Product](#product).id |
-| tool_id | [ int64](#int64) | Reference to [Tool](#tool).id |
-| place_id | [ int64](#int64) | Reference to [Place](#place).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _product_id.product_id | [optional int64](#int64) | Reference to [Product](#product).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _tool_id.tool_id | [optional int64](#int64) | Reference to [Tool](#tool).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _place_id.place_id | [optional int64](#int64) | Reference to [Place](#place).id |
 | qty | [ double](#double) |  |
 | description | [ string](#string) |  |
 | shared | [ bool](#bool) |  |
@@ -596,7 +593,7 @@ RequestUpdate Key->ID keys:
 | planumber | [ string](#string) | Unique ID. If you set it to numberdef, it will be generated at the first data save. The format and value of the next data in row is taken from the numberdef (numberkey = planumber) data series. |
 | placetype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'placetype') |
 | description | [ string](#string) |  |
-| curr | [ string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _curr.curr | [optional string](#string) |  |
 | defplace | [ bool](#bool) |  |
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
@@ -619,7 +616,7 @@ RequestUpdate Key->ID keys:
 | id | [ int64](#int64) |  |
 | product_id | [ int64](#int64) | Reference to [Product](#product).id |
 | validfrom | [ string](#string) | Start of validity, mandatory data. |
-| validto | [ string](#string) | End of validity, can be left empty. |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _validto.validto | [optional string](#string) | End of validity, can be left empty. |
 | curr | [ string](#string) |  |
 | qty | [ double](#double) | Price ranges can also be specified, thus different price can be set for a smaller and bigger quantity of the same product. The quantity should be used as the lower threshold, ie. this should be the minimum quantity for the price set. |
 | pricevalue | [ double](#double) | Price value |
@@ -670,9 +667,9 @@ RequestUpdate Key->ID keys:
 | id | [ int64](#int64) |  |
 | pronumber | [ string](#string) | Unique ID. If you set it to numberdef, it will be generated at the first data save. The format and value of the next data in row is taken from the numberdef (numberkey = pronumber) data series. |
 | description | [ string](#string) | The name of the project. |
-| customer_id | [ int64](#int64) | Reference to [Customer](#customer).id |
-| startdate | [ string](#string) |  |
-| enddate | [ string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _customer_id.customer_id | [optional int64](#int64) | Reference to [Customer](#customer).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _startdate.startdate | [optional string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _enddate.enddate | [optional string](#string) |  |
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Project meta data |
@@ -699,8 +696,8 @@ RequestUpdate Key->ID keys:
 | ratetype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'ratetype') |
 | ratedate | [ string](#string) |  |
 | curr | [ string](#string) |  |
-| place_id | [ int64](#int64) | Reference to [Place](#place).id |
-| rategroup | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'rategroup') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _place_id.place_id | [optional int64](#int64) | Reference to [Place](#place).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _rategroup.rategroup | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'rategroup') |
 | ratevalue | [ double](#double) | Rate or interest value |
 | metadata | [repeated MetaData](#metadata) | Rate meta data |
  <!-- end Fields -->
@@ -741,20 +738,6 @@ No parameters
  <!-- end HasFields -->
 
 
-## RequestField
-
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.boolean | [ bool](#bool) |  |
-| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.number | [ double](#double) |  |
-| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.text | [ string](#string) |  |
- <!-- end Fields -->
-<br />
- <!-- end HasFields -->
-
-
 ## RequestFunction
 
 
@@ -775,7 +758,7 @@ No parameters
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
-| value | [ RequestField](#requestfield) |  |
+| value | [ Value](#value) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -790,7 +773,7 @@ No parameters
 | nervatype | [ DataType](#datatype) |  |
 | metadata | [ bool](#bool) |  |
 | ids | [repeated int64](#int64) |  |
-| filters | [repeated string](#string) |  |
+| filter | [repeated string](#string) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -806,8 +789,9 @@ No parameters
 | orientation | [ ReportOrientation](#reportorientation) |  |
 | size | [ ReportSize](#reportsize) |  |
 | output | [ ReportOutput](#reportoutput) |  |
-| type | [ RequestReport.ReportType](#requestreportreporttype) |  |
+| type | [ ReportType](#reporttype) |  |
 | refnumber | [ string](#string) | Example : DMINV/00001 |
+| template | [ string](#string) | Custom report JSON template |
 | filters | [map RequestReport.FiltersEntry](#requestreportfiltersentry) |  |
  <!-- end Fields -->
 <br />
@@ -821,7 +805,7 @@ No parameters
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
-| value | [ RequestField](#requestfield) |  |
+| value | [ Value](#value) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -908,7 +892,7 @@ Admin user group membership required.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
-| value | [ RequestField](#requestfield) |  |
+| value | [ Value](#value) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -921,7 +905,7 @@ Admin user group membership required.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
-| value | [ RequestField](#requestfield) |  |
+| value | [ Value](#value) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -976,7 +960,7 @@ Only "select" queries and functions can be executed. Changes to the data are not
 | ----- | ---- | ----------- |
 | key | [ string](#string) | Give the query a unique name |
 | text | [ string](#string) | The SQL query as a string |
-| values | [repeated string](#string) | The array of parameter values |
+| values | [repeated Value](#value) | The array of parameter values |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -1056,14 +1040,11 @@ Does not return content.
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.tool | [ Tool](#tool) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.trans | [ Trans](#trans) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_audit | [ UiAudit](#uiaudit) |  |
-| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_language | [ UiLanguage](#uilanguage) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_menu | [ UiMenu](#uimenu) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_menufields | [ UiMenufields](#uimenufields) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_message | [ UiMessage](#uimessage) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_printqueue | [ UiPrintqueue](#uiprintqueue) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_report | [ UiReport](#uireport) |  |
-| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_reportfields | [ UiReportfields](#uireportfields) |  |
-| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_reportsources | [ UiReportsources](#uireportsources) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_userconfig | [ UiUserconfig](#uiuserconfig) |  |
  <!-- end Fields -->
 <br />
@@ -1155,7 +1136,7 @@ Returns all installable files from the NT_REPORT_DIR directory (empty value: all
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
-| value | [ string](#string) |  |
+| value | [ Value](#value) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -1290,7 +1271,7 @@ RequestUpdate Key->ID keys:
 | serial | [ string](#string) | Unique ID. If you set it to numberdef, it will be generated at the first data save. The format and value of the next data in row is taken from the numberdef (numberkey = serial) data series. |
 | description | [ string](#string) |  |
 | product_id | [ int64](#int64) | Reference to [Product](#product).id |
-| toolgroup | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'toolgroup') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _toolgroup.toolgroup | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'toolgroup') |
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Tool meta data |
@@ -1329,17 +1310,17 @@ RequestUpdate Key->ID keys:
 | transnumber | [ string](#string) | Unique ID. If you set it to numberdef, it will be generated at the first data save. The format and value of the next data in row is taken from the numberdef (numberkey = transnumber) data series. |
 | transtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'transtype')[Groups](#groups).id |
 | direction | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'direction') |
-| ref_transnumber | [ string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _ref_transnumber.ref_transnumber | [optional string](#string) |  |
 | crdate | [ string](#string) |  |
 | transdate | [ string](#string) |  |
-| duedate | [ string](#string) | Date-time |
-| customer_id | [ int64](#int64) | Reference to [Customer](#customer).id |
-| employee_id | [ int64](#int64) | Reference to [Employee](#employee).id |
-| department | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'department') |
-| project_id | [ int64](#int64) | Reference to [Project](#project).id |
-| place_id | [ int64](#int64) | Reference to [Place](#place).id |
-| paidtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'paidtype') |
-| curr | [ string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _duedate.duedate | [optional string](#string) | Date-time |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _customer_id.customer_id | [optional int64](#int64) | Reference to [Customer](#customer).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _employee_id.employee_id | [optional int64](#int64) | Reference to [Employee](#employee).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _department.department | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'department') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _project_id.project_id | [optional int64](#int64) | Reference to [Project](#project).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _place_id.place_id | [optional int64](#int64) | Reference to [Place](#place).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _paidtype.paidtype | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'paidtype') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _curr.curr | [optional string](#string) |  |
 | notax | [ bool](#bool) |  |
 | paid | [ bool](#bool) |  |
 | acrate | [ double](#double) |  |
@@ -1373,25 +1354,9 @@ RequestUpdate Key->ID keys:
 | id | [ int64](#int64) |  |
 | usergroup | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'usergroup') |
 | nervatype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
-| subtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'movetype') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _subtype.subtype | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'movetype') |
 | inputfilter | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'inputfilter') |
 | supervisor | [ bool](#bool) |  |
- <!-- end Fields -->
-<br />
- <!-- end HasFields -->
-
-
-## UiLanguage
-RequestUpdate Key->ID keys:
-
-- ```id```: UiLanguage *lang*
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| id | [ int64](#int64) |  |
-| lang | [ string](#string) |  |
-| description | [ string](#string) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -1410,8 +1375,8 @@ RequestUpdate Key->ID keys:
 | description | [ string](#string) |  |
 | modul | [ string](#string) |  |
 | icon | [ string](#string) |  |
+| method | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'method') |
 | funcname | [ string](#string) |  |
-| url | [ bool](#bool) |  |
 | address | [ string](#string) |  |
  <!-- end Fields -->
 <br />
@@ -1464,10 +1429,10 @@ RequestUpdate Key->ID keys:
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | id | [ int64](#int64) |  |
-| nervatype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _nervatype.nervatype | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
 | ref_id | [ int64](#int64) | Reference to {nervatype}.id |
 | qty | [ double](#double) |  |
-| employee_id | [ int64](#int64) | Reference to [Employee](#employee).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _employee_id.employee_id | [optional int64](#int64) | Reference to [Employee](#employee).id |
 | report_id | [ int64](#int64) | Reference to [UiReport](#UiReport).id |
 | crdate | [ string](#string) | Date-time |
  <!-- end Fields -->
@@ -1494,63 +1459,13 @@ RequestUpdate Key->ID keys:
 | id | [ int64](#int64) |  |
 | reportkey | [ string](#string) |  |
 | nervatype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
-| transtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'transtype') |
-| direction | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'direction') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _transtype.transtype | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'transtype') |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _direction.direction | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'direction') |
 | repname | [ string](#string) |  |
 | description | [ string](#string) |  |
 | label | [ string](#string) |  |
 | filetype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'filetype') |
 | report | [ string](#string) |  |
- <!-- end Fields -->
-<br />
- <!-- end HasFields -->
-
-
-## UiReportfields
-RequestUpdate Key->ID keys:
-
-- ```id```: *{reportkey}~{fieldname}*
-
-- ```report_id```: *{reportkey}*
-
-- ```wheretype```: All groupvalue from Groups, where groupname equal wheretype
-
-- ```fieldtype```: Valid valaus: *bool, date, integer, float, string*
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| id | [ int64](#int64) |  |
-| report_id | [ int64](#int64) | Reference to [UiReport](#UiReport).id |
-| fieldname | [ string](#string) |  |
-| fieldtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'fieldtype') |
-| wheretype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'wheretype') |
-| description | [ string](#string) |  |
-| orderby | [ int64](#int64) |  |
-| sqlstr | [ string](#string) |  |
-| parameter | [ bool](#bool) |  |
-| dataset | [ string](#string) |  |
-| defvalue | [ string](#string) |  |
-| valuelist | [ string](#string) |  |
- <!-- end Fields -->
-<br />
- <!-- end HasFields -->
-
-
-## UiReportsources
-RequestUpdate Key->ID keys:
-
-- ```id```: *{reportkey}~{dataset}*
-
-- ```report_id```: *{reportkey}*
-
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| id | [ int64](#int64) |  |
-| report_id | [ int64](#int64) | Reference to [UiReport](#UiReport).id |
-| dataset | [ string](#string) |  |
-| sqlstr | [ string](#string) |  |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -1567,12 +1482,26 @@ RequestUpdate Key->ID keys:
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | id | [ int64](#int64) |  |
-| employee_id | [ int64](#int64) | Reference to [Employee](#employee).id |
-| section | [ string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _employee_id.employee_id | [optional int64](#int64) | Reference to [Employee](#employee).id |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _section.section | [optional string](#string) |  |
 | cfgroup | [ string](#string) |  |
 | cfname | [ string](#string) |  |
-| cfvalue | [ string](#string) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _cfvalue.cfvalue | [optional string](#string) |  |
 | orderby | [ int64](#int64) |  |
+ <!-- end Fields -->
+<br />
+ <!-- end HasFields -->
+
+
+## Value
+
+
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.boolean | [ bool](#bool) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.number | [ double](#double) |  |
+| [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.text | [ string](#string) | google.protobuf.NullValue null = 4; |
  <!-- end Fields -->
 <br />
  <!-- end HasFields -->
@@ -1614,15 +1543,12 @@ RequestUpdate Key->ID keys:
 | tool | 23 | [Tool](#tool) |
 | trans | 24 | [Trans](#trans) |
 | ui_audit | 25 | [UiAudit](#uiaudit) |
-| ui_language | 26 | [UiLanguage](#uilanguage) |
-| ui_menu | 27 | [UiMenu](#uimenu) |
-| ui_menufields | 28 | [UiMenufields](#uimenufields) |
-| ui_message | 29 | [UiMessage](#uimessage) |
-| ui_printqueue | 30 | [UiPrintqueue](#uiprintqueue) |
-| ui_report | 31 | [UiReport](#uireport) |
-| ui_reportfields | 32 | [UiReportfields](#uireportfields) |
-| ui_reportsources | 33 | [UiReportsources](#uireportsources) |
-| ui_userconfig | 34 | [UiUserconfig](#uiuserconfig) |
+| ui_menu | 26 | [UiMenu](#uimenu) |
+| ui_menufields | 27 | [UiMenufields](#uimenufields) |
+| ui_message | 28 | [UiMessage](#uimessage) |
+| ui_printqueue | 29 | [UiPrintqueue](#uiprintqueue) |
+| ui_report | 30 | [UiReport](#uireport) |
+| ui_userconfig | 31 | [UiUserconfig](#uiuserconfig) |
 
 <br />
 
@@ -1646,6 +1572,7 @@ RequestUpdate Key->ID keys:
 | auto | 0 |  |
 | xml | 1 |  |
 | data | 2 |  |
+| base64 | 3 |  |
 
 <br />
 
@@ -1664,20 +1591,20 @@ RequestUpdate Key->ID keys:
 <br />
 
 
-## RequestReport.ReportType
+## ReportType
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| none | 0 |  |
-| customer | 1 |  |
-| employee | 2 |  |
-| event | 3 |  |
-| place | 4 |  |
-| product | 5 |  |
-| project | 6 |  |
-| tool | 7 |  |
-| trans | 8 |  |
+| report_none | 0 |  |
+| report_customer | 1 |  |
+| report_employee | 2 |  |
+| report_event | 3 |  |
+| report_place | 4 |  |
+| report_product | 5 |  |
+| report_project | 6 |  |
+| report_tool | 7 |  |
+| report_trans | 8 |  |
 
 <br />
  <!-- end Enums -->

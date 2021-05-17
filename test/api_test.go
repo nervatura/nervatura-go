@@ -19,7 +19,7 @@ func getLogin() (string, *nt.API, error) {
 }
 
 func TestDatabaseCreate(t *testing.T) {
-	options := nt.IM{"database": alias, "demo": "true", "report_dir": reportDir}
+	options := nt.IM{"database": alias, "demo": true}
 	_, err := getAPI().DatabaseCreate(options)
 	if err != nil {
 		t.Fatal(err)
@@ -176,6 +176,7 @@ func TestAPIReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	options := nt.IM{
 		"reportkey":   "ntr_invoice_en",
 		"orientation": "portrait",
@@ -200,7 +201,7 @@ func TestAPIReport(t *testing.T) {
 	}
 
 	options = nt.IM{
-		"reportkey": "xls_vat_en",
+		"reportkey": "csv_vat_en",
 		"filters": nt.IM{
 			"date_from": "2014-01-01",
 			"date_to":   "2022-01-01",
@@ -220,7 +221,7 @@ func TestAPIReportList(t *testing.T) {
 	}
 
 	options := nt.IM{
-		"report_dir": reportDir,
+		"report_dir": "",
 	}
 	_, err = api.ReportList(options)
 	if err != nil {
@@ -250,8 +251,7 @@ func TestAPIReportInstall(t *testing.T) {
 	}
 
 	options := nt.IM{
-		"report_dir": reportDir,
-		"reportkey":  "ntr_cash_in_en",
+		"reportkey": "ntr_cash_in_en",
 	}
 	_, err = api.ReportInstall(options)
 	if err != nil {

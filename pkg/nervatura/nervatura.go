@@ -38,10 +38,6 @@ Homepage: http://www.nervatura.com
 */
 package nervatura
 
-import (
-	"github.com/dgrijalva/jwt-go"
-)
-
 //TimeLayout DateTime format
 const TimeLayout = "2006-01-02 15:04:05"
 
@@ -108,13 +104,6 @@ type Update struct {
 	Trans  interface{} //Transaction
 }
 
-// NTClaims is a custom Nervatura claims type
-type NTClaims struct {
-	Username string `json:"username"`
-	Database string `json:"database"`
-	jwt.StandardClaims
-}
-
 // User - Nervatura user properties
 type User struct {
 	Id         int64  `json:"id"`
@@ -123,55 +112,4 @@ type User struct {
 	Usergroup  int64  `json:"usergroup"`
 	Scope      string `json:"scope"`
 	Department string `json:"department,omitempty"`
-}
-
-func messages() SM {
-	return SM{
-		"disabled_feature":       "Disabled feature",
-		"disabled_insert":        "New record requires the insert_row parameter!",
-		"disabled_update":        "Disabled update",
-		"empty_password":         "The new password can not be empty!",
-		"exists_template":        "The template already exists!",
-		"log_create_demo":        "Create a DEMO database (optional)",
-		"log_create_index":       "Creating indexes ...",
-		"log_create_table":       "Creating the tables...",
-		"log_database_alias":     "Database alias",
-		"log_drop_table":         "The existing table is dropped...",
-		"log_end_process":        "End process",
-		"log_error":              "Error",
-		"log_init_data":          "Data initialization ...",
-		"log_load_data":          "Loading data ...",
-		"log_load_template":      "Loading report templates and data ...",
-		"log_start_process":      "Start process",
-		"log_rebuilding":         "Rebuilding the database...",
-		"missing_database":       "Missing database",
-		"missing_driver":         "Missing database driver",
-		"missing_fieldname":      "Missing fieldname",
-		"missing_insert_field":   "Unknown fieldname and missing insert_field parameter:",
-		"missing_nervatype":      "Missing or unknown nervatype",
-		"missing_user":           "Missing user",
-		"missing_usergroup":      "Missing usergroup!",
-		"missing_reportkey":      "Missing reportkey",
-		"missing_required_field": "Missing required field",
-		"info_create_ok":         "The database was created successfully!",
-		"invalid_engine":         "Invalid database driver",
-		"integrity_error":        "Integrity error. The object can not be deleted!",
-		"invalid_fieldname":      "Invalid fieldname",
-		"invalid_nervatype":      "Invalid nervatype value:",
-		"invalid_provider":       "Invalid Email Service Provider",
-		"invalid_trans":          "Invalid transaction",
-		"invalid_id":             "Invalid id value",
-		"invalid_template":       "Invalid template!",
-		"invalid_refnumber":      "Invalid refnumber",
-		"invalid_login":          "Login required!",
-		"invalid_value":          "Invalid value type",
-		"unknown_fieldname":      "Unknown fieldname:",
-		"unknown_method":         "Unknown method",
-		"unknown_user":           "Unknown username",
-		"not_connect":            "Could not connect to the database",
-		"nodata":                 "No data available",
-		"not_exist":              "does not exist",
-		"verify_password":        "Password fields don't match",
-		"wrong_password":         "Incorrect password",
-	}
 }

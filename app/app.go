@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -11,18 +12,19 @@ import (
 
 	_ "github.com/joho/godotenv/autoload" // load .env file automatically
 	db "github.com/nervatura/nervatura-go/pkg/database"
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 	srv "github.com/nervatura/nervatura-go/pkg/service"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 	"golang.org/x/sync/errgroup"
 )
 
 // App - Nervatura Application
 type App struct {
-	services    map[string]srv.APIService
-	defConn     ntura.DataDriver
-	infoLog     *log.Logger
-	errorLog    *log.Logger
-	signingKeys ntura.IM
+	services  map[string]srv.APIService
+	defConn   nt.DataDriver
+	infoLog   *log.Logger
+	errorLog  *log.Logger
+	tokenKeys map[string]map[string]string
 }
 
 var services = make(map[string]srv.APIService)
@@ -33,8 +35,8 @@ func registerService(name string, server srv.APIService) {
 
 func New() (app *App, err error) {
 	app = &App{
-		services:    services,
-		signingKeys: make(ntura.IM),
+		services:  services,
+		tokenKeys: make(map[string]map[string]string),
 	}
 
 	app.infoLog = log.New(os.Stdout, "INFO: ", log.LstdFlags)
@@ -56,13 +58,11 @@ func New() (app *App, err error) {
 		return nil, err
 	}
 
-	/*
-		err = app.checkExternalToken()
-		if err != nil {
-			app.errorLog.Printf("error loading external token: %v\n", err)
-			return nil, err
-		}
-	*/
+	err = app.setPrivateKey()
+	if err != nil {
+		app.errorLog.Printf("error loading private key: %v\n", err)
+		return nil, err
+	}
 
 	err = app.startService("cli")
 	if err != nil {
@@ -75,6 +75,27 @@ func New() (app *App, err error) {
 	}
 
 	return app, err
+}
+
+func (app *App) setPrivateKey() error {
+	pkey := os.Getenv("NT_TOKEN_PRIVATE_KEY")
+	kid := ut.ToString(os.Getenv("NT_TOKEN_KID"), "private")
+	ktype := ut.ToString(os.Getenv("NT_TOKEN_PRIVATE_KEY_TYPE"), "KEY")
+	if pkey != "" {
+		if _, err := os.Stat(pkey); err == nil {
+			content, err := ioutil.ReadFile(pkey)
+			if err != nil {
+				return err
+			}
+			pkey = string(content)
+		}
+		app.tokenKeys[kid] = nt.SM{
+			"type":  "private",
+			"ktype": ktype,
+			"value": pkey,
+		}
+	}
+	return nil
 }
 
 func (app *App) startServer() {
@@ -91,7 +112,7 @@ func (app *App) startServer() {
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	if _, found := services["http"]; found && ntura.GetEnvValue("bool", os.Getenv("NT_HTTP_ENABLED")).(bool) {
+	if _, found := services["http"]; found && ut.GetEnvValue("bool", os.Getenv("NT_HTTP_ENABLED")).(bool) {
 		g.Go(func() error {
 			return app.startService("http")
 		})
@@ -99,7 +120,7 @@ func (app *App) startServer() {
 		app.infoLog.Println("http rest api is disabled")
 	}
 
-	if _, found := services["grpc"]; found && ntura.GetEnvValue("bool", os.Getenv("NT_GRPC_ENABLED")).(bool) {
+	if _, found := services["grpc"]; found && ut.GetEnvValue("bool", os.Getenv("NT_GRPC_ENABLED")).(bool) {
 		g.Go(func() error {
 			return app.startService("grpc")
 		})
@@ -149,37 +170,13 @@ func (app *App) checkDefaultConn() (err error) {
 	return nil
 }
 
-/*
-func (app *App) checkExternalToken() error {
-	if os.Getenv("NT_TOKEN_KID") != "" && os.Getenv("NT_TOKEN_KEY") != "" {
-		app.signingKeys[os.Getenv("NT_TOKEN_KID")] = os.Getenv("NT_TOKEN_KEY")
-	}
-	if ntura.GetEnvValue("bool", os.Getenv("NT_TOKEN_EXTERNAL_ENABLED")).(bool) && (os.Getenv("NT_TOKEN_EXTERNAL_URL") != "") {
-		res, err := http.Get(os.Getenv("NT_TOKEN_EXTERNAL_URL"))
-		if err != nil {
-			return err
-		}
-		defer res.Body.Close()
-		data, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-		err = ntura.ConvertFromByte(data, &app.signingKeys)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-*/
-
-func (app *App) GetNervaStore(database string) *ntura.NervaStore {
+func (app *App) GetNervaStore(database string) *nt.NervaStore {
 	if app.defConn != nil {
 		if app.defConn.Connection().Alias == database {
-			return ntura.New(app.defConn)
+			return nt.New(app.defConn)
 		}
 	}
-	return ntura.New(&db.SQLDriver{})
+	return nt.New(&db.SQLDriver{})
 }
 
 func (app *App) GetResults() string {

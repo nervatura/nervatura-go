@@ -31,6 +31,10 @@ func getRPCToken(t *testing.T) string {
 	return resp.Token
 }
 
+func getAuth(token string) string {
+	return "Bearer " + token
+}
+
 func TestRpcUserLogin(t *testing.T) {
 	token := getRPCToken(t)
 	fmt.Printf("UserLogin: %+v\n", token)
@@ -43,7 +47,7 @@ func TestRpcDatabaseCreate(t *testing.T) {
 	md := metadata.Pairs("X-Api-Key", apiKey)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
-	resp, err := client.DatabaseCreate(ctx, &pb.RequestDatabaseCreate{Alias: "test", Demo: true})
+	resp, err := client.DatabaseCreate(ctx, &pb.RequestDatabaseCreate{Alias: "demo", Demo: true})
 	if err != nil {
 		t.Fatalf("DatabaseCreate failed: %v", err)
 	}
@@ -55,7 +59,7 @@ func TestRpcTokenLogin(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.TokenLogin(ctx, &pb.RequestEmpty{})
@@ -70,7 +74,7 @@ func TestRpcTokenRefresh(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.TokenRefresh(ctx, &pb.RequestEmpty{})
@@ -116,11 +120,11 @@ func TestRpcGet(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.Get(ctx, &pb.RequestGet{
-		Nervatype: pb.DataType_event, Metadata: true, Ids: []int64{1, 2},
+		Nervatype: pb.DataType_trans, Metadata: true, Ids: []int64{4},
 	})
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
@@ -133,46 +137,46 @@ func TestRpcUpdate(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.Update(ctx,
 		&pb.RequestUpdate{
 			Nervatype: pb.DataType_address,
 			Items: []*pb.RequestUpdate_Item{
-				{Values: map[string]*pb.RequestField{
-					"nervatype":         {Value: &pb.RequestField_Number{Number: 10}},
-					"ref_id":            {Value: &pb.RequestField_Number{Number: 2}},
-					"zipcode":           {Value: &pb.RequestField_Text{Text: "12345"}},
-					"city":              {Value: &pb.RequestField_Text{Text: "BigCity"}},
-					"notes":             {Value: &pb.RequestField_Text{Text: "Create a new item by IDs"}},
-					"address_metadata1": {Value: &pb.RequestField_Text{Text: "value1"}},
-					"address_metadata2": {Value: &pb.RequestField_Text{Text: "value2~note2"}},
+				{Values: map[string]*pb.Value{
+					"nervatype":         {Value: &pb.Value_Number{Number: 10}},
+					"ref_id":            {Value: &pb.Value_Number{Number: 2}},
+					"zipcode":           {Value: &pb.Value_Text{Text: "12345"}},
+					"city":              {Value: &pb.Value_Text{Text: "BigCity"}},
+					"notes":             {Value: &pb.Value_Text{Text: "Create a new item by IDs"}},
+					"address_metadata1": {Value: &pb.Value_Text{Text: "value1"}},
+					"address_metadata2": {Value: &pb.Value_Text{Text: "value2~note2"}},
 				}},
-				{Values: map[string]*pb.RequestField{
-					"id":      {Value: &pb.RequestField_Number{Number: 6}},
-					"zipcode": {Value: &pb.RequestField_Text{Text: "54321"}},
-					"city":    {Value: &pb.RequestField_Text{Text: "BigCity"}},
-					"notes":   {Value: &pb.RequestField_Text{Text: "Update an item by IDs"}},
+				{Values: map[string]*pb.Value{
+					"id":      {Value: &pb.Value_Number{Number: 6}},
+					"zipcode": {Value: &pb.Value_Text{Text: "54321"}},
+					"city":    {Value: &pb.Value_Text{Text: "BigCity"}},
+					"notes":   {Value: &pb.Value_Text{Text: "Update an item by IDs"}},
 				}},
-				{Values: map[string]*pb.RequestField{
-					"zipcode":           {Value: &pb.RequestField_Text{Text: "12345"}},
-					"city":              {Value: &pb.RequestField_Text{Text: "BigCity"}},
-					"notes":             {Value: &pb.RequestField_Text{Text: "Create a new item by IDs"}},
-					"address_metadata1": {Value: &pb.RequestField_Text{Text: "value1"}},
-					"address_metadata2": {Value: &pb.RequestField_Text{Text: "value2~note2"}},
+				{Values: map[string]*pb.Value{
+					"zipcode":           {Value: &pb.Value_Text{Text: "12345"}},
+					"city":              {Value: &pb.Value_Text{Text: "BigCity"}},
+					"notes":             {Value: &pb.Value_Text{Text: "Create a new item by IDs"}},
+					"address_metadata1": {Value: &pb.Value_Text{Text: "value1"}},
+					"address_metadata2": {Value: &pb.Value_Text{Text: "value2~note2"}},
 				},
-					Keys: map[string]*pb.RequestField{
-						"nervatype": {Value: &pb.RequestField_Text{Text: "customer"}},
-						"ref_id":    {Value: &pb.RequestField_Text{Text: "customer/DMCUST/00001"}},
+					Keys: map[string]*pb.Value{
+						"nervatype": {Value: &pb.Value_Text{Text: "customer"}},
+						"ref_id":    {Value: &pb.Value_Text{Text: "customer/DMCUST/00001"}},
 					}},
-				{Values: map[string]*pb.RequestField{
-					"zipcode": {Value: &pb.RequestField_Text{Text: "12345"}},
-					"city":    {Value: &pb.RequestField_Text{Text: "BigCity"}},
-					"notes":   {Value: &pb.RequestField_Text{Text: "Update an item by Keys"}},
+				{Values: map[string]*pb.Value{
+					"zipcode": {Value: &pb.Value_Text{Text: "12345"}},
+					"city":    {Value: &pb.Value_Text{Text: "BigCity"}},
+					"notes":   {Value: &pb.Value_Text{Text: "Update an item by Keys"}},
 				},
-					Keys: map[string]*pb.RequestField{
-						"id": {Value: &pb.RequestField_Text{Text: "customer/DMCUST/00001~1"}},
+					Keys: map[string]*pb.Value{
+						"id": {Value: &pb.Value_Text{Text: "customer/DMCUST/00001~1"}},
 					}},
 			},
 		},
@@ -188,7 +192,7 @@ func TestRpcDelete(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	_, err := client.Delete(ctx,
@@ -204,7 +208,7 @@ func TestRpcView(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.View(ctx,
@@ -213,19 +217,19 @@ func TestRpcView(t *testing.T) {
 				{
 					Key:    "customers",
 					Text:   "select c.id, ct.groupvalue as custtype, c.custnumber, c.custname from customer c inner join groups ct on c.custtype = ct.id where c.deleted = 0 and c.custnumber <> 'HOME'",
-					Values: []string{},
+					Values: []*pb.Value{},
 				},
 				{
 					Key: "invoices",
-					Text: `select t.id, t.transnumber, tt.groupvalue as transtype, td.groupvalue as direction, t.transdate, c.custname, t.curr, items.amount 
-					  from trans t inner join groups tt on t.transtype = tt.id 
-						inner join groups td on t.direction = td.id 
-						inner join customer c on t.customer_id = c.id 
-						inner join ( 
-							select trans_id, sum(amount) amount 
-						  from item where deleted = 0 group by trans_id) items on t.id = items.trans_id 
-						where t.deleted = 0 and tt.groupvalue = 'invoice'`,
-					Values: []string{},
+					Text: `select t.id, t.transnumber, tt.groupvalue as transtype, td.groupvalue as direction, t.transdate, c.custname, t.curr, items.amount
+							  from trans t inner join groups tt on t.transtype = tt.id
+								inner join groups td on t.direction = td.id
+								inner join customer c on t.customer_id = c.id
+								inner join (
+									select trans_id, sum(amount) amount
+								  from item where deleted = 0 group by trans_id) items on t.id = items.trans_id
+								where t.deleted = 0 and tt.groupvalue = 'invoice'`,
+					Values: []*pb.Value{},
 				},
 			},
 		},
@@ -241,15 +245,15 @@ func TestRpcFunction(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.Function(ctx,
 		&pb.RequestFunction{
 			Key: "nextNumber",
-			Values: map[string]*pb.RequestField{
-				"numberkey": {Value: &pb.RequestField_Text{Text: "custnumber"}},
-				"step":      {Value: &pb.RequestField_Boolean{Boolean: false}},
+			Values: map[string]*pb.Value{
+				"numberkey": {Value: &pb.Value_Text{Text: "custnumber"}},
+				"step":      {Value: &pb.Value_Boolean{Boolean: false}},
 			},
 		},
 	)
@@ -264,7 +268,7 @@ func TestRpcReportList(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.ReportList(ctx,
@@ -283,7 +287,7 @@ func TestRpcReportDelete(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	_, err := client.ReportDelete(ctx,
@@ -302,7 +306,7 @@ func TestRpcReportInstall(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	id, err := client.ReportInstall(ctx,
@@ -321,7 +325,7 @@ func TestRpcReport(t *testing.T) {
 	defer conn.Close()
 
 	token := getRPCToken(t)
-	md := metadata.Pairs("Authorization", "Bearer "+token)
+	md := metadata.Pairs("Authorization", getAuth(token))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	result, err := client.Report(ctx,
@@ -329,7 +333,7 @@ func TestRpcReport(t *testing.T) {
 			Reportkey:   "ntr_invoice_en",
 			Orientation: pb.ReportOrientation_portrait,
 			Size:        pb.ReportSize_a4,
-			Type:        pb.RequestReport_trans,
+			Type:        pb.ReportType_report_trans,
 			Refnumber:   "DMINV/00001",
 		},
 	)

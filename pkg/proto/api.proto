@@ -40,9 +40,53 @@ service API {
   rpc DatabaseCreate (RequestDatabaseCreate) returns (ResponseDatabaseCreate) {}
 }
 
+enum DataType {
+  address = 0; // Address
+  barcode = 1; // Barcode
+  contact = 2; // Contact
+  currency = 3; // Currency
+  customer = 4; // Customer
+  deffield = 5; // Deffield
+  employee = 6; // Employee
+  event = 7; // Event
+  fieldvalue = 8; // Fieldvalue
+  groups = 9; // Groups
+  item = 10; // Item
+  link = 11; // Link
+  log = 12; // Log
+  movement = 13; // Movement
+  numberdef = 14; // Numberdef
+  pattern = 15; // Pattern
+  payment = 16; // Payment
+  place = 17; // Place
+  price = 18; // Price
+  product = 19; // Product
+  project = 20; // Project
+  rate = 21; // Rate
+  tax = 22; // Tax
+  tool = 23; // Tool
+  trans = 24; // Trans
+  ui_audit = 25; // UiAudit
+  ui_menu = 26; // UiMenu
+  ui_menufields = 27; // UiMenufields
+  ui_message = 28; // UiMessage
+  ui_printqueue = 29; // UiPrintqueue
+  ui_report = 30; // UiReport
+  ui_userconfig = 31; // UiUserconfig
+}
+
+message Value {
+  oneof value {
+    bool boolean = 1;
+    double number = 2;
+    string text = 3;
+    //google.protobuf.NullValue null = 4;
+  }
+}
+
 message ResponseRows {
   message Item {
-    map<string, string> values = 1;
+    map<string, Value> values = 1;
   }
   repeated Item items = 1;
 }
@@ -116,44 +160,6 @@ message ResponseDatabaseCreate {
   ResponseRows details = 1;
 }
 
-enum DataType {
-  address = 0; // Address
-  barcode = 1; // Barcode
-  contact = 2; // Contact
-  currency = 3; // Currency
-  customer = 4; // Customer
-  deffield = 5; // Deffield
-  employee = 6; // Employee
-  event = 7; // Event
-  fieldvalue = 8; // Fieldvalue
-  groups = 9; // Groups
-  item = 10; // Item
-  link = 11; // Link
-  log = 12; // Log
-  movement = 13; // Movement
-  numberdef = 14; // Numberdef
-  pattern = 15; // Pattern
-  payment = 16; // Payment
-  place = 17; // Place
-  price = 18; // Price
-  product = 19; // Product
-  project = 20; // Project
-  rate = 21; // Rate
-  tax = 22; // Tax
-  tool = 23; // Tool
-  trans = 24; // Trans
-  ui_audit = 25; // UiAudit
-  ui_language = 26; // UiLanguage
-  ui_menu = 27; // UiMenu
-  ui_menufields = 28; // UiMenufields
-  ui_message = 29; // UiMessage
-  ui_printqueue = 30; // UiPrintqueue
-  ui_report = 31; // UiReport
-  ui_reportfields = 32; // UiReportfields
-  ui_reportsources = 33; // UiReportsources
-  ui_userconfig = 34; // UiUserconfig
-}
-
 // Delete parameters
 message RequestDelete {
   DataType nervatype = 1;
@@ -171,7 +177,7 @@ message RequestView {
     // The SQL query as a string
     string text = 2;
     // The array of parameter values
-    repeated string values = 3;
+    repeated Value values = 3;
   }
   // The array of Query object
   repeated Query options = 1;
@@ -182,19 +188,11 @@ message ResponseView {
   map<string, ResponseRows> values = 1;
 }
 
-message RequestField {
-  oneof value {
-    bool boolean = 1;
-    double number = 2;
-    string text = 3;
-  }
-}
-
 message RequestFunction {
   // Server function name
   string key = 1;
   // The array of parameter values
-  map<string, RequestField> values = 2;
+  map<string, Value> values = 2;
 }
 
 message ResponseFunction {
@@ -254,6 +252,19 @@ enum ReportOutput {
   auto = 0;
   xml = 1;
   data = 2;
+  base64 = 3;
+}
+
+enum ReportType {
+  report_none = 0;
+  report_customer = 1;
+  report_employee = 2;
+  report_event = 3;
+  report_place = 4;
+  report_product = 5;
+  report_project = 6;
+  report_tool = 7;
+  report_trans = 8;
 }
 
 message RequestReport {
@@ -262,21 +273,12 @@ message RequestReport {
   ReportOrientation orientation = 2;
   ReportSize size = 3;
   ReportOutput output = 4;
-  enum ReportType {
-    none = 0;
-    customer = 1;
-    employee = 2;
-    event = 3;
-    place = 4;
-    product = 5;
-    project = 6;
-    tool = 7;
-    trans = 8;
-  }
   ReportType type = 5;
   // Example : DMINV/00001
   string refnumber = 6;
-  map<string, RequestField> filters = 7;
+  // Custom report JSON template
+  string template = 7;
+  map<string, Value> filters = 8;
 }
 
 message ResponseReport {
@@ -285,8 +287,8 @@ message ResponseReport {
 
 message RequestUpdate {
   message Item {
-    map<string, RequestField> values = 1;
-    map<string, RequestField> keys = 2;
+    map<string, Value> values = 1;
+    map<string, Value> keys = 2;
   }
   DataType nervatype = 1;
   repeated Item items = 2;
@@ -302,7 +304,7 @@ message RequestGet {
   DataType nervatype = 1;
   bool metadata = 2;
   repeated int64 ids = 3;
-  repeated string filters = 7;
+  repeated string filter = 7;
 }
 
 message ResponseGet {
@@ -334,15 +336,12 @@ message ResponseGet {
       Tool tool = 24;
       Trans trans = 25;
       UiAudit ui_audit = 26;
-      UiLanguage ui_language = 27;
-      UiMenu ui_menu = 28;
-      UiMenufields ui_menufields = 29;
-      UiMessage ui_message = 30;
-      UiPrintqueue ui_printqueue = 31;
-      UiReport ui_report = 32;
-      UiReportfields ui_reportfields = 33;
-      UiReportsources ui_reportsources = 34;
-      UiUserconfig ui_userconfig = 35;
+      UiMenu ui_menu = 27;
+      UiMenufields ui_menufields = 28;
+      UiMessage ui_message = 29;
+      UiPrintqueue ui_printqueue = 30;
+      UiReport ui_report = 31;
+      UiUserconfig ui_userconfig = 32;
     }
   }
   repeated Value values = 1;
@@ -506,7 +505,7 @@ message Deffield {
   // Reference to [Groups](#groups).id (only where groupname = 'nervatype')
   int64 nervatype = 3;
   //  Reference to [Groups](#groups).id (where groupname in ('custtype','placetype','  protype','toolgroup','transtype'))
-  int64 subtype = 4;
+  optional int64 subtype = 4;
   // Reference to [Groups](#groups).id  (only where groupname = 'fieldtype')
   int64 fieldtype = 5;
   string description = 6;
@@ -534,13 +533,13 @@ message Employee {
   // Unique ID. If you set it to numberdef, it will be generated at the first data save. The format and value of the next data in row is taken from the numberdef (numberkey = empnumber) data series.
   string empnumber = 2;
   // Database login name. Should be unique on database level.
-  string username = 3;
+  optional string username = 3;
   // Reference to [Groups](#groups).id (only where groupname = 'usergroup')
   int64 usergroup = 4;
-  string startdate = 5;
-  string enddate = 6;
+  optional string startdate = 5;
+  optional string enddate = 6;
   // Reference to [Groups](#groups).id (only where groupname = 'department')
-  int64 department = 7;
+  optional int64 department = 7;
   string registration_key = 8;
   bool inactive = 9;
   // Employee meta data
@@ -568,11 +567,11 @@ message Event {
   int64 ref_id = 4;
   string uid = 5;
   // Reference to [Groups](#groups).id (only where groupname = 'eventgroup')
-  int64 eventgroup = 6;
+  optional int64 eventgroup = 6;
   // Datetime
   string fromdate = 7;
   // Datetime
-  string todate = 8;
+  optional string todate = 8;
   string subject = 9;
   string place = 10;
   string description = 11;
@@ -592,7 +591,7 @@ message Fieldvalue {
   // Reference to [Deffield](#deffield).fieldname.
   string fieldname = 2;
   // Reference to any type.id where type = [Deffield](#deffield).nervatype. If it is null then nervatype = setting.
-  int64 ref_id = 3;
+  optional int64 ref_id = 3;
   string value = 4;
   string notes = 5;
 }
@@ -689,9 +688,9 @@ message Log {
   // Date-time
   string crdate = 3;
   // Reference to [Groups](#groups).id (only where groupname = 'nervatype')
-  int64 nervatype = 4;
+  optional int64 nervatype = 4;
   // Reference to {nervatype}.id
-  int64 ref_id = 5;
+  optional int64 ref_id = 5;
   // Reference to [Groups](#groups).id (only where groupname = 'logstate')
   int64 logstate = 6;
   // Log meta data
@@ -722,11 +721,11 @@ message Movement {
   // Reference to [Groups](#groups).id (only where groupname = 'movetype')
   int64 movetype = 4;
   // Reference to [Product](#product).id
-  int64 product_id = 5;
+  optional int64 product_id = 5;
   // Reference to [Tool](#tool).id
-  int64 tool_id = 6;
+  optional int64 tool_id = 6;
   // Reference to [Place](#place).id
-  int64 place_id = 7;
+  optional int64 place_id = 7;
   double qty = 8;
   string description = 9;
   bool shared = 10;
@@ -805,7 +804,7 @@ message Place {
   // Reference to [Groups](#groups).id (only where groupname = 'placetype')
   int64 placetype = 3;
   string description = 4;
-  string curr = 5;
+  optional string curr = 5;
   bool defplace = 6;
   string notes = 7;
   bool inactive = 8;
@@ -827,7 +826,7 @@ message Price {
   // Start of validity, mandatory data.
   string validfrom = 3;
   // End of validity, can be left empty.
-  string validto = 4;
+  optional string validto = 4;
   string curr = 5;
   // Price ranges can also be specified, thus different price can be set for a smaller and bigger quantity of the same product. The quantity should be used as the lower threshold, ie. this should be the minimum quantity for the price set.
   double qty = 6;
@@ -880,9 +879,9 @@ message Project {
   // The name of the project.
   string description = 3;
   // Reference to [Customer](#customer).id
-  int64 customer_id = 4;
-  string startdate = 5;
-  string enddate = 6;
+  optional int64 customer_id = 4;
+  optional string startdate = 5;
+  optional string enddate = 6;
   string notes = 7;
   bool inactive = 8;
   // Project meta data
@@ -907,9 +906,9 @@ message Rate {
   string ratedate = 3;
   string curr = 4;
   // Reference to [Place](#place).id
-  int64 place_id = 5;
+  optional int64 place_id = 5;
   // Reference to [Groups](#groups).id (only where groupname = 'rategroup')
-  int64 rategroup = 6;
+  optional int64 rategroup = 6;
   // Rate or interest value
   double ratevalue = 7;
   // Rate meta data
@@ -950,7 +949,7 @@ message Tool {
   // Reference to [Product](#product).id
   int64 product_id = 4;
   // Reference to [Groups](#groups).id (only where groupname = 'toolgroup')
-  int64 toolgroup = 5;
+  optional int64 toolgroup = 5;
   string notes = 6;
   bool inactive = 7;
   // Tool meta data
@@ -988,24 +987,24 @@ message Trans {
   int64 transtype = 3;
   // Reference to [Groups](#groups).id (only where groupname = 'direction')
   int64 direction = 4;
-  string ref_transnumber = 5;
+  optional string ref_transnumber = 5;
   string crdate = 6;
   string transdate = 7;
   // Date-time
-  string duedate = 8;
+  optional string duedate = 8;
   // Reference to [Customer](#customer).id
-  int64 customer_id = 9;
+  optional int64 customer_id = 9;
   // Reference to [Employee](#employee).id
-  int64 employee_id = 10;
+  optional int64 employee_id = 10;
   // Reference to [Groups](#groups).id (only where groupname = 'department')
-  int64 department = 11;
+  optional int64 department = 11;
   // Reference to [Project](#project).id
-  int64 project_id = 12;
+  optional int64 project_id = 12;
   // Reference to [Place](#place).id
-  int64 place_id = 13;
+  optional int64 place_id = 13;
   // Reference to [Groups](#groups).id (only where groupname = 'paidtype')
-  int64 paidtype = 14;
-  string curr = 15;
+  optional int64 paidtype = 14;
+  optional string curr = 15;
   bool notax = 16;
   bool paid = 17;
   double acrate = 18;
@@ -1039,21 +1038,10 @@ message UiAudit {
   // Reference to [Groups](#groups).id (only where groupname = 'nervatype')
   int64 nervatype = 3;
   // Reference to [Groups](#groups).id (only where groupname = 'movetype')
-  int64 subtype = 4;
+  optional int64 subtype = 4;
   // Reference to [Groups](#groups).id (only where groupname = 'inputfilter')
   int64 inputfilter = 5;
   bool supervisor = 6;
-}
-
-/*
-  RequestUpdate Key->ID keys:
-
-  - ```id```: UiLanguage *lang*
-  */
-message UiLanguage {
-  int64 id = 1;
-  string lang = 2;
-  string description = 3;
 }
 
 /*
@@ -1067,8 +1055,9 @@ message UiMenu {
   string description = 3;
   string modul = 4;
   string icon = 5;
-  string funcname = 6;
-  bool url = 7;
+  // Reference to [Groups](#groups).id (only where groupname = 'method')
+  int64 method = 6;
+  string funcname = 7;
   string address = 8;
 }
 
@@ -1106,12 +1095,12 @@ message UiMessage {
 message UiPrintqueue {
   int64 id = 1;
   // Reference to [Groups](#groups).id (only where groupname = 'nervatype')
-  int64 nervatype = 2;
+  optional int64 nervatype = 2;
   // Reference to {nervatype}.id
   int64 ref_id = 3;
   double qty = 4;
   // Reference to [Employee](#employee).id
-  int64 employee_id = 5;
+  optional int64 employee_id = 5;
   // Reference to [UiReport](#UiReport).id
   int64 report_id = 6;
   // Date-time
@@ -1137,59 +1126,15 @@ message UiReport {
   // Reference to [Groups](#groups).id (only where groupname = 'nervatype')
   int64 nervatype = 3;
   // Reference to [Groups](#groups).id (only where groupname = 'transtype')
-  int64 transtype = 4;
+  optional int64 transtype = 4;
   // Reference to [Groups](#groups).id (only where groupname = 'direction')
-  int64 direction = 5;
+  optional int64 direction = 5;
   string repname = 6;
   string description = 7;
   string label = 8;
   // Reference to [Groups](#groups).id (only where groupname = 'filetype')
   int64 filetype = 9;
   string report = 10;
-}
-
-/*
-  RequestUpdate Key->ID keys:
-
-  - ```id```: *{reportkey}~{fieldname}*
-
-  - ```report_id```: *{reportkey}*
-
-  - ```wheretype```: All groupvalue from Groups, where groupname equal wheretype
-
-  - ```fieldtype```: Valid valaus: *bool, date, integer, float, string*
-  */
-message UiReportfields {
-  int64 id = 1;
-  // Reference to [UiReport](#UiReport).id
-  int64 report_id = 2;
-  string fieldname = 3;
-  // Reference to [Groups](#groups).id (only where groupname = 'fieldtype')
-  int64 fieldtype = 4;
-  // Reference to [Groups](#groups).id (only where groupname = 'wheretype')
-  int64 wheretype = 5;
-  string description = 6;
-  int64 orderby = 7;
-  string sqlstr = 8;
-  bool parameter = 9;
-  string dataset = 10;
-  string defvalue = 11;
-  string valuelist = 12;
-}
-
-/*
-  RequestUpdate Key->ID keys:
-
-  - ```id```: *{reportkey}~{dataset}*
-
-  - ```report_id```: *{reportkey}*
-  */
-message UiReportsources{
-  int64 id = 1;
-  // Reference to [UiReport](#UiReport).id
-  int64 report_id = 2;
-  string dataset = 3;
-  string sqlstr = 4;
 }
 
 /*
@@ -1202,10 +1147,10 @@ message UiReportsources{
 message UiUserconfig {
   int64 id = 1;
   // Reference to [Employee](#employee).id
-  int64 employee_id = 2;
-  string section = 3;
+  optional int64 employee_id = 2;
+  optional string section = 3;
   string cfgroup = 4;
   string cfname = 5;
-  string cfvalue = 6;
+  optional string cfvalue = 6;
   int64 orderby = 7;
 }

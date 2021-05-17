@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"strings"
 
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 	srv "github.com/nervatura/nervatura-go/pkg/service"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 type cliServer struct {
 	app     *App
 	service srv.CLIService
-	args    ntura.SM
+	args    nt.SM
 	result  string
 }
 
@@ -64,7 +65,7 @@ func (s *cliServer) StopService(interface{}) error {
 }
 
 func (s *cliServer) parseFlags() (err error) {
-	s.args = make(ntura.SM)
+	s.args = make(nt.SM)
 	var cmds = []string{"server", "Delete", "Function", "Get", "Update", "View",
 		"UserPassword", "TokenLogin", "TokenRefresh", "UserLogin", "DatabaseCreate",
 		"Report", "ReportDelete", "ReportInstall", "ReportList", "TokenDecode"}
@@ -169,69 +170,69 @@ func (s *cliServer) parseCommand() (result string, err error) {
 		return "", nil
 	}
 
-	var api *ntura.API
+	var api *nt.API
 	if _, found := s.args["token"]; found {
 		if s.args["cmd"] == "TokenDecode" {
 			return s.service.TokenDecode(s.args["token"]), nil
 		}
-		api, result = s.service.TokenLogin(s.args["token"])
+		api, result = s.service.TokenLogin(s.args["token"], s.app.tokenKeys)
 		if api == nil || s.args["cmd"] == "TokenLogin" {
 			return result, nil
 		}
 	}
 
-	var options ntura.IM
+	var options nt.IM
 	if _, found := s.args["options"]; found {
-		if ntura.ConvertFromByte([]byte(s.args["options"]), &options); err != nil {
+		if ut.ConvertFromByte([]byte(s.args["options"]), &options); err != nil {
 			return "", errors.New("invalid options json")
 		}
 	}
 
-	var data []ntura.IM
+	var data []nt.IM
 	if _, found := s.args["data"]; found {
-		if ntura.ConvertFromByte([]byte(s.args["data"]), &data); err != nil {
+		if ut.ConvertFromByte([]byte(s.args["data"]), &data); err != nil {
 			return "", errors.New("invalid data json")
 		}
 	}
 
-	apiMap := map[string]func(api *ntura.API) string{
-		"UserLogin": func(api *ntura.API) string {
+	apiMap := map[string]func(api *nt.API) string{
+		"UserLogin": func(api *nt.API) string {
 			return s.service.UserLogin(options)
 		},
-		"UserPassword": func(api *ntura.API) string {
+		"UserPassword": func(api *nt.API) string {
 			return s.service.UserPassword(api, options)
 		},
-		"TokenRefresh": func(api *ntura.API) string {
+		"TokenRefresh": func(api *nt.API) string {
 			return s.service.TokenRefresh(api)
 		},
-		"Get": func(api *ntura.API) string {
+		"Get": func(api *nt.API) string {
 			return s.service.Get(api, options)
 		},
-		"View": func(api *ntura.API) string {
+		"View": func(api *nt.API) string {
 			return s.service.View(api, data)
 		},
-		"Function": func(api *ntura.API) string {
+		"Function": func(api *nt.API) string {
 			return s.service.Function(api, options)
 		},
-		"Update": func(api *ntura.API) string {
+		"Update": func(api *nt.API) string {
 			return s.service.Update(api, s.args["nervatype"], data)
 		},
-		"Delete": func(api *ntura.API) string {
+		"Delete": func(api *nt.API) string {
 			return s.service.Delete(api, options)
 		},
-		"DatabaseCreate": func(api *ntura.API) string {
+		"DatabaseCreate": func(api *nt.API) string {
 			return s.service.DatabaseCreate(s.args["key"], options)
 		},
-		"Report": func(api *ntura.API) string {
+		"Report": func(api *nt.API) string {
 			return s.service.Report(api, options)
 		},
-		"ReportList": func(api *ntura.API) string {
+		"ReportList": func(api *nt.API) string {
 			return s.service.ReportList(api, options)
 		},
-		"ReportInstall": func(api *ntura.API) string {
+		"ReportInstall": func(api *nt.API) string {
 			return s.service.ReportInstall(api, options)
 		},
-		"ReportDelete": func(api *ntura.API) string {
+		"ReportDelete": func(api *nt.API) string {
 			return s.service.ReportDelete(api, options)
 		},
 	}

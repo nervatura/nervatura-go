@@ -4,35 +4,41 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"io"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
 	db "github.com/nervatura/nervatura-go/pkg/database"
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 // HTTPService implements the Nervatura API service
 type HTTPService struct {
-	GetNervaStore func(database string) *ntura.NervaStore
+	GetNervaStore func(database string) *nt.NervaStore
 	GetParam      func(req *http.Request, name string) string
+	GetTokenKeys  func() map[string]map[string]string
 }
+
+const contentKey = "Content-Type"
 
 // respondMessage write json response format
 func (srv *HTTPService) respondMessage(w http.ResponseWriter, code int, payload interface{}, errCode int, err error) {
 	var response []byte
 	var jerr error
 	if err != nil || payload != nil {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(contentKey, "application/json")
 		if err != nil {
 			w.WriteHeader(errCode)
-			response, jerr = ntura.ConvertToByte(ntura.SM{"code": strconv.Itoa(errCode), "message": err.Error()})
+			response, jerr = ut.ConvertToByte(nt.SM{"code": strconv.Itoa(errCode), "message": err.Error()})
 		} else {
 			w.WriteHeader(code)
-			response, jerr = ntura.ConvertToByte(payload)
+			response, jerr = ut.ConvertToByte(payload)
 		}
 		if jerr == nil {
 			w.Write(response)
@@ -40,6 +46,16 @@ func (srv *HTTPService) respondMessage(w http.ResponseWriter, code int, payload 
 	} else {
 		w.WriteHeader(code)
 	}
+}
+
+func (srv *HTTPService) Config(w http.ResponseWriter, r *http.Request) {
+	config := nt.IM{}
+	if os.Getenv("NT_CLIENT_CONFIG") != "" {
+		if content, err := ioutil.ReadFile(os.Getenv("NT_CLIENT_CONFIG")); err == nil {
+			_ = ut.ConvertFromByte(content, &config)
+		}
+	}
+	srv.respondMessage(w, http.StatusOK, config, http.StatusBadRequest, nil)
 }
 
 func (srv *HTTPService) TokenLogin(w http.ResponseWriter, r *http.Request) (ctx context.Context, err error) {
@@ -51,16 +67,16 @@ func (srv *HTTPService) TokenLogin(w http.ResponseWriter, r *http.Request) (ctx 
 	if tokenStr == "" {
 		return ctx, errors.New("Unauthorized")
 	}
-	claim, err := ntura.TokenDecode(tokenStr)
+	claim, err := ut.TokenDecode(tokenStr)
 	if err != nil {
 		return ctx, err
 	}
-	database := ntura.ToString(claim["database"], "")
+	database := ut.ToString(claim["database"], "")
 	nstore := srv.GetNervaStore(database)
 	if nstore == nil {
 		return ctx, errors.New("Unauthorized")
 	}
-	err = (&ntura.API{NStore: nstore}).TokenLogin(ntura.IM{"token": tokenStr})
+	err = (&nt.API{NStore: nstore}).TokenLogin(nt.IM{"token": tokenStr, "keys": srv.GetTokenKeys()})
 	if err != nil {
 		return ctx, err
 	}
@@ -69,21 +85,21 @@ func (srv *HTTPService) TokenLogin(w http.ResponseWriter, r *http.Request) (ctx 
 }
 
 func (srv *HTTPService) UserLogin(w http.ResponseWriter, r *http.Request) {
-	data := ntura.IM{}
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data := nt.IM{}
+	err := ut.ConvertFromReader(r.Body, &data)
 	if err != nil {
 		srv.respondMessage(w, 0, nil, http.StatusBadRequest, err)
 	}
 	if _, found := data["database"]; !found {
-		srv.respondMessage(w, 0, nil, http.StatusBadRequest, errors.New(ntura.GetMessage("missing_database")))
+		srv.respondMessage(w, 0, nil, http.StatusBadRequest, errors.New(ut.GetMessage("missing_database")))
 	}
 	nstore := srv.GetNervaStore(data["database"].(string))
 	if nstore == nil {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	token, engine, err := (&ntura.API{NStore: nstore}).UserLogin(data)
-	srv.respondMessage(w, http.StatusOK, ntura.SM{"token": token, "engine": engine}, http.StatusBadRequest, err)
+	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(data)
+	srv.respondMessage(w, http.StatusOK, nt.SM{"token": token, "engine": engine}, http.StatusBadRequest, err)
 }
 
 func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {
@@ -91,10 +107,10 @@ func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	nstore := r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)
+	nstore := r.Context().Value(NstoreCtxKey).(*nt.NervaStore)
 
-	data := ntura.IM{}
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data := nt.IM{}
+	err := ut.ConvertFromReader(r.Body, &data)
 	if err != nil {
 		srv.respondMessage(w, 0, nil, http.StatusBadRequest, err)
 		return
@@ -120,7 +136,7 @@ func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	err = (&ntura.API{NStore: nstore}).UserPassword(data)
+	err = (&nt.API{NStore: nstore}).UserPassword(data)
 	srv.respondMessage(w, http.StatusNoContent, nil, http.StatusBadRequest, err)
 }
 
@@ -129,8 +145,8 @@ func (srv *HTTPService) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	tokenStr, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).TokenRefresh()
-	srv.respondMessage(w, http.StatusOK, ntura.SM{"token": tokenStr}, http.StatusBadRequest, err)
+	tokenStr, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).TokenRefresh()
+	srv.respondMessage(w, http.StatusOK, nt.SM{"token": tokenStr}, http.StatusBadRequest, err)
 }
 
 func (srv *HTTPService) GetFilter(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +155,7 @@ func (srv *HTTPService) GetFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := ntura.IM{"nervatype": srv.GetParam(r, "nervatype"),
+	params := nt.IM{"nervatype": srv.GetParam(r, "nervatype"),
 		"metadata": r.URL.Query().Get("metadata")}
 	query := strings.Split(r.URL.RawQuery, "&")
 	for index := 0; index < len(query); index++ {
@@ -147,7 +163,7 @@ func (srv *HTTPService) GetFilter(w http.ResponseWriter, r *http.Request) {
 			params["filter"] = query[index][7:]
 		}
 	}
-	results, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).Get(params)
+	results, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).Get(params)
 	srv.respondMessage(w, http.StatusOK, results, http.StatusBadRequest, err)
 }
 
@@ -157,9 +173,9 @@ func (srv *HTTPService) GetIds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := ntura.IM{"nervatype": srv.GetParam(r, "nervatype"),
+	params := nt.IM{"nervatype": srv.GetParam(r, "nervatype"),
 		"metadata": r.URL.Query().Get("metadata"), "ids": srv.GetParam(r, "IDs")}
-	results, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).Get(params)
+	results, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).Get(params)
 	srv.respondMessage(w, http.StatusOK, results, http.StatusBadRequest, err)
 }
 
@@ -169,13 +185,13 @@ func (srv *HTTPService) View(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := make([]ntura.IM, 0)
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data := make([]nt.IM, 0)
+	err := ut.ConvertFromReader(r.Body, &data)
 	if err != nil {
 		srv.respondMessage(w, 0, nil, http.StatusBadRequest, err)
 		return
 	}
-	results, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).View(data)
+	results, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).View(data)
 	srv.respondMessage(w, http.StatusOK, results, http.StatusBadRequest, err)
 }
 
@@ -185,13 +201,13 @@ func (srv *HTTPService) Function(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := ntura.IM{}
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data := nt.IM{}
+	err := ut.ConvertFromReader(r.Body, &data)
 	if err != nil {
 		srv.respondMessage(w, 0, nil, http.StatusBadRequest, err)
 		return
 	}
-	results, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).Function(data)
+	results, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).Function(data)
 	srv.respondMessage(w, http.StatusOK, results, http.StatusBadRequest, err)
 }
 
@@ -201,13 +217,13 @@ func (srv *HTTPService) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := make([]ntura.IM, 0)
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data := make([]nt.IM, 0)
+	err := ut.ConvertFromReader(r.Body, &data)
 	if err != nil {
 		srv.respondMessage(w, 0, nil, http.StatusBadRequest, err)
 		return
 	}
-	results, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).Update(srv.GetParam(r, "nervatype"), data)
+	results, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).Update(srv.GetParam(r, "nervatype"), data)
 	srv.respondMessage(w, http.StatusOK, results, http.StatusBadRequest, err)
 }
 
@@ -217,9 +233,9 @@ func (srv *HTTPService) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := ntura.IM{"nervatype": srv.GetParam(r, "nervatype"),
+	data := nt.IM{"nervatype": srv.GetParam(r, "nervatype"),
 		"id": r.URL.Query().Get("id"), "key": r.URL.Query().Get("key")}
-	err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).Delete(data)
+	err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).Delete(data)
 	srv.respondMessage(w, http.StatusNoContent, nil, http.StatusBadRequest, err)
 }
 
@@ -229,8 +245,8 @@ func (srv *HTTPService) DatabaseCreate(w http.ResponseWriter, r *http.Request) {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	data := ntura.IM{"database": r.URL.Query().Get("alias"), "demo": r.URL.Query().Get("demo")}
-	log, err := (&ntura.API{NStore: ntura.New(&db.SQLDriver{})}).DatabaseCreate(data)
+	data := nt.IM{"database": r.URL.Query().Get("alias"), "demo": r.URL.Query().Get("demo")}
+	log, err := (&nt.API{NStore: nt.New(&db.SQLDriver{})}).DatabaseCreate(data)
 	srv.respondMessage(w, http.StatusOK, log, http.StatusBadRequest, err)
 }
 
@@ -240,8 +256,8 @@ func (srv *HTTPService) ReportList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := ntura.IM{"label": r.URL.Query().Get("label")}
-	api := &ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}
+	params := nt.IM{"label": r.URL.Query().Get("label")}
+	api := &nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}
 	if api.NStore.User.Scope != "admin" {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -256,8 +272,8 @@ func (srv *HTTPService) ReportInstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := ntura.IM{"reportkey": r.URL.Query().Get("reportkey")}
-	api := &ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}
+	params := nt.IM{"reportkey": r.URL.Query().Get("reportkey")}
+	api := &nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}
 	if api.NStore.User.Scope != "admin" {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -272,8 +288,8 @@ func (srv *HTTPService) ReportDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := ntura.IM{"reportkey": r.URL.Query().Get("reportkey")}
-	api := &ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}
+	params := nt.IM{"reportkey": r.URL.Query().Get("reportkey")}
+	api := &nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}
 	if api.NStore.User.Scope != "admin" {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
@@ -282,17 +298,12 @@ func (srv *HTTPService) ReportDelete(w http.ResponseWriter, r *http.Request) {
 	srv.respondMessage(w, http.StatusNoContent, nil, http.StatusBadRequest, err)
 }
 
-func (srv *HTTPService) Report(w http.ResponseWriter, r *http.Request) {
-	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
-		return
-	}
-
-	options := ntura.IM{"filters": ntura.IM{}}
-	for key, value := range r.URL.Query() {
+func reportQueryFilters(values url.Values) nt.IM {
+	options := nt.IM{"filters": nt.IM{}}
+	for key, value := range values {
 		if strings.HasPrefix(key, "filters[") {
 			fkey := key[8 : len(key)-1]
-			options["filters"].(ntura.IM)[fkey] = value[0]
+			options["filters"].(nt.IM)[fkey] = value[0]
 		} else {
 			switch key {
 			case "report_id":
@@ -310,7 +321,27 @@ func (srv *HTTPService) Report(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	results, err := (&ntura.API{NStore: r.Context().Value(NstoreCtxKey).(*ntura.NervaStore)}).Report(options)
+	return options
+}
+
+func reportFilters(values url.Values, body io.ReadCloser) nt.IM {
+	if len(values) > 0 {
+		return reportQueryFilters(values)
+	}
+	data := nt.IM{}
+	_ = ut.ConvertFromReader(body, &data)
+	return data
+}
+
+func (srv *HTTPService) Report(w http.ResponseWriter, r *http.Request) {
+	if r.Context().Value(NstoreCtxKey) == nil {
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	options := reportFilters(r.URL.Query(), r.Body)
+
+	results, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).Report(options)
 	if err != nil {
 		srv.respondMessage(w, 0, nil, http.StatusBadRequest, err)
 		return
@@ -320,15 +351,15 @@ func (srv *HTTPService) Report(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if results["filetype"] == "csv" {
-		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set(contentKey, "text/csv")
 		w.Write([]byte(results["template"].(string)))
 		return
 	}
 	if results["filetype"] == "xml" {
-		w.Header().Set("Content-Type", "application/xml")
+		w.Header().Set(contentKey, "application/xml")
 		w.Write([]byte(results["template"].(string)))
 		return
 	}
-	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set(contentKey, "application/pdf")
 	w.Write(results["template"].([]uint8))
 }

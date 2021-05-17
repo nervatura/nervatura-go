@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 const (
@@ -31,7 +33,7 @@ func New(driver DataDriver) (nstore *NervaStore) {
 
 func (nstore *NervaStore) connected() (bool, error) {
 	if nstore.ds == nil {
-		return false, errors.New(GetMessage("missing_driver"))
+		return false, errors.New(ut.GetMessage("missing_driver"))
 	}
 	return nstore.ds.Connection().Connected, nil
 }
@@ -92,7 +94,7 @@ func checkFieldvalueInteger(value interface{}, fieldname string) (interface{}, e
 		}
 		return value, nil
 	}
-	return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (integer)")
+	return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (integer)")
 }
 
 func checkFieldvalueFloat(value interface{}, fieldname string) (interface{}, error) {
@@ -117,12 +119,12 @@ func checkFieldvalueFloat(value interface{}, fieldname string) (interface{}, err
 		}
 		return value, nil
 	}
-	return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (float)")
+	return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (float)")
 }
 
 func checkFieldvalueDate(value interface{}, fieldname, fieldtype string) (interface{}, error) {
 	if value == nil {
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 	switch v := value.(type) {
 	case time.Time:
@@ -133,17 +135,17 @@ func checkFieldvalueDate(value interface{}, fieldname, fieldtype string) (interf
 			tm, err = time.Parse(dateFmt, v)
 		}
 		if err != nil {
-			return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
+			return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 		}
 		return tm.Format(dateFmt), nil
 	default:
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 }
 
 func checkFieldvalueTime(value interface{}, fieldname, fieldtype string) (interface{}, error) {
 	if value == nil {
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 	switch v := value.(type) {
 	case time.Time:
@@ -154,11 +156,11 @@ func checkFieldvalueTime(value interface{}, fieldname, fieldtype string) (interf
 			tm, err = time.Parse("15:04", v)
 		}
 		if err != nil {
-			return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
+			return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 		}
 		return tm.Format("15:04"), nil
 	default:
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 	}
 }
 
@@ -183,14 +185,14 @@ func (nstore *NervaStore) checkFieldvalueNervatype(value interface{}, fieldname,
 				{Field: nstore.getTableKey(fieldtype), Comp: "like", Value: value}}
 		}
 	default:
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 	}
 	rows, err := nstore.ds.Query([]Query{query}, trans)
 	if err != nil {
 		return value, err
 	}
 	if len(rows) == 0 {
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 	}
 	return rows[0]["id"], nil
 }
@@ -202,7 +204,7 @@ func (nstore *NervaStore) checkFieldvalue(fieldname string, value, trans interfa
 		return value, err
 	}
 	if len(rows) == 0 {
-		return value, errors.New(GetMessage("missing_fieldname"))
+		return value, errors.New(ut.GetMessage("missing_fieldname"))
 	}
 	fieldtype := rows[0]["fieldtype"].(string)
 
@@ -229,18 +231,18 @@ func (nstore *NervaStore) checkFieldvalue(fieldname string, value, trans interfa
 		return nstore.checkFieldvalueNervatype(value, fieldname, fieldtype, trans)
 
 	default:
-		return value, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 	}
 }
 
 func (nstore *NervaStore) insertLog(options IM) error {
-	nervatype := ToString(options["nervatype"], "")
+	nervatype := ut.ToString(options["nervatype"], "")
 	if nervatype == "" {
 		return errors.New("missing_nervatype")
 	}
-	logstate := ToString(options["logstate"], "")
+	logstate := ut.ToString(options["logstate"], "")
 	if ok, err := nstore.connected(); !ok || err != nil {
-		return errors.New(GetMessage("not_connect"))
+		return errors.New(ut.GetMessage("not_connect"))
 	}
 
 	if nstore.User != nil && nervatype != "log" && logstate != "" {
@@ -274,14 +276,14 @@ func (nstore *NervaStore) insertLog(options IM) error {
 				nervatypeID = row["id"].(int64)
 			}
 			if row["fieldname"] == "log_"+nervatype+"_"+logstate {
-				if row["value"] == "true" {
+				if ut.ToBoolean(row["value"], false) {
 					logEnabled = true
 				}
 			}
 			if (row["fieldname"] == "log_"+logstate) &&
 				((len(logdata) == 2) && (nervatype == "") ||
 					(len(logdata) == 3) && (nervatype != "")) {
-				if row["value"] == "true" {
+				if ut.ToBoolean(row["value"], false) {
 					logEnabled = true
 				}
 			}
@@ -292,9 +294,9 @@ func (nstore *NervaStore) insertLog(options IM) error {
 			if nervatypeID > 0 {
 				values["nervatype"] = nervatypeID
 			}
-			ref_id := ToInteger(options["ref_id"])
-			if ref_id > 0 {
-				values["ref_id"] = ref_id
+			refId := ut.ToInteger(options["ref_id"], 0)
+			if refId > 0 {
+				values["ref_id"] = refId
 			}
 			data := Update{Values: values, Model: "log", Trans: options["trans"]}
 			_, err := nstore.ds.Update(data)
@@ -309,30 +311,30 @@ func (nstore *NervaStore) insertLog(options IM) error {
 // UpdateData - update a record data
 func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 
-	nervatype := ToString(options["nervatype"], "")
+	nervatype := ut.ToString(options["nervatype"], "")
 	if nervatype == "" {
-		return id, errors.New(GetMessage("missing_nervatype"))
+		return id, errors.New(ut.GetMessage("missing_nervatype"))
 	}
 	if _, found := nstore.models[nervatype]; !found {
-		return id, errors.New(GetMessage("invalid_nervatype") + " " + nervatype)
+		return id, errors.New(ut.GetMessage("invalid_nervatype") + " " + nervatype)
 	}
 
 	values, valid := options["values"].(IM)
 	if !valid {
-		return id, errors.New(GetMessage("invalid_value"))
+		return id, errors.New(ut.GetMessage("invalid_value"))
 	}
 
-	logEnabled := ToBoolean(options["log_enabled"], true)
-	validate := ToBoolean(options["validate"], true)
-	insertField := ToBoolean(options["insert_field"], false)
-	insertRow := ToBoolean(options["insert_row"], false)
-	updateRow := ToBoolean(options["update_row"], true)
+	logEnabled := ut.ToBoolean(options["log_enabled"], true)
+	validate := ut.ToBoolean(options["validate"], true)
+	insertField := ut.ToBoolean(options["insert_field"], false)
+	insertRow := ut.ToBoolean(options["insert_row"], false)
+	updateRow := ut.ToBoolean(options["update_row"], true)
 
 	if ok, err := nstore.connected(); !ok || err != nil {
 		if err != nil {
 			return id, err
 		}
-		return id, errors.New(GetMessage("not_connect"))
+		return id, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	var trans interface{}
@@ -363,7 +365,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 
 	if _, found := values["id"]; found && values["id"] != nil {
 		//id check
-		id = ToInteger(values["id"])
+		id = ut.ToInteger(values["id"], 0)
 		query := []Query{{
 			Fields: []string{"*"}, From: nervatype, Filters: []Filter{
 				{Field: "id", Comp: "==", Value: id}}}}
@@ -372,17 +374,17 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 			return id, err
 		}
 		if len(result) == 0 {
-			return id, errors.New(GetMessage("invalid_id"))
+			return id, errors.New(ut.GetMessage("invalid_id"))
 		}
 		if !updateRow {
 			//readonly record
-			return id, errors.New(GetMessage("disabled_update"))
+			return id, errors.New(ut.GetMessage("disabled_update"))
 		}
 
 	}
 
 	if id <= 0 && !insertRow {
-		return id, errors.New(GetMessage("disabled_insert"))
+		return id, errors.New(ut.GetMessage("disabled_insert"))
 	}
 
 	//check fieldnames
@@ -397,7 +399,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 				if validFieldValue(nervatype) {
 					checkValues["fvalues"].(IM)[fieldname] = value
 				} else {
-					return id, errors.New(GetMessage("unknown_fieldname") + " " + fieldname)
+					return id, errors.New(ut.GetMessage("unknown_fieldname") + " " + fieldname)
 				}
 			}
 		}
@@ -415,7 +417,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 				if _, found := checkValues["fvalues"].(IM)[row["fieldname"].(string)]; !found {
 					switch row["fieldtype"] {
 					case "bool":
-						checkValues["fvalues"].(IM)[row["fieldname"].(string)] = "false"
+						checkValues["fvalues"].(IM)[row["fieldname"].(string)] = false
 					case "integer", "float":
 						checkValues["fvalues"].(IM)[row["fieldname"].(string)] = 0
 					default:
@@ -499,7 +501,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 							checkValues["values"].(IM)[fieldname] = int64(v)
 						case int64:
 						default:
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (integer)")
+							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (integer)")
 						}
 					}
 				}
@@ -516,7 +518,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 					case float64:
 						checkValues["values"].(IM)[fieldname] = value.(float64)
 					default:
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (float)")
+						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (float)")
 					}
 				}
 
@@ -533,11 +535,11 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 							tm, err = time.Parse(dateFmt, value.(string))
 						}
 						if err != nil {
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 						}
 						checkValues["values"].(IM)[fieldname] = tm.Format(dateFmt)
 					default:
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 					}
 				}
 
@@ -575,11 +577,11 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 							tm, err = time.Parse(dateFmt, value.(string))
 						}
 						if err != nil {
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 						}
 						checkValues["values"].(IM)[fieldname] = tm.Format(datetimeISOFmt)
 					default:
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
 					}
 				}
 
@@ -601,13 +603,17 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 							checkValues["values"].(IM)[fieldname] = value.(string)[:field.Length]
 						}
 					default:
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname + " (string)")
+						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (string)")
 					}
+				}
+			default:
+				if value == "" || value == 0 {
+					checkValues["values"].(IM)[fieldname] = nil
 				}
 			}
 			value = checkValues["values"].(IM)[fieldname]
 			if value == nil && field.NotNull {
-				return id, errors.New(GetMessage("missing_required_field") + ": " + fieldname)
+				return id, errors.New(ut.GetMessage("missing_required_field") + ": " + fieldname)
 			}
 			if field.Requires != nil {
 				_, minFound := field.Requires["min"]
@@ -617,11 +623,11 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 						switch v := value.(type) {
 						case int64:
 							if v < field.Requires["min"].(int64) {
-								return id, errors.New(GetMessage("invalid_value") + " (min. value): " + fieldname)
+								return id, errors.New(ut.GetMessage("invalid_value") + " (min. value): " + fieldname)
 							}
 						case float64:
 							if v < field.Requires["min"].(float64) {
-								return id, errors.New(GetMessage("invalid_value") + " (min. value): " + fieldname)
+								return id, errors.New(ut.GetMessage("invalid_value") + " (min. value): " + fieldname)
 							}
 						}
 					}
@@ -629,11 +635,11 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 						switch v := value.(type) {
 						case int64:
 							if v > field.Requires["max"].(int64) {
-								return id, errors.New(GetMessage("invalid_value") + " (max. value): " + fieldname)
+								return id, errors.New(ut.GetMessage("invalid_value") + " (max. value): " + fieldname)
 							}
 						case float64:
 							if v > field.Requires["max"].(float64) {
-								return id, errors.New(GetMessage("invalid_value") + " (max. value): " + fieldname)
+								return id, errors.New(ut.GetMessage("invalid_value") + " (max. value): " + fieldname)
 							}
 						}
 					}
@@ -650,19 +656,19 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 					} else {
 						value, valid := value.(string)
 						if !valid {
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 						} else if _, found := curr[value]; !found {
-							return id, errors.New(GetMessage("invalid_value") + ": " + value)
+							return id, errors.New(ut.GetMessage("invalid_value") + ": " + value)
 						}
 					}
 				} else {
-					ivalue := ToInteger(value)
+					ivalue := ut.ToInteger(value, 0)
 					if value == "" || value == nil {
 						checkValues["values"].(IM)[fieldname] = nil
 					} else if ivalue == 0 {
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 					} else if _, found := groups[ivalue]; !found {
-						return id, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 					} else {
 						var gvalid bool
 						for req, rvalue := range field.Requires {
@@ -677,7 +683,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 							}
 						}
 						if !gvalid {
-							return id, errors.New(GetMessage("invalid_value") + ": " + fieldname)
+							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
 						}
 					}
 				}
@@ -688,7 +694,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 	if len(checkValues["values"].(IM)) > 0 && nervatype == "fieldvalue" {
 		//check_fieldvalue (fieldvalue table)
 		if _, found := checkValues["values"].(IM)["fieldname"]; !found {
-			return id, errors.New(GetMessage("missing_fieldname"))
+			return id, errors.New(ut.GetMessage("missing_fieldname"))
 		}
 		if _, found := checkValues["values"].(IM)["value"]; !found {
 			checkValues["values"].(IM)["value"] = ""
@@ -726,7 +732,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 			}
 			if _, found := checkValues["dvalues"].(IM)[fieldname]; !found {
 				if !insertField {
-					return id, errors.New(GetMessage("missing_insert_field"))
+					return id, errors.New(ut.GetMessage("missing_insert_field"))
 				}
 				checkValues["deffield"] = append(checkValues["deffield"].([]IM), IM{
 					"fieldname":   fieldname,
@@ -771,7 +777,7 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 				return id, err
 			}
 			fieldvalue["value"] = value
-			fID := ToInteger(fieldvalue["id"])
+			fID := ut.ToInteger(fieldvalue["id"], 0)
 			values := Update{Values: fieldvalue, Model: "fieldvalue", IDKey: fID, Trans: trans}
 			_, err = nstore.ds.Update(values)
 			if err != nil {
@@ -795,41 +801,41 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 
 	var md1 = SM{"deffield": "fieldname", "employee": "empnumber",
 		"pattern": "description", "project": "pronumber", "tool": "serial"}
-	var md2 = SM{"currency": "curr", "numberdef": "numberkey", "ui_language": "lang",
+	var md2 = SM{"currency": "curr", "numberdef": "numberkey",
 		"ui_report": "reportkey", "ui_menu": "menukey"}
 	var infoData = IM{"qkey": "refnumber->id", "nervatype": "", "refnumber": "",
-		"useDeleted": "false", "extraInfo": "false"}
+		"useDeleted": false, "extraInfo": false}
 	var err error
 	refIndex := 0
 
-	infoData["nervatype"] = ToString(options["nervatype"], "")
+	infoData["nervatype"] = ut.ToString(options["nervatype"], "")
 	if infoData["nervatype"] == "" {
-		return nil, errors.New(GetMessage("missing_nervatype"))
+		return nil, errors.New(ut.GetMessage("missing_nervatype"))
 	}
 
 	if _, found := nstore.models[infoData["nervatype"].(string)]; !found && infoData["nervatype"] != "setting" {
-		return nil, errors.New(GetMessage("invalid_nervatype") + " " + infoData["nervatype"].(string))
+		return nil, errors.New(ut.GetMessage("invalid_nervatype") + " " + infoData["nervatype"].(string))
 	}
 
-	infoData["refnumber"] = ToString(options["refnumber"], "")
+	infoData["refnumber"] = ut.ToString(options["refnumber"], "")
 	if infoData["refnumber"] == "" {
-		return nil, errors.New(GetMessage("missing_fieldname") + ": refnumber")
+		return nil, errors.New(ut.GetMessage("missing_fieldname") + ": refnumber")
 	}
-	infoData["useDeleted"] = ToBoolean(options["use_deleted"], false)
-	infoData["extraInfo"] = ToBoolean(options["extra_info"], false)
+	infoData["useDeleted"] = ut.ToBoolean(options["use_deleted"], false)
+	infoData["extraInfo"] = ut.ToBoolean(options["extra_info"], false)
 
 	if ok, err := nstore.connected(); !ok || err != nil {
 		if err != nil {
 			return nil, err
 		}
-		return nil, errors.New(GetMessage("not_connect"))
+		return nil, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	if _, found := md1[infoData["nervatype"].(string)]; found {
 		infoData["refField"] = md1[infoData["nervatype"].(string)]
 	} else if _, found := md2[infoData["nervatype"].(string)]; found {
 		infoData["refField"] = md2[infoData["nervatype"].(string)]
-		infoData["useDeleted"] = "true"
+		infoData["useDeleted"] = true
 	} else {
 		switch infoData["nervatype"] {
 		case "barcode", "customer", "event", "product", "place", "tax", "trans", "setting":
@@ -842,10 +848,10 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				if len(strings.Split(infoData["refnumber"].(string), "~")) > 1 {
 					refIndex, err = strconv.Atoi(strings.Split(infoData["refnumber"].(string), "~")[1])
 					if err != nil {
-						return nil, errors.New(GetMessage("invalid_refnumber"))
+						return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 					}
 					if refIndex < 1 {
-						return nil, errors.New(GetMessage("invalid_refnumber"))
+						return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 					}
 					refIndex--
 					infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
@@ -858,10 +864,10 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 					}
 				}
 				if infoData["refField"] == "" {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		case "groups":
@@ -870,7 +876,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				infoData["refType"] = strings.Split(infoData["refnumber"].(string), "~")[0]
 				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[1]
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		case "fieldvalue":
@@ -882,10 +888,10 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				if len(strings.Split(fieldname, "~")) > 1 {
 					refIndex, err = strconv.Atoi(strings.Split(fieldname, "~")[1])
 					if err != nil {
-						return nil, errors.New(GetMessage("invalid_refnumber"))
+						return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 					}
 					if refIndex < 1 {
-						return nil, errors.New(GetMessage("invalid_refnumber"))
+						return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 					}
 					refIndex--
 					fieldname = strings.Split(fieldname, "~")[0]
@@ -893,13 +899,13 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				//get refNervatype
 				info1, err := nstore.GetInfofromRefnumber(IM{"nervatype": "deffield", "refnumber": fieldname})
 				if err != nil {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				//get refId
 				info2, err := nstore.GetInfofromRefnumber(IM{"nervatype": info1["ref_nervatype"].(string),
 					"refnumber": refnumber, "extra_info": false})
 				if err != nil {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				infoData["refID"] = strconv.FormatInt(info2["id"].(int64), 10)
 				infoData["refnumber"] = fieldname
@@ -913,10 +919,10 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 			if len(strings.Split(infoData["refnumber"].(string), "~")) > 1 {
 				refIndex, err = strconv.Atoi(strings.Split(infoData["refnumber"].(string), "~")[1])
 				if err != nil {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				if refIndex < 1 {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				refIndex--
 				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
@@ -940,12 +946,12 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				}
 				qty, err := strconv.ParseInt(qtyStr, 10, 64)
 				if err != nil {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				infoData["qty"] = strconv.FormatInt(qty, 10)
 				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		case "link":
@@ -955,18 +961,18 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				infoData["refValue1"] = strings.Replace(strings.Split(infoData["refnumber"].(string), "~~")[0], infoData["refType1"].(string)+"~", "", 1)
 				info1, err := nstore.GetInfofromRefnumber(IM{"nervatype": infoData["refType1"], "refnumber": infoData["refValue1"]})
 				if err != nil {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				infoData["refID1"] = strconv.FormatInt(info1["id"].(int64), 10)
 				infoData["refType2"] = strings.Split(strings.Split(infoData["refnumber"].(string), "~~")[1], "~")[0]
 				infoData["refValue2"] = strings.Replace(strings.Split(infoData["refnumber"].(string), "~~")[1], infoData["refType2"].(string)+"~", "", 1)
 				info2, err := nstore.GetInfofromRefnumber(IM{"nervatype": infoData["refType2"], "refnumber": infoData["refValue2"]})
 				if err != nil {
-					return nil, errors.New(GetMessage("invalid_refnumber"))
+					return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 				}
 				infoData["refID2"] = strconv.FormatInt(info2["id"].(int64), 10)
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		case "rate":
@@ -979,7 +985,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 					infoData["planumber"] = strings.Split(infoData["refnumber"].(string), "~")[3]
 				}
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		case "log":
@@ -988,7 +994,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				infoData["crdate"] = strings.Split(infoData["refnumber"].(string), "~")[1]
 				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		case "ui_audit":
@@ -998,35 +1004,25 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 				if len(strings.Split(infoData["refnumber"].(string), "~")) > 2 {
 					infoData["transType"] = strings.Split(infoData["refnumber"].(string), "~")[2]
 					if infoData["transType"] != "trans" && infoData["transType"] != "report" {
-						return nil, errors.New(GetMessage("invalid_refnumber"))
+						return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 					}
 				}
 				infoData["usergroup"] = strings.Split(infoData["refnumber"].(string), "~")[0]
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
-		case "ui_menufields", "ui_reportfields":
+		case "ui_menufields":
 			//menukey~fieldname
-			//reportkey~fieldname
 			if len(strings.Split(infoData["refnumber"].(string), "~")) > 1 {
 				infoData["fieldname"] = strings.Split(infoData["refnumber"].(string), "~")[1]
 				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
 			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
-			}
-
-		case "ui_reportsources":
-			//reportkey~dataset
-			if len(strings.Split(infoData["refnumber"].(string), "~")) > 1 {
-				infoData["dataset"] = strings.Split(infoData["refnumber"].(string), "~")[1]
-				infoData["refnumber"] = strings.Split(infoData["refnumber"].(string), "~")[0]
-			} else {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 
 		default:
-			return nil, errors.New(GetMessage("invalid_refnumber"))
+			return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 		}
 	}
 
@@ -1035,7 +1031,7 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 		return nil, err
 	}
 	if len(rows) == 0 || refIndex > len(rows)-1 {
-		return nil, errors.New(GetMessage("invalid_refnumber"))
+		return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 	}
 
 	info := IM{"id": rows[refIndex]["id"]}
@@ -1043,10 +1039,10 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 	switch infoData["nervatype"] {
 
 	case "customer":
-		if infoData["extraInfo"] == "true" && len(rows) < 2 {
-			return nil, errors.New(GetMessage("invalid_refnumber"))
+		if ut.ToBoolean(infoData["extraInfo"], false) && len(rows) < 2 {
+			return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 		}
-		if infoData["extraInfo"] == "true" {
+		if ut.ToBoolean(infoData["extraInfo"], false) {
 			for index := 0; index < len(rows); index++ {
 				zipcode := ""
 				if rows[index]["zipcode"] != nil {
@@ -1126,19 +1122,19 @@ func (nstore *NervaStore) GetInfofromRefnumber(options IM) (IM, error) {
 // DeleteData - delete a record data
 func (nstore *NervaStore) DeleteData(options IM) (err error) {
 
-	nervatype := ToString(options["nervatype"], "")
+	nervatype := ut.ToString(options["nervatype"], "")
 	if nervatype == "" {
-		return errors.New(GetMessage("missing_nervatype"))
+		return errors.New(ut.GetMessage("missing_nervatype"))
 	}
 
 	if _, found := nstore.models[nervatype]; !found {
-		return errors.New(GetMessage("invalid_nervatype") + " " + nervatype)
+		return errors.New(ut.GetMessage("invalid_nervatype") + " " + nervatype)
 	}
 
-	refID := ToInteger(options["ref_id"])
-	refnumber := ToString(options["refnumber"], "")
+	refID := ut.ToInteger(options["ref_id"], 0)
+	refnumber := ut.ToString(options["refnumber"], "")
 	if refID == int64(0) && refnumber == "" {
-		return errors.New(GetMessage("missing_fieldname") + ": ref_id or refnumber")
+		return errors.New(ut.GetMessage("missing_fieldname") + ": ref_id or refnumber")
 	}
 	if refID == int64(0) {
 		info, err := nstore.GetInfofromRefnumber(IM{"nervatype": nervatype, "refnumber": refnumber})
@@ -1147,13 +1143,13 @@ func (nstore *NervaStore) DeleteData(options IM) (err error) {
 		}
 		refID = info["id"].(int64)
 	}
-	logEnabled := ToBoolean(options["log_enabled"], true)
+	logEnabled := ut.ToBoolean(options["log_enabled"], true)
 
 	if ok, err := nstore.connected(); !ok || err != nil {
 		if err != nil {
 			return err
 		}
-		return errors.New(GetMessage("not_connect"))
+		return errors.New(ut.GetMessage("not_connect"))
 	}
 
 	//check integrity
@@ -1162,7 +1158,7 @@ func (nstore *NervaStore) DeleteData(options IM) (err error) {
 		"movement", "pattern", "payment", "price", "rate":
 	case "numberdef":
 		//protected, always false
-		return errors.New(GetMessage("integrity_error"))
+		return errors.New(ut.GetMessage("integrity_error"))
 	case "currency", "customer", "deffield", "employee", "groups", "place", "product", "project", "tax", "tool", "trans":
 		rows, err := nstore.ds.QueryKey(IM{"qkey": "integrity", "nervatype": nervatype, "ref_id": refID}, nil)
 		if err != nil {
@@ -1170,17 +1166,17 @@ func (nstore *NervaStore) DeleteData(options IM) (err error) {
 		}
 		if len(rows) > 0 {
 			if rows[0]["count"].(int64) > 0 {
-				return errors.New(GetMessage("integrity_error"))
+				return errors.New(ut.GetMessage("integrity_error"))
 			}
 		}
 	default:
 		if nervatype[:3] != "ui_" {
-			return errors.New(GetMessage("integrity_error"))
+			return errors.New(ut.GetMessage("integrity_error"))
 		}
 	}
 
 	//check logical delete
-	logicalDelete := ToBoolean(nstore.models[nervatype].(IM)["deleted"], true)
+	_, logicalDelete := nstore.models[nervatype].(IM)["deleted"]
 	if logicalDelete {
 		query := []Query{{
 			Fields: []string{"value"},
@@ -1192,7 +1188,7 @@ func (nstore *NervaStore) DeleteData(options IM) (err error) {
 			return err
 		}
 		if len(result) > 0 {
-			if result[0]["value"] == "true" {
+			if ut.ToBoolean(result[0]["value"], false) {
 				logicalDelete = false
 			}
 		}
@@ -1278,25 +1274,25 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 
 	info := IM{"index": 1}
 	var infoData = IM{"qkey": "id->refnumber", "nervatype": "", "id": "",
-		"useDeleted": "false", "retfield": ""}
-	infoData["nervatype"] = ToString(options["nervatype"], "")
+		"useDeleted": false, "retfield": ""}
+	infoData["nervatype"] = ut.ToString(options["nervatype"], "")
 	if infoData["nervatype"] == "" {
-		return nil, errors.New(GetMessage("missing_nervatype"))
+		return nil, errors.New(ut.GetMessage("missing_nervatype"))
 	}
 
 	if _, found := nstore.models[infoData["nervatype"].(string)]; !found && infoData["nervatype"] != "setting" {
-		return nil, errors.New(GetMessage("invalid_nervatype") + " " + infoData["nervatype"].(string))
+		return nil, errors.New(ut.GetMessage("invalid_nervatype") + " " + infoData["nervatype"].(string))
 	}
 
-	infoData["id"] = ToInteger(options["ref_id"])
+	infoData["id"] = ut.ToInteger(options["ref_id"], 0)
 	if infoData["id"] == 0 {
-		return nil, errors.New(GetMessage("missing_fieldname") + ": ref_id")
+		return nil, errors.New(ut.GetMessage("missing_fieldname") + ": ref_id")
 	}
-	infoData["retfield"] = ToString(options["retfield"], "")
-	infoData["useDeleted"] = ToBoolean(options["use_deleted"], false)
+	infoData["retfield"] = ut.ToString(options["retfield"], "")
+	infoData["useDeleted"] = ut.ToBoolean(options["use_deleted"], false)
 	if _, found := nstore.models[infoData["nervatype"].(string)]; found {
 		if _, found := nstore.models[infoData["nervatype"].(string)].(IM)["deleted"]; !found {
-			infoData["useDeleted"] = "true"
+			infoData["useDeleted"] = true
 		}
 	}
 
@@ -1304,7 +1300,7 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 		if err != nil {
 			return nil, err
 		}
-		return nil, errors.New(GetMessage("not_connect"))
+		return nil, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	rows, err := nstore.ds.QueryKey(infoData, nil)
@@ -1312,7 +1308,7 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 		return nil, err
 	}
 	if len(rows) == 0 {
-		return nil, errors.New(GetMessage("invalid_refnumber"))
+		return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 	}
 	if _, found := rows[0][infoData["retfield"].(string)]; found {
 		info[infoData["retfield"].(string)] = rows[0][infoData["retfield"].(string)]
@@ -1330,12 +1326,12 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 			return nil, err
 		}
 		if len(rows) == 0 {
-			return nil, errors.New(GetMessage("invalid_refnumber"))
+			return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 		}
 		info["index"] = rows[0]["count"]
 		head, err := nstore.GetRefnumber(IM{
 			"nervatype": info["headNervatype"], "ref_id": info["refId"],
-			"use_deleted": (infoData["useDeleted"] == "true")})
+			"use_deleted": ut.ToBoolean(infoData["useDeleted"], false)})
 		if err != nil {
 			return nil, err
 		}
@@ -1355,7 +1351,7 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 				return nil, err
 			}
 			if len(rows) == 0 {
-				return nil, errors.New(GetMessage("invalid_refnumber"))
+				return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 			}
 			info["index"] = rows[0]["count"]
 			if infoData["retfield"] == "fieldname" {
@@ -1363,7 +1359,7 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 			}
 			head, err := nstore.GetRefnumber(IM{
 				"nervatype": info["headNervatype"], "ref_id": info["refId"],
-				"use_deleted": (infoData["useDeleted"] == "true")})
+				"use_deleted": ut.ToBoolean(infoData["useDeleted"], false)})
 			if err != nil {
 				return nil, err
 			}
@@ -1383,7 +1379,7 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 			return nil, err
 		}
 		if len(rows) == 0 {
-			return nil, errors.New(GetMessage("invalid_refnumber"))
+			return nil, errors.New(ut.GetMessage("invalid_refnumber"))
 		}
 		info["index"] = rows[0]["count"]
 		info["refnumber"] = info["transnumber"].(string) + "~" + strconv.FormatInt(info["index"].(int64), 10)
@@ -1401,13 +1397,13 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 		//nervatype_1~refnumber_1~~nervatype_2~refnumber_2
 		refnumber1, err := nstore.GetRefnumber(IM{
 			"nervatype": rows[0]["nervatype1"].(string), "ref_id": rows[0]["ref_id_1"].(int64),
-			"use_deleted": (infoData["useDeleted"] == "true")})
+			"use_deleted": ut.ToBoolean(infoData["useDeleted"], false)})
 		if err != nil {
 			return nil, err
 		}
 		refnumber2, err := nstore.GetRefnumber(IM{
 			"nervatype": rows[0]["nervatype2"].(string), "ref_id": rows[0]["ref_id_2"].(int64),
-			"use_deleted": (infoData["useDeleted"] == "true")})
+			"use_deleted": ut.ToBoolean(infoData["useDeleted"], false)})
 		if err != nil {
 			return nil, err
 		}
@@ -1438,14 +1434,14 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 func (nstore *NervaStore) GetDataAudit() (string, error) {
 	result := "own"
 	if nstore.User == nil {
-		return result, errors.New(GetMessage("invalid_login"))
+		return result, errors.New(ut.GetMessage("invalid_login"))
 	}
 
 	if ok, err := nstore.connected(); !ok || err != nil {
 		if err != nil {
 			return result, err
 		}
-		return result, errors.New(GetMessage("not_connect"))
+		return result, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	rows, err := nstore.ds.QueryKey(IM{"qkey": "data_audit", "id": nstore.User.Id}, nil)
@@ -1466,11 +1462,11 @@ func (nstore *NervaStore) GetDataAudit() (string, error) {
 func (nstore *NervaStore) GetObjectAudit(options IM) ([]string, error) {
 	result := []string{"disabled", ""}
 	if nstore.User == nil {
-		return result, errors.New(GetMessage("invalid_login"))
+		return result, errors.New(ut.GetMessage("invalid_login"))
 	}
 	if _, found := options["nervatype"]; !found {
 		if _, found := options["transtype"]; !found {
-			return result, errors.New(GetMessage("missing_nervatype"))
+			return result, errors.New(ut.GetMessage("missing_nervatype"))
 		}
 	}
 
@@ -1483,7 +1479,7 @@ func (nstore *NervaStore) GetObjectAudit(options IM) ([]string, error) {
 		if err != nil {
 			return result, err
 		}
-		return result, errors.New(GetMessage("not_connect"))
+		return result, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	var infoData = IM{"qkey": "object_audit", "usergroup": nstore.User.Usergroup}
@@ -1583,7 +1579,7 @@ func (nstore *NervaStore) GetGroups(options IM) (IM, error) {
 		if err != nil {
 			return groups, err
 		}
-		return groups, errors.New(GetMessage("not_connect"))
+		return groups, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	filters :=
@@ -1627,7 +1623,7 @@ func (nstore *NervaStore) GetDatabaseSettings() (IM, error) {
 		if err != nil {
 			return settings, err
 		}
-		return settings, errors.New(GetMessage("not_connect"))
+		return settings, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	rows, err := nstore.ds.QueryKey(IM{"qkey": "dbs_settings"}, nil)

@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/nervatura/nervatura-go/app"
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 func encodeOptions(data interface{}) string {
-	jdata, _ := ntura.ConvertToByte(data)
+	jdata, _ := ut.ConvertToByte(data)
 	return string(jdata)
 }
 
 func checkResult(result string, code float64) bool {
 	var data interface{}
-	err := ntura.ConvertFromByte([]byte(result), &data)
+	err := ut.ConvertFromByte([]byte(result), &data)
 	if err != nil {
 		return false
 	}
@@ -38,7 +38,7 @@ func getToken() string {
 }
 
 func TestCliDatabaseCreate(t *testing.T) {
-	options := map[string]interface{}{"database": "test", "demo": "true", "report_dir": reportDir}
+	options := map[string]interface{}{"database": "test", "demo": true}
 	os.Args = append(os.Args, "-c", "DatabaseCreate")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-k", apiKey)
@@ -262,7 +262,7 @@ func TestCliReport(t *testing.T) {
 			"posdate": "2019-02-23"},
 		"orientation": "portrait",
 		"output":      "auto",
-		"reportkey":   "xls_custpos_en",
+		"reportkey":   "csv_custpos_en",
 		"size":        "a4"}
 	os.Args = append(os.Args, "-c", "Report")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
@@ -279,7 +279,7 @@ func TestCliReport(t *testing.T) {
 func TestCliReportList(t *testing.T) {
 	token := getToken()
 	options := map[string]interface{}{
-		"report_dir": reportDir}
+		"report_dir": ""}
 	os.Args = append(os.Args, "-c", "ReportList")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
@@ -311,8 +311,7 @@ func TestCliReportDelete(t *testing.T) {
 func TestCliReportInstall(t *testing.T) {
 	token := getToken()
 	options := map[string]interface{}{
-		"report_dir": reportDir,
-		"reportkey":  "ntr_cash_in_en"}
+		"reportkey": "ntr_cash_in_en"}
 	os.Args = append(os.Args, "-c", "ReportInstall")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)

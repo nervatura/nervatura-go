@@ -2,6 +2,8 @@ package nervatura
 
 import (
 	"errors"
+	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -9,8 +11,7 @@ import (
 	"time"
 
 	"github.com/alexedwards/argon2id"
-	"github.com/beevik/etree"
-	"github.com/dgrijalva/jwt-go"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 /*
@@ -45,12 +46,12 @@ func (api *API) getHashvalue(refname string) (string, error) {
 func (api *API) authUser(options IM) error {
 
 	if !api.NStore.ds.Connection().Connected {
-		database := ToString(options["database"], "")
+		database := ut.ToString(options["database"], "")
 		if database == "" {
-			return errors.New(GetMessage("missing_database"))
+			return errors.New(ut.GetMessage("missing_database"))
 		}
 		if os.Getenv("NT_ALIAS_"+strings.ToUpper(database)) == "" {
-			return errors.New(GetMessage("missing_database"))
+			return errors.New(ut.GetMessage("missing_database"))
 		}
 		err := api.NStore.ds.CreateConnection(database, os.Getenv("NT_ALIAS_"+strings.ToUpper(database)))
 		if err != nil {
@@ -59,7 +60,7 @@ func (api *API) authUser(options IM) error {
 	}
 
 	if _, found := options["username"]; !found {
-		return errors.New(GetMessage("missing_user"))
+		return errors.New(ut.GetMessage("missing_user"))
 	}
 
 	rows, err := api.NStore.ds.QueryKey(IM{"qkey": "user", "username": options["username"]}, nil)
@@ -68,12 +69,12 @@ func (api *API) authUser(options IM) error {
 	}
 	if len(rows) > 0 {
 		api.NStore.User = &User{
-			Id:         ToInteger(rows[0]["id"]),
-			Username:   ToString(rows[0]["username"], ""),
-			Empnumber:  ToString(rows[0]["empnumber"], ""),
-			Usergroup:  ToInteger(rows[0]["usergroup"]),
-			Scope:      ToString(rows[0]["scope"], ""),
-			Department: ToString(rows[0]["department"], ""),
+			Id:         ut.ToInteger(rows[0]["id"], 0),
+			Username:   ut.ToString(rows[0]["username"], ""),
+			Empnumber:  ut.ToString(rows[0]["empnumber"], ""),
+			Usergroup:  ut.ToInteger(rows[0]["usergroup"], 0),
+			Scope:      ut.ToString(rows[0]["scope"], ""),
+			Department: ut.ToString(rows[0]["department"], ""),
 		}
 	} else {
 		query := []Query{{
@@ -93,18 +94,18 @@ func (api *API) authUser(options IM) error {
 			}
 			if len(rows) > 0 {
 				api.NStore.User = &User{
-					Id:         ToInteger(rows[0]["id"]),
-					Username:   ToString(rows[0]["username"], ""),
-					Empnumber:  ToString(rows[0]["empnumber"], ""),
-					Usergroup:  ToInteger(rows[0]["usergroup"]),
-					Scope:      ToString(rows[0]["scope"], ""),
-					Department: ToString(rows[0]["department"], ""),
+					Id:         ut.ToInteger(rows[0]["id"], 0),
+					Username:   ut.ToString(rows[0]["username"], ""),
+					Empnumber:  ut.ToString(rows[0]["empnumber"], ""),
+					Usergroup:  ut.ToInteger(rows[0]["usergroup"], 0),
+					Scope:      ut.ToString(rows[0]["scope"], ""),
+					Department: ut.ToString(rows[0]["department"], ""),
 				}
 			} else {
-				return errors.New(GetMessage("unknown_user"))
+				return errors.New(ut.GetMessage("unknown_user"))
 			}
 		} else {
-			return errors.New(GetMessage("unknown_user"))
+			return errors.New(ut.GetMessage("unknown_user"))
 		}
 	}
 	return nil
@@ -116,24 +117,13 @@ TokenRefresh - create/refresh a JWT token
 func (api *API) TokenRefresh() (string, error) {
 	conn := api.NStore.ds.Connection()
 	if !conn.Connected {
-		return "", errors.New(GetMessage("not_connect"))
+		return "", errors.New(ut.GetMessage("not_connect"))
 	}
 	username := api.NStore.User.Username
 	if api.NStore.Customer != nil {
 		username = api.NStore.Customer["custnumber"].(string)
 	}
-	expirationTime := time.Now().Add(GetEnvValue("duration", os.Getenv("NT_TOKEN_EXP")).(time.Duration) * time.Hour)
-	claims := NTClaims{
-		username,
-		conn.Alias,
-		jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-			Issuer:    os.Getenv("NT_TOKEN_ISS"),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = os.Getenv("NT_TOKEN_KID")
-	return token.SignedString([]byte(os.Getenv("NT_TOKEN_KEY")))
+	return ut.CreateToken(username, conn.Alias)
 }
 
 /*
@@ -146,53 +136,19 @@ Example:
 
 */
 func (api *API) TokenLogin(options IM) error {
-	tokenString := ToString(options["token"], "")
+	tokenString := ut.ToString(options["token"], "")
 	if tokenString == "" {
-		return errors.New(GetMessage("missing_required_field") + ": token")
+		return errors.New(ut.GetMessage("missing_required_field") + ": token")
 	}
-	key := os.Getenv("NT_TOKEN_KEY")
-	if _, found := options["key"]; found {
-		key = ToString(options["key"], "")
+	keyMap := make(map[string]map[string]string)
+	if keys, found := options["keys"].(map[string]map[string]string); found {
+		keyMap = keys
 	}
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("Unexpected signing method: " + token.Header["alg"].(string))
-		}
-		return []byte(key), nil
-	})
+	data, err := ut.ParseToken(tokenString, keyMap)
 	if err != nil {
 		return err
 	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if _, found := claims["database"]; !found {
-			if os.Getenv("NT_ALIAS_DEFAULT") == "" {
-				return errors.New(GetMessage("missing_database"))
-			}
-			options["database"] = "default"
-		}
-		options["database"] = claims["database"]
-		options["username"] = ""
-		if _, found := claims["username"]; found {
-			options["username"] = claims["username"]
-		} else if _, found := claims["custnumber"]; found {
-			options["username"] = claims["custnumber"]
-		} else if _, found := claims["email"]; found {
-			options["username"] = claims["email"]
-		} else if _, found := claims["phone_number"]; found {
-			options["username"] = claims["phone_number"]
-		}
-		if options["username"] == "" {
-			return errors.New(GetMessage("missing_user"))
-		}
-		return api.authUser(options)
-
-	} else if ve, ok := err.(*jwt.ValidationError); ok {
-		if ve.Errors&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0 {
-			return errors.New("token is either expired or not active yet")
-		}
-		return err
-	}
-	return err
+	return api.authUser(data)
 }
 
 /*
@@ -210,23 +166,23 @@ Example:
 func (api *API) UserPassword(options IM) error {
 	if _, found := options["username"]; !found {
 		if _, found := options["custnumber"]; !found {
-			return errors.New(GetMessage("missing_required_field") + ": username or custnumber")
+			return errors.New(ut.GetMessage("missing_required_field") + ": username or custnumber")
 		}
 	}
 	if _, found := options["password"]; !found {
-		return errors.New(GetMessage("missing_required_field") + ": password")
+		return errors.New(ut.GetMessage("missing_required_field") + ": password")
 	}
 	if _, found := options["confirm"]; !found {
-		return errors.New(GetMessage("missing_required_field") + ": confirm")
+		return errors.New(ut.GetMessage("missing_required_field") + ": confirm")
 	}
 	if options["password"] == "" {
-		return errors.New(GetMessage("empty_password"))
+		return errors.New(ut.GetMessage("empty_password"))
 	}
 	if options["password"] != options["confirm"] {
-		return errors.New(GetMessage("verify_password"))
+		return errors.New(ut.GetMessage("verify_password"))
 	}
 	if !api.NStore.ds.Connection().Connected {
-		return errors.New(GetMessage("not_connect"))
+		return errors.New(ut.GetMessage("not_connect"))
 	}
 	refname := ""
 	if _, found := options["custnumber"]; found && api.NStore.Customer != nil {
@@ -261,13 +217,13 @@ func (api *API) UserPassword(options IM) error {
 			return err
 		}
 		if len(rows) > 0 {
-			refname += ToString(rows[0]["id"], "")
+			refname += ut.ToString(rows[0]["id"], "")
 		} else {
-			return errors.New(GetMessage("unknown_user"))
+			return errors.New(ut.GetMessage("unknown_user"))
 		}
 	}
-	refname = getMD5Hash(refname)
-	hash, err := argon2id.CreateHash(ToString(options["password"], ""), argon2id.DefaultParams)
+	refname = ut.GetMD5Hash(refname)
+	hash, err := argon2id.CreateHash(ut.ToString(options["password"], ""), argon2id.DefaultParams)
 	if err != nil {
 		return err
 	}
@@ -289,11 +245,11 @@ Returns a access token and the type of database.
 func (api *API) UserLogin(options IM) (string, string, error) {
 	if _, found := options["database"]; !found {
 		if os.Getenv("NT_ALIAS_DEFAULT") == "" {
-			return "", "", errors.New(GetMessage("missing_database"))
+			return "", "", errors.New(ut.GetMessage("missing_database"))
 		}
 		options["database"] = strings.ToLower(os.Getenv("NT_ALIAS_DEFAULT"))
 	}
-	password := ToString(options["password"], "")
+	password := ut.ToString(options["password"], "")
 	err := api.authUser(options)
 	if err != nil {
 		return "", "", err
@@ -303,7 +259,7 @@ func (api *API) UserLogin(options IM) (string, string, error) {
 	if api.NStore.Customer != nil {
 		refname = "customer" + strconv.FormatInt(api.NStore.Customer["id"].(int64), 10)
 	}
-	refname = getMD5Hash(refname)
+	refname = ut.GetMD5Hash(refname)
 	hash, err := api.getHashvalue(refname)
 	if err != nil {
 		return "", "", err
@@ -315,10 +271,10 @@ func (api *API) UserLogin(options IM) (string, string, error) {
 			return "", "", err
 		}
 		if !match {
-			return "", "", errors.New(GetMessage("wrong_password"))
+			return "", "", errors.New(ut.GetMessage("wrong_password"))
 		}
 	} else if password != hash {
-		return "", "", errors.New(GetMessage("wrong_password"))
+		return "", "", errors.New(ut.GetMessage("wrong_password"))
 	}
 
 	token, err := api.TokenRefresh()
@@ -334,16 +290,16 @@ Example:
 
   options := map[string]interface{}{
     "database": alias,
-    "demo": "true",
-    "report_dir": "../server/templates"}
+    "demo": true,
+    "report_dir": ""}
   _, err := getAPI().DatabaseCreate(options)
 
 */
 func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	logData := []SM{}
-	database := ToString(options["database"], "")
+	database := ut.ToString(options["database"], "")
 	if database == "" {
-		return logData, errors.New(GetMessage("missing_required_field") + ": database")
+		return logData, errors.New(ut.GetMessage("missing_required_field") + ": database")
 	}
 
 	//check connect
@@ -351,8 +307,8 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 		logData = append(logData, SM{
 			"stamp":   time.Now().Format(TimeLayout),
 			"state":   "err",
-			"message": GetMessage("not_connect")})
-		return logData, errors.New(GetMessage("not_connect"))
+			"message": ut.GetMessage("not_connect")})
+		return logData, errors.New(ut.GetMessage("not_connect"))
 	}
 
 	logData, err := api.NStore.ds.CreateDatabase(logData)
@@ -365,7 +321,7 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	}
 
 	if _, found := options["demo"]; found {
-		if options["demo"] == "true" {
+		if ut.ToBoolean(options["demo"], false) {
 			options["logData"] = logData
 			logData, err = api.demoDatabase(options)
 			if err != nil {
@@ -381,7 +337,7 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	logData = append(logData, SM{
 		"stamp":   time.Now().Format(TimeLayout),
 		"state":   "log",
-		"message": GetMessage("info_create_ok")})
+		"message": ut.GetMessage("info_create_ok")})
 
 	return logData, nil
 }
@@ -511,7 +467,7 @@ func (api *API) demoDatabase(options IM) ([]SM, error) {
 		if err != nil {
 			return logData, err
 		}
-		resultStr += "," + ToString(reports[index]["reportkey"], "")
+		resultStr += "," + ut.ToString(reports[index]["reportkey"], "")
 	}
 	logData = append(logData, SM{
 		"stamp":   time.Now().Format(TimeLayout),
@@ -540,7 +496,7 @@ Examples:
 */
 func (api *API) Delete(options IM) error {
 	if _, found := options["id"]; found {
-		options["ref_id"] = ToInteger(options["id"])
+		options["ref_id"] = ut.ToInteger(options["id"], 0)
 	}
 	return api.NStore.DeleteData(IM{
 		"nervatype": options["nervatype"],
@@ -567,42 +523,42 @@ Examples:
 
 */
 func (api *API) Get(options IM) (results []IM, err error) {
-	nervatype := ToString(options["nervatype"], "")
+	nervatype := ut.ToString(options["nervatype"], "")
 	if nervatype == "" {
-		return results, errors.New(GetMessage("missing_required_field") + ": nervatype")
+		return results, errors.New(ut.GetMessage("missing_required_field") + ": nervatype")
 	}
 	if _, found := api.NStore.models[nervatype]; !found {
-		return results, errors.New(GetMessage("invalid_nervatype") + " " + nervatype)
+		return results, errors.New(ut.GetMessage("invalid_nervatype") + " " + nervatype)
 	}
-	metadata := ToBoolean(options["metadata"], false)
+	metadata := ut.ToBoolean(options["metadata"], false)
 
 	query := []Query{{
 		Fields: []string{"*"}, From: nervatype, Filters: []Filter{}}}
 	if _, found := api.NStore.models[nervatype].(IM)["deleted"]; found {
 		query[0].Filters = append(query[0].Filters, Filter{Field: "deleted", Comp: "==", Value: 0})
 	}
-	if ToString(options["ids"], "") != "" {
-		query[0].Filters = append(query[0].Filters, Filter{Field: "id", Comp: "in", Value: ToString(options["ids"], "")})
+	if ut.ToString(options["ids"], "") != "" {
+		query[0].Filters = append(query[0].Filters, Filter{Field: "id", Comp: "in", Value: ut.ToString(options["ids"], "")})
 	} else if _, found := options["filter"]; found {
-		filters := strings.Split(ToString(options["filter"], ""), "|")
+		filters := strings.Split(ut.ToString(options["filter"], ""), "|")
 		for index := 0; index < len(filters); index++ {
 			fields := strings.Split(filters[index], ";")
 			if len(fields) != 3 {
-				return results, errors.New(GetMessage("invalid_value") + "- filter: " + filters[index])
+				return results, errors.New(ut.GetMessage("invalid_value") + "- filter: " + filters[index])
 			}
 			if _, found := api.NStore.models[nervatype].(IM)[fields[0]]; !found {
-				return results, errors.New(GetMessage("invalid_value") + "- fieldname: " + fields[0])
+				return results, errors.New(ut.GetMessage("invalid_value") + "- fieldname: " + fields[0])
 			}
 			switch fields[1] {
 			case "==", "!=", "<", "<=", ">", ">=", "in":
 			default:
-				return results, errors.New(GetMessage("invalid_value") + "- comparison: " + fields[1])
+				return results, errors.New(ut.GetMessage("invalid_value") + "- comparison: " + fields[1])
 			}
 			value := fields[2]
 			query[0].Filters = append(query[0].Filters, Filter{Field: fields[0], Comp: fields[1], Value: value})
 		}
 	} else {
-		return results, errors.New(GetMessage("missing_required_field") + ": filter or ids")
+		return results, errors.New(ut.GetMessage("missing_required_field") + ": filter or ids")
 	}
 
 	results, err = api.NStore.ds.Query(query, nil)
@@ -616,7 +572,7 @@ func (api *API) Get(options IM) (results []IM, err error) {
 			"tax", "tool", "trans":
 			ids := ""
 			for index := 0; index < len(results); index++ {
-				ids += "," + ToString(results[index]["id"], "")
+				ids += "," + ut.ToString(results[index]["id"], "")
 			}
 			ids = ids[1:]
 			metadata, err := api.NStore.ds.QueryKey(IM{"qkey": "metadata", "nervatype": nervatype, "ids": ids}, nil)
@@ -684,16 +640,16 @@ func (api *API) View(options []IM) (results IM, err error) {
 	}()
 
 	for index := 0; index < len(options); index++ {
-		key := ToString(options[index]["key"], "")
+		key := ut.ToString(options[index]["key"], "")
 		if key == "" {
-			return results, errors.New(GetMessage("missing_required_field") + ": key")
+			return results, errors.New(ut.GetMessage("missing_required_field") + ": key")
 		}
-		text := ToString(options[index]["text"], "")
+		text := ut.ToString(options[index]["text"], "")
 		if text == "" {
-			return results, errors.New(GetMessage("missing_required_field") + ": text")
+			return results, errors.New(ut.GetMessage("missing_required_field") + ": text")
 		}
 		if _, valid := options[index]["values"].([]interface{}); !valid {
-			return results, errors.New(GetMessage("missing_required_field") + ": values")
+			return results, errors.New(ut.GetMessage("missing_required_field") + ": values")
 		}
 		result, err := api.NStore.ds.QuerySQL(
 			text, options[index]["values"].([]interface{}), trans)
@@ -756,12 +712,12 @@ Examples:
 
 */
 func (api *API) Function(options IM) (results interface{}, err error) {
-	key := ToString(options["key"], "")
+	key := ut.ToString(options["key"], "")
 	if key == "" {
-		return results, errors.New(GetMessage("missing_required_field") + ": key")
+		return results, errors.New(ut.GetMessage("missing_required_field") + ": key")
 	}
 	if _, valid := options["values"].(IM); !valid {
-		return results, errors.New(GetMessage("missing_required_field") + ": values")
+		return results, errors.New(ut.GetMessage("missing_required_field") + ": values")
 	}
 	return api.NStore.GetService(key, options["values"].(IM))
 }
@@ -812,7 +768,7 @@ Examples:
 */
 func (api *API) Update(nervatype string, data []IM) (results []int64, err error) {
 	if _, found := api.NStore.models[nervatype]; !found {
-		return results, errors.New(GetMessage("invalid_nervatype") + " " + nervatype)
+		return results, errors.New(ut.GetMessage("invalid_nervatype") + " " + nervatype)
 	}
 
 	if nervatype == "trans" {
@@ -827,36 +783,36 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 			if !(fkeys && ftranstype && fcustomer) {
 				options := IM{"qkey": "post_transtype"}
 				options["transtype_id"] = nil
-				transtype_id := ToInteger(data[index]["transtype"])
-				if transtype_id > 0 {
-					options["transtype_id"] = transtype_id
+				transtypeId := ut.ToInteger(data[index]["transtype"], 0)
+				if transtypeId > 0 {
+					options["transtype_id"] = transtypeId
 				}
 				options["transtype_key"] = nil
 				if fkeys && ftranstype {
-					transtype := ToString(data[index]["keys"].(IM)["transtype"], "")
+					transtype := ut.ToString(data[index]["keys"].(IM)["transtype"], "")
 					if transtype != "" {
 						options["transtype_key"] = transtype
 					}
 				}
 				options["customer_id"] = nil
 				if _, found := data[index]["customer_id"]; found {
-					customer_id := ToInteger(data[index]["customer_id"])
-					if customer_id > 0 {
-						options["customer_id"] = customer_id
+					customerId := ut.ToInteger(data[index]["customer_id"], 0)
+					if customerId > 0 {
+						options["customer_id"] = customerId
 					}
 				}
 				options["custnumber"] = nil
 				if fkeys && fcustomer {
-					custnumber := ToString(data[index]["keys"].(IM)["customer_id"], "")
+					custnumber := ut.ToString(data[index]["keys"].(IM)["customer_id"], "")
 					if custnumber != "" {
 						options["custnumber"] = custnumber
 					}
 				}
 				options["trans_id"] = nil
 				if _, found := data[index]["id"]; found {
-					trans_id := ToInteger(data[index]["id"])
-					if trans_id > 0 {
-						options["trans_id"] = trans_id
+					transId := ut.ToInteger(data[index]["id"], 0)
+					if transId > 0 {
+						options["trans_id"] = transId
 					}
 				}
 				info, err := api.NStore.ds.QueryKey(options, nil)
@@ -956,15 +912,15 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 					if err != nil {
 						return results, err
 					}
-					data[index][ToString(info["fieldname"], "")] = retnumber
+					data[index][ut.ToString(info["fieldname"], "")] = retnumber
 				} else {
 					refValues, err := api.NStore.GetInfofromRefnumber(info)
 					if err != nil {
 						return results, err
 					}
-					data[index][ToString(info["fieldname"], "")] = refValues["id"]
-					extra_info := ToBoolean(info["extra_info"], false)
-					if extra_info {
+					data[index][ut.ToString(info["fieldname"], "")] = refValues["id"]
+					extraInfo := ut.ToBoolean(info["extra_info"], false)
+					if extraInfo {
 						data[index]["trans_custinvoice_compname"] = refValues["compname"]
 						data[index]["trans_custinvoice_comptax"] = refValues["comptax"]
 						data[index]["trans_custinvoice_compaddress"] = refValues["compaddress"]
@@ -1004,7 +960,7 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 				default:
 					if ifield.(MF).NotNull && ifield.(MF).Default == nil {
 						if _, found := data[index][ikey]; !found {
-							return results, errors.New(GetMessage("missing_required_field") + " " + ikey)
+							return results, errors.New(ut.GetMessage("missing_required_field") + " " + ikey)
 						}
 					}
 				}
@@ -1092,7 +1048,7 @@ Examples:
   CSV report:
 
   options = map[string]interface{}{
-    "reportkey": "xls_vat_en",
+    "reportkey": "csv_vat_en",
     "filters": map[string]interface{}{
       "date_from": "2014-01-01",
       "date_to":   "2019-01-01",
@@ -1112,7 +1068,7 @@ ReportList - returns all installable files from the NT_REPORT_DIR (environment v
 Example:
 
   options := map[string]interface{}{
-    "report_dir": "../server/templates",
+    "report_dir": "",
   }
   _, err = api.ReportList(options)
 
@@ -1126,54 +1082,60 @@ func (api *API) ReportList(options IM) (results []IM, err error) {
 	}
 	dbReports := IM{}
 	for index := 0; index < len(reports); index++ {
-		dbReports[ToString(reports[index]["reportkey"], "")] = reports[index]["id"]
+		dbReports[ut.ToString(reports[index]["reportkey"], "")] = reports[index]["id"]
 	}
-	reportDir := os.Getenv("NT_REPORT_DIR")
-	report_dir := ToString(options["report_dir"], "")
-	if report_dir != "" {
-		reportDir = report_dir
-	}
-	filter := ToString(options["label"], "")
+	reportDir := ut.ToString(options["report_dir"], os.Getenv("NT_REPORT_DIR"))
+	filter := ut.ToString(options["label"], "")
 	results = []IM{}
-	err = filepath.Walk(reportDir, func(path string, info os.FileInfo, err error) error {
-		if filepath.Ext(path) == ".xml" {
-			xdoc := etree.NewDocument()
-			if err := xdoc.ReadFromFile(path); err != nil {
-				return err
-			}
-			if xreport := xdoc.SelectElement("report"); xreport != nil {
+
+	fileInfo := func(file []byte, fileName string) {
+		temp := IM{}
+		if err = ut.ConvertFromByte(file, &temp); err == nil {
+			if meta, found := temp["meta"].(IM); found {
 				report := IM{"installed": false, "label": ""}
-				if attr := xreport.SelectAttr("reportkey"); attr != nil {
-					report["reportkey"] = attr.Value
-					if _, found := dbReports[attr.Value]; found {
-						report["installed"] = true
-					}
+				report["reportkey"] = ut.ToString(meta["reportkey"], "")
+				if _, found := dbReports[ut.ToString(meta["reportkey"], "")]; found {
+					report["installed"] = true
 				}
-				if attr := xreport.SelectAttr("repname"); attr != nil {
-					report["repname"] = attr.Value
-				}
-				if attr := xreport.SelectAttr("description"); attr != nil {
-					report["description"] = attr.Value
-				}
-				if attr := xreport.SelectAttr("filetype"); attr != nil {
-					report["reptype"] = attr.Value
-				}
-				if attr := xreport.SelectAttr("nervatype"); attr != nil {
-					report["label"] = attr.Value
-				}
-				if attr := xreport.SelectAttr("transtype"); attr != nil {
-					report["label"] = attr.Value
-				}
-				report["filename"] = info.Name()
+				report["repname"] = ut.ToString(meta["repname"], "")
+				report["description"] = ut.ToString(meta["description"], "")
+				report["reptype"] = ut.ToString(meta["filetype"], "")
+				report["label"] = ut.ToString(meta["nervatype"], "")
+				report["label"] = ut.ToString(meta["transtype"], "")
+				report["filename"] = fileName
 				if (filter == "") || (filter == report["label"]) {
-					if (report["reptype"] == "xls") || (report["reptype"] == "ntr") {
+					if (report["reptype"] == "csv") || (report["reptype"] == "pdf") {
 						results = append(results, report)
 					}
 				}
 			}
 		}
-		return err
-	})
+	}
+
+	if reportDir == "" {
+		err = fs.WalkDir(ut.Public, "static/templates", func(path string, d fs.DirEntry, err error) error {
+			if filepath.Ext(path) == ".json" {
+				if file, err := ut.Public.ReadFile(path); err == nil {
+					fileInfo(file, d.Name())
+				} else {
+					return err
+				}
+			}
+			return err
+		})
+	} else {
+		err = filepath.Walk(reportDir, func(path string, info os.FileInfo, err error) error {
+			if filepath.Ext(path) == ".json" {
+				if file, err := ioutil.ReadFile(path); err != nil {
+					fileInfo(file, info.Name())
+				} else {
+					return err
+				}
+			}
+			return err
+		})
+	}
+
 	if err != nil {
 		return results, err
 	}
@@ -1192,9 +1154,9 @@ Example:
 
 */
 func (api *API) ReportDelete(options IM) (err error) {
-	reportkey := ToString(options["reportkey"], "")
+	reportkey := ut.ToString(options["reportkey"], "")
 	if reportkey == "" {
-		return errors.New(GetMessage("missing_required_field") + ": reportkey")
+		return errors.New(ut.GetMessage("missing_required_field") + ": reportkey")
 	}
 
 	query := []Query{{
@@ -1206,83 +1168,12 @@ func (api *API) ReportDelete(options IM) (err error) {
 		return err
 	}
 	if len(rows) == 0 {
-		return errors.New(GetMessage("missing_reportkey") + ": " + reportkey)
+		return errors.New(ut.GetMessage("missing_reportkey") + ": " + reportkey)
 	}
-	refID := ToInteger(rows[0]["id"])
+	refID := ut.ToInteger(rows[0]["id"], 0)
 
-	var trans interface{}
-	if api.NStore.ds.Properties().Transaction {
-		trans, err = api.NStore.ds.BeginTransaction()
-		if err != nil {
-			return err
-		}
-	}
-
-	defer func() {
-		pe := recover()
-		if trans != nil {
-			if err != nil || pe != nil {
-				api.NStore.ds.RollbackTransaction(trans)
-			} else {
-				err = api.NStore.ds.CommitTransaction(trans)
-			}
-		}
-		if pe != nil {
-			panic(pe)
-		}
-	}()
-
-	query = []Query{{
-		Fields: []string{"*"}, From: "ui_reportfields", Filters: []Filter{
-			{Field: "report_id", Comp: "==", Value: refID},
-		}}}
-	rows, err = api.NStore.ds.Query(query, nil)
-	if err != nil {
-		return err
-	}
-	for index := 0; index < len(rows); index++ {
-		_, err = api.NStore.ds.Update(Update{IDKey: ToInteger(rows[index]["id"]), Model: "ui_reportfields", Trans: trans})
-		if err != nil {
-			return err
-		}
-	}
-
-	query = []Query{{
-		Fields: []string{"*"}, From: "ui_reportsources", Filters: []Filter{
-			{Field: "report_id", Comp: "==", Value: refID},
-		}}}
-	rows, err = api.NStore.ds.Query(query, nil)
-	if err != nil {
-		return err
-	}
-	for index := 0; index < len(rows); index++ {
-		_, err = api.NStore.ds.Update(Update{IDKey: ToInteger(rows[index]["id"]), Model: "ui_reportsources", Trans: trans})
-		if err != nil {
-			return err
-		}
-	}
-
-	query = []Query{{
-		Fields: []string{"*"}, From: "ui_message", Filters: []Filter{
-			{Field: "secname", Comp: "==", Value: options["reportkey"]},
-		}}}
-	rows, err = api.NStore.ds.Query(query, nil)
-	if err != nil {
-		return err
-	}
-	for index := 0; index < len(rows); index++ {
-		_, err = api.NStore.ds.Update(Update{IDKey: ToInteger(rows[index]["id"]), Model: "ui_message", Trans: trans})
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = api.NStore.ds.Update(Update{IDKey: refID, Model: "ui_report", Trans: trans})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err = api.NStore.ds.Update(Update{IDKey: refID, Model: "ui_report"})
+	return err
 }
 
 /*
@@ -1291,48 +1182,55 @@ ReportInstall - install a report to the database
 Example:
 
   options := nt.IM{
-    "report_dir": "../server/templates",
+    "report_dir": "",
     "reportkey":  "ntr_cash_in_en",
   }
   _, err = api.ReportInstall(options)
 
 */
 func (api *API) ReportInstall(options IM) (result int64, err error) {
-	reportkey := ToString(options["reportkey"], "")
+	reportkey := ut.ToString(options["reportkey"], "")
 	if reportkey == "" {
-		return result, errors.New(GetMessage("missing_required_field") + ": reportkey")
+		return result, errors.New(ut.GetMessage("missing_required_field") + ": reportkey")
 	}
-	reportDir := os.Getenv("NT_REPORT_DIR")
-	report_dir := ToString(options["report_dir"], "")
-	if report_dir != "" {
-		reportDir = report_dir
+	reportDir := ut.ToString(options["report_dir"], os.Getenv("NT_REPORT_DIR"))
+	var file []byte
+	if reportDir == "" {
+		file, err = ut.Public.ReadFile(filepath.Join("static", "templates", reportkey+".json"))
+	} else {
+		file, err = ioutil.ReadFile(filepath.Join(reportDir, reportkey+".json"))
 	}
-	xdoc := etree.NewDocument()
-	err = xdoc.ReadFromFile(filepath.Join(reportDir, reportkey+".xml"))
 	if err != nil {
 		return result, err
 	}
+
+	temp := IM{}
+	if err = ut.ConvertFromByte(file, &temp); err != nil {
+		return result, err
+	}
+
 	report := IM{}
-	xreport := xdoc.SelectElement("report")
-	if xreport != nil {
-		if attr := xreport.SelectAttr("reportkey"); attr != nil {
-			report["reportkey"] = attr.Value
+	meta, found := temp["meta"].(IM)
+	if found {
+		reportkey := ut.ToString(meta["reportkey"], "")
+		if reportkey != "" {
+			report["reportkey"] = reportkey
 			query := []Query{{
 				Fields: []string{"*"}, From: "ui_report", Filters: []Filter{
-					{Field: "reportkey", Comp: "==", Value: attr.Value},
+					{Field: "reportkey", Comp: "==", Value: reportkey},
 				}}}
 			rows, err := api.NStore.ds.Query(query, nil)
 			if err != nil {
 				return result, err
 			}
 			if len(rows) > 0 {
-				return result, errors.New(GetMessage("exists_template"))
+				return result, errors.New(ut.GetMessage("exists_template"))
 			}
 		} else {
-			return result, errors.New(GetMessage("invalid_template"))
+			return result, errors.New(ut.GetMessage("invalid_template"))
 		}
 	} else {
-		return result, errors.New(GetMessage("invalid_template"))
+		return result, errors.New(ut.GetMessage("invalid_template"))
 	}
 
 	groups := IM{}
@@ -1352,134 +1250,14 @@ func (api *API) ReportInstall(options IM) (result int64, err error) {
 		groups[rows[index]["groupname"].(string)].(IM)[rows[index]["groupvalue"].(string)] = rows[index]["id"]
 	}
 
-	if attr := xreport.SelectAttr("repname"); attr != nil {
-		report["repname"] = attr.Value
-	}
-	if attr := xreport.SelectAttr("description"); attr != nil {
-		report["description"] = attr.Value
-	}
-	if attr := xreport.SelectAttr("nervatype"); attr != nil {
-		report["nervatype"] = groups["nervatype"].(IM)[attr.Value]
-	}
-	if attr := xreport.SelectAttr("filetype"); attr != nil {
-		report["filetype"] = groups["filetype"].(IM)[attr.Value]
-	}
-	if attr := xreport.SelectAttr("transtype"); attr != nil {
-		report["transtype"] = groups["transtype"].(IM)[attr.Value]
-	}
-	if attr := xreport.SelectAttr("direction"); attr != nil {
-		report["direction"] = groups["direction"].(IM)[attr.Value]
-	}
-	if attr := xreport.SelectAttr("label"); attr != nil {
-		report["label"] = attr.Value
-	}
-	if el := xreport.SelectElement("template"); el != nil {
-		report["report"] = el.Text()
-	}
+	report["repname"] = ut.ToString(meta["repname"], "")
+	report["description"] = ut.ToString(meta["description"], "")
+	report["nervatype"] = groups["nervatype"].(IM)[ut.ToString(meta["nervatype"], "")]
+	report["filetype"] = groups["filetype"].(IM)[ut.ToString(meta["filetype"], "")]
+	report["transtype"] = groups["transtype"].(IM)[ut.ToString(meta["transtype"], "")]
+	report["direction"] = groups["direction"].(IM)[ut.ToString(meta["direction"], "")]
+	report["label"] = ut.ToString(meta["label"], "")
+	report["report"] = string(file)
 
-	var trans interface{}
-	if api.NStore.ds.Properties().Transaction {
-		trans, err = api.NStore.ds.BeginTransaction()
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	defer func() {
-		pe := recover()
-		if trans != nil {
-			if err != nil || pe != nil {
-				api.NStore.ds.RollbackTransaction(trans)
-			} else {
-				err = api.NStore.ds.CommitTransaction(trans)
-			}
-		}
-		if pe != nil {
-			panic(pe)
-		}
-	}()
-
-	result, err = api.NStore.ds.Update(Update{Model: "ui_report", Values: report, Trans: trans})
-	if err != nil {
-		return result, err
-	}
-
-	dsValues := IM{}
-	cengine := strings.ReplaceAll(api.NStore.ds.Connection().Engine, "3", "")
-	if ds := xreport.SelectElements("dataset"); ds != nil {
-		for index := 0; index < len(ds); index++ {
-			engine := ""
-			if attr := ds[index].SelectAttr("engine"); attr != nil {
-				engine = attr.Value
-			}
-			if engine == "" || engine == cengine {
-				if attr := ds[index].SelectAttr("name"); attr != nil {
-					if _, found := dsValues[attr.Value]; !found || engine == cengine {
-						dsValues[attr.Value] = IM{"report_id": result, "dataset": attr.Value,
-							"sqlstr": ds[index].Text()}
-					}
-				}
-			}
-		}
-	}
-	for _, values := range dsValues {
-		_, err = api.NStore.ds.Update(Update{Model: "ui_reportsources", Values: values.(IM), Trans: trans})
-		if err != nil {
-			return result, err
-		}
-	}
-
-	if rf := xreport.SelectElements("field"); rf != nil {
-		for index := 0; index < len(rf); index++ {
-			values := IM{"report_id": result}
-			if attr := rf[index].SelectAttr("fieldname"); attr != nil {
-				values["fieldname"] = attr.Value
-			}
-			if attr := rf[index].SelectAttr("description"); attr != nil {
-				values["description"] = attr.Value
-			}
-			if attr := rf[index].SelectAttr("orderby"); attr != nil {
-				values["orderby"] = attr.Value
-			}
-			if attr := rf[index].SelectAttr("dataset"); attr != nil {
-				values["dataset"] = attr.Value
-			}
-			if attr := rf[index].SelectAttr("defvalue"); attr != nil {
-				values["defvalue"] = attr.Value
-			}
-			if attr := rf[index].SelectAttr("valuelist"); attr != nil {
-				values["valuelist"] = attr.Value
-			}
-			if attr := rf[index].SelectAttr("fieldtype"); attr != nil {
-				values["fieldtype"] = groups["fieldtype"].(IM)[attr.Value]
-			}
-			if attr := rf[index].SelectAttr("wheretype"); attr != nil {
-				values["wheretype"] = groups["wheretype"].(IM)[attr.Value]
-			}
-			values["sqlstr"] = rf[index].Text()
-			_, err = api.NStore.ds.Update(Update{Model: "ui_reportfields", Values: values, Trans: trans})
-			if err != nil {
-				return result, err
-			}
-		}
-	}
-
-	if ms := xreport.SelectElements("message"); ms != nil {
-		for index := 0; index < len(ms); index++ {
-			values := IM{}
-			if attr := ms[index].SelectAttr("secname"); attr != nil {
-				values["secname"] = ToString(report["reportkey"], "") + "_" + attr.Value
-			}
-			if attr := ms[index].SelectAttr("fieldname"); attr != nil {
-				values["fieldname"] = attr.Value
-			}
-			values["msg"] = ms[index].Text()
-			_, err = api.NStore.ds.Update(Update{Model: "ui_message", Values: values, Trans: trans})
-			if err != nil {
-				return result, err
-			}
-		}
-	}
-
-	return result, err
+	return api.NStore.ds.Update(Update{Model: "ui_report", Values: report})
 }

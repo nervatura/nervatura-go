@@ -77,8 +77,6 @@ func TestGetInfofromRefnumber(t *testing.T) {
 		{"trans", "DMINV/00001"},
 		{"link", "movement~DMDEL/00001~2~~item~DMORD/00001~2"},
 		{"ui_menufields", "mnu_exp_1~number_1"},
-		{"ui_reportfields", "ntr_custpos_en~transdate_from"},
-		{"ui_reportsources", "ntr_invoice_en~head"},
 	}
 	for index := 0; index < len(params); index++ {
 		options := nt.IM{

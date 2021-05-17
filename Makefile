@@ -1,4 +1,7 @@
 APP_NAME = nervatura
+# all http grpc postgres mysql sqlite
+TAGS = all
+VNUM = 5.0.0
 
 security:
 	gosec -quiet ./...
@@ -7,7 +10,7 @@ test: security
 	go test -cover ./...
 
 build:
-	CGO_ENABLED=0 go build -tags "all" -ldflags="-w -s" -o $(APP_NAME) main.go
+	CGO_ENABLED=0 go build -tags "$(TAGS)" -ldflags="-w -s" -o $(APP_NAME) main.go
 
 run:
 	./$(APP_NAME)
@@ -19,7 +22,7 @@ docs:
 	godoc -http=:6060
 
 docker.build:
-	docker build -t nervatura --build-arg APP_MODULES=sqlite,postgres .
+	docker build -t nervatura --build-arg APP_MODULES=$(TAGS) .
 
 docker.run:
 	docker run -i -t --rm \
@@ -27,3 +30,11 @@ docker.run:
 		-p 5000:5000 \
 		-v $(PWD)/data:/data \
 		nervatura:latest
+
+release: build
+	upx --best --lzma nervatura
+
+deploy:
+	git add .
+	git commit -m 'v${VNUM}'
+	git push

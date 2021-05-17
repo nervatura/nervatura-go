@@ -10,9 +10,9 @@ import (
 	"os"
 	"time"
 
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
 	pb "github.com/nervatura/nervatura-go/pkg/proto"
 	srv "github.com/nervatura/nervatura-go/pkg/service"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -37,10 +37,13 @@ func init() {
 func (s *rpcServer) StartService() error {
 	s.service = srv.RPCService{
 		GetNervaStore: s.app.GetNervaStore,
+		GetTokenKeys: func() map[string]map[string]string {
+			return s.app.tokenKeys
+		},
 	}
 
 	var cred credentials.TransportCredentials
-	if ntura.GetEnvValue("bool", os.Getenv("NT_GRPC_TLS_ENABLED")).(bool) {
+	if ut.GetEnvValue("bool", os.Getenv("NT_GRPC_TLS_ENABLED")).(bool) {
 		if os.Getenv("NT_TLS_CERT_FILE") != "" && os.Getenv("NT_TLS_KEY_FILE") != "" {
 			cert, err := tls.LoadX509KeyPair(os.Getenv("NT_TLS_CERT_FILE"), os.Getenv("NT_TLS_KEY_FILE"))
 			if err != nil {
@@ -52,7 +55,7 @@ func (s *rpcServer) StartService() error {
 		}
 	}
 
-	addr := fmt.Sprintf(":%d", ntura.GetEnvValue("int", os.Getenv("NT_GRPC_PORT")).(int))
+	addr := fmt.Sprintf(":%d", ut.GetEnvValue("int", os.Getenv("NT_GRPC_PORT")).(int))
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		s.app.errorLog.Printf("grpc server: failed to listen %v\n", err)

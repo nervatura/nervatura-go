@@ -490,16 +490,18 @@ func demoData() IM {
 				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDTF/00001~9", "nervatype_2": "movement", "ref_id_2": "movement/DMDTF/00001~10"}}}},
 		"menu": IM{
 			"ui_menu": []IM{
-				{"menukey": "mnu_exp_1", "description": "Server function example", "funcname": "callMenuCmd", "url": 0},
-				{"menukey": "mnu_exp_2", "description": "Server URL example", "funcname": "ndi/getVernum", "url": 1},
-				{"menukey": "mnu_exp_3", "description": "Internet URL example", "funcname": "search", "url": 1,
-					"address": "https://www.google.com"}},
+				{"menukey": "printer", "description": "Default printer", "address": "",
+					"keys": IM{"method": "printer"}},
+				{"menukey": "nextNumber", "description": "Server function example", "funcname": "nextNumber",
+					"keys": IM{"method": "post"}},
+				{"menukey": "google", "description": "Internet URL example", "funcname": "search",
+					"address": "https://www.google.com", "keys": IM{"method": "get"}}},
 			"ui_menufields": []IM{
-				{"fieldname": "number_1", "description": "first number", "orderby": 0,
-					"keys": IM{"menu_id": "mnu_exp_1", "fieldtype": "float"}},
-				{"fieldname": "number_2", "description": "second number", "orderby": 1,
-					"keys": IM{"menu_id": "mnu_exp_1", "fieldtype": "float"}},
+				{"fieldname": "numberkey", "description": "Code (e.g. custnumber)", "orderby": 0,
+					"keys": IM{"menu_id": "nextNumber", "fieldtype": "string"}},
+				{"fieldname": "step", "description": "Stepping", "orderby": 1,
+					"keys": IM{"menu_id": "nextNumber", "fieldtype": "bool"}},
 				{"fieldname": "q", "description": "google search", "orderby": 0,
-					"keys": IM{"menu_id": "mnu_exp_3", "fieldtype": "string"}}}},
+					"keys": IM{"menu_id": "google", "fieldtype": "string"}}}},
 	}
 }

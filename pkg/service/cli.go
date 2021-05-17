@@ -4,22 +4,23 @@ import (
 	"errors"
 	"os"
 
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 // CLIService implements the Nervatura API service
 type CLIService struct {
-	GetNervaStore func(database string) *ntura.NervaStore
+	GetNervaStore func(database string) *nt.NervaStore
 }
 
 func respondData(code int, data interface{}, errCode int, err error) string {
 	if err != nil {
-		data = ntura.IM{"code": errCode, "message": err.Error()}
+		data = nt.IM{"code": errCode, "message": err.Error()}
 	}
 	if data == nil {
-		data = ntura.IM{"code": code, "message": "OK"}
+		data = nt.IM{"code": code, "message": "OK"}
 	}
-	jdata, err := ntura.ConvertToByte(data)
+	jdata, err := ut.ConvertToByte(data)
 	if err != nil {
 		return `{"code":0,"error": "` + err.Error() + `"}`
 	}
@@ -27,97 +28,91 @@ func respondData(code int, data interface{}, errCode int, err error) string {
 }
 
 func (srv *CLIService) TokenDecode(token string) string {
-	claim, err := ntura.TokenDecode(token)
+	claim, err := ut.TokenDecode(token)
 	return respondData(200, claim, 400, err)
 }
 
-func (srv *CLIService) TokenLogin(token string) (*ntura.API, string) {
-	claim, err := ntura.TokenDecode(token)
+func (srv *CLIService) TokenLogin(token string, tokenKeys map[string]map[string]string) (*nt.API, string) {
+	claim, err := ut.TokenDecode(token)
 	if err != nil {
 		return nil, respondData(0, nil, 401, errors.New("Unauthorized"))
 	}
-	database := ntura.ToString(claim["database"], "")
+	database := ut.ToString(claim["database"], "")
 	nstore := srv.GetNervaStore(database)
 	if nstore == nil {
 		return nil, respondData(0, nil, 401, errors.New("Unauthorized"))
 	}
-	api := (&ntura.API{NStore: nstore})
-	err = api.TokenLogin(ntura.IM{"token": token})
+	api := (&nt.API{NStore: nstore})
+	err = api.TokenLogin(nt.IM{"token": token, "keys": tokenKeys})
 	return api, respondData(200, api.NStore.User, 401, err)
 }
 
-func (srv *CLIService) UserLogin(options ntura.IM) string {
+func (srv *CLIService) UserLogin(options nt.IM) string {
 	if _, found := options["database"]; !found {
-		return respondData(0, nil, 400, errors.New(ntura.GetMessage("missing_database")))
+		return respondData(0, nil, 400, errors.New(ut.GetMessage("missing_database")))
 	}
 	nstore := srv.GetNervaStore(options["database"].(string))
-	token, engine, err := (&ntura.API{NStore: nstore}).UserLogin(options)
-	return respondData(200, ntura.SM{"token": token, "engine": engine}, 400, err)
+	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(options)
+	return respondData(200, nt.SM{"token": token, "engine": engine}, 400, err)
 }
 
-func (srv *CLIService) UserPassword(api *ntura.API, options ntura.IM) string {
-	if _, found := options["username"]; found {
+func (srv *CLIService) UserPassword(api *nt.API, options nt.IM) string {
+	username := ut.ToString(options["username"], "")
+	custnumber := ut.ToString(options["custnumber"], "")
+	if username != "" || custnumber != "" {
 		if api.NStore.User.Scope != "admin" {
 			return respondData(0, nil, 401, errors.New("Unauthorized"))
 		}
-	}
-	if _, found := options["custnumber"]; found {
-		if api.NStore.User.Scope != "admin" {
-			return respondData(0, nil, 401, errors.New("Unauthorized"))
+		if custnumber == "" && api.NStore.Customer != nil {
+			options["custnumber"] = api.NStore.Customer["custnumber"]
 		}
-	}
-	if _, found := options["username"]; !found {
-		if _, found := options["custnumber"]; !found {
-			if api.NStore.Customer != nil {
-				options["custnumber"] = api.NStore.Customer["custnumber"]
-			} else {
-				options["username"] = api.NStore.User.Username
-			}
+		if username == "" {
+			options["username"] = api.NStore.User.Username
 		}
 	}
 	err := api.UserPassword(options)
 	return respondData(204, nil, 400, err)
 }
 
-func (srv *CLIService) TokenRefresh(api *ntura.API) string {
+func (srv *CLIService) TokenRefresh(api *nt.API) string {
 	token, err := api.TokenRefresh()
-	return respondData(200, ntura.SM{"token": token}, 400, err)
+	return respondData(200, nt.SM{"token": token}, 400, err)
 }
 
-func (srv *CLIService) Get(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) Get(api *nt.API, options nt.IM) string {
 	results, err := api.Get(options)
 	return respondData(200, results, 400, err)
 }
 
-func (srv *CLIService) View(api *ntura.API, data []ntura.IM) string {
+func (srv *CLIService) View(api *nt.API, data []nt.IM) string {
 	results, err := api.View(data)
 	return respondData(200, results, 400, err)
 }
 
-func (srv *CLIService) Function(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) Function(api *nt.API, options nt.IM) string {
 	results, err := api.Function(options)
 	return respondData(200, results, 400, err)
 }
 
-func (srv *CLIService) Update(api *ntura.API, nervatype string, data []ntura.IM) string {
+func (srv *CLIService) Update(api *nt.API, nervatype string, data []nt.IM) string {
 	results, err := api.Update(nervatype, data)
 	return respondData(200, results, 400, err)
 }
 
-func (srv *CLIService) Delete(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) Delete(api *nt.API, options nt.IM) string {
 	err := api.Delete(options)
 	return respondData(204, nil, 400, err)
 }
 
-func (srv *CLIService) DatabaseCreate(apiKey string, options ntura.IM) string {
+func (srv *CLIService) DatabaseCreate(apiKey string, options nt.IM) string {
 	if os.Getenv("NT_API_KEY") != apiKey {
 		return respondData(0, nil, 401, errors.New("Unauthorized"))
 	}
-	log, err := (&ntura.API{NStore: srv.GetNervaStore("")}).DatabaseCreate(options)
+	log, err := (&nt.API{NStore: srv.GetNervaStore("")}).DatabaseCreate(options)
 	return respondData(200, log, 400, err)
 }
 
-func (srv *CLIService) ReportList(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) ReportList(api *nt.API, options nt.IM) string {
 	if api.NStore.User.Scope != "admin" {
 		return respondData(0, nil, 401, errors.New("Unauthorized"))
 	}
@@ -125,7 +120,7 @@ func (srv *CLIService) ReportList(api *ntura.API, options ntura.IM) string {
 	return respondData(200, results, 400, err)
 }
 
-func (srv *CLIService) ReportInstall(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) ReportInstall(api *nt.API, options nt.IM) string {
 	if api.NStore.User.Scope != "admin" {
 		return respondData(0, nil, 401, errors.New("Unauthorized"))
 	}
@@ -133,7 +128,7 @@ func (srv *CLIService) ReportInstall(api *ntura.API, options ntura.IM) string {
 	return respondData(200, results, 400, err)
 }
 
-func (srv *CLIService) ReportDelete(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) ReportDelete(api *nt.API, options nt.IM) string {
 	if api.NStore.User.Scope != "admin" {
 		return respondData(0, nil, 401, errors.New("Unauthorized"))
 	}
@@ -141,7 +136,7 @@ func (srv *CLIService) ReportDelete(api *ntura.API, options ntura.IM) string {
 	return respondData(204, nil, 400, err)
 }
 
-func (srv *CLIService) Report(api *ntura.API, options ntura.IM) string {
+func (srv *CLIService) Report(api *nt.API, options nt.IM) string {
 	if _, found := options["output"]; !found || (options["output"] != "xml") {
 		options["output"] = "base64"
 	}

@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 // Drivers -> Nervatura linked database drivers
@@ -48,11 +49,11 @@ type SQLDriver struct {
 var dropList = []string{
 	"pattern", "movement", "payment", "item", "trans", "barcode", "price", "tool", "product", "tax", "rate",
 	"place", "currency", "project", "customer", "event", "contact", "address", "numberdef", "log", "fieldvalue",
-	"deffield", "ui_audit", "link", "ui_userconfig", "ui_printqueue", "employee", "ui_reportsources",
-	"ui_reportfields", "ui_report", "ui_message", "ui_menufields", "ui_menu", "ui_language", "groups"}
+	"deffield", "ui_audit", "link", "ui_userconfig", "ui_printqueue", "employee",
+	"ui_report", "ui_message", "ui_menufields", "ui_menu", "groups"}
 
 var createList = []string{
-	"groups", "ui_language", "ui_menu", "ui_menufields", "ui_message", "ui_report", "ui_reportfields", "ui_reportsources",
+	"groups", "ui_menu", "ui_menufields", "ui_message", "ui_report",
 	"employee", "ui_printqueue", "ui_userconfig", "link", "ui_audit", "deffield", "fieldvalue", "log", "numberdef",
 	"address", "contact", "event", "customer", "project", "currency", "place", "rate", "tax", "product", "tool", "price",
 	"barcode", "trans", "item", "payment", "movement", "pattern"}
@@ -248,7 +249,7 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string) error {
 	}
 	engine := strings.Split(connStr, "://")[0]
 	if len(Drivers) > 0 {
-		if !ntura.Contains(Drivers, engine) && !ntura.Contains(Drivers, "all") {
+		if !ut.Contains(Drivers, engine) && !ut.Contains(Drivers, "all") {
 			return errors.New("Invalid database types. Valid value(s): " + strings.Join(Drivers, ","))
 		}
 	}
@@ -267,9 +268,9 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string) error {
 	if err != nil {
 		return err
 	}
-	db.SetMaxOpenConns(ntura.GetEnvValue("int", os.Getenv("SQL_MAX_OPEN_CONNS")).(int))
-	db.SetMaxIdleConns(ntura.GetEnvValue("int", os.Getenv("SQL_MAX_IDLE_CONNS")).(int))
-	db.SetConnMaxLifetime(time.Minute * time.Duration(ntura.GetEnvValue("int", os.Getenv("SQL_CONN_MAX_LIFETIME")).(int)))
+	db.SetMaxOpenConns(ut.GetEnvValue("int", os.Getenv("SQL_MAX_OPEN_CONNS")).(int))
+	db.SetMaxIdleConns(ut.GetEnvValue("int", os.Getenv("SQL_MAX_IDLE_CONNS")).(int))
+	db.SetConnMaxLifetime(time.Minute * time.Duration(ut.GetEnvValue("int", os.Getenv("SQL_CONN_MAX_LIFETIME")).(int)))
 	ds.db = db
 	ds.alias = alias
 	ds.engine = engine
@@ -289,7 +290,7 @@ func (ds *SQLDriver) getPrmString(index int) string {
 func (ds *SQLDriver) CheckHashtable(hashtable string) error {
 
 	if ds.db == nil {
-		return errors.New(ntura.GetMessage("missing_driver"))
+		return errors.New(ut.GetMessage("missing_driver"))
 	}
 	var name string
 	sqlString := ""
@@ -344,7 +345,7 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 	trans, err := ds.db.Begin()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"stamp":   time.Now().Format(nt.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -352,9 +353,9 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 	defer rollBackTrans(trans, err)
 
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format(ntura.TimeLayout),
+		"stamp":   time.Now().Format(nt.TimeLayout),
 		"state":   "create",
-		"message": ntura.GetMessage("log_drop_table")})
+		"message": ut.GetMessage("log_drop_table")})
 
 	for index := 0; index < len(dropList); index++ {
 		sqlString := ""
@@ -372,7 +373,7 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"stamp":   time.Now().Format(nt.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -381,7 +382,7 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 	err = trans.Commit()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"stamp":   time.Now().Format(nt.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -389,7 +390,7 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 	return logData, nil
 }
 
-func (ds *SQLDriver) createTableFields(sqlString, fieldname, indexName string, field ntura.MF) string {
+func (ds *SQLDriver) createTableFields(sqlString, fieldname, indexName string, field nt.MF) string {
 	sqlString += fieldname
 	if field.References != nil {
 		reference := ds.getDataType("reference")
@@ -430,16 +431,16 @@ func (ds *SQLDriver) createTableFields(sqlString, fieldname, indexName string, f
 func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format(ntura.TimeLayout),
+		"stamp":   time.Now().Format(nt.TimeLayout),
 		"state":   "create",
-		"message": ntura.GetMessage("log_create_table")})
-	model := ntura.DataModel()["model"].(IM)
+		"message": ut.GetMessage("log_create_table")})
+	model := nt.DataModel()["model"].(IM)
 
 	for index := 0; index < len(createList); index++ {
 		sqlString := "CREATE TABLE " + createList[index] + "("
 		for fld := 0; fld < len(model[createList[index]].(IM)["_fields"].(SL)); fld++ {
 			fieldname := model[createList[index]].(IM)["_fields"].(SL)[fld]
-			field := model[createList[index]].(IM)[fieldname].(ntura.MF)
+			field := model[createList[index]].(IM)[fieldname].(nt.MF)
 			sqlString = ds.createTableFields(sqlString, fieldname, createList[index], field)
 		}
 		sqlString += ");"
@@ -448,7 +449,7 @@ func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"stamp":   time.Now().Format(nt.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -462,10 +463,10 @@ func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 func (ds *SQLDriver) createIndex(logData []SM, trans *sql.Tx) ([]SM, error) {
 
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format(ntura.TimeLayout),
+		"stamp":   time.Now().Format(nt.TimeLayout),
 		"state":   "create",
-		"message": ntura.GetMessage("log_create_index")})
-	indexRows := ntura.DataModel()["index"].(map[string]ntura.MI)
+		"message": ut.GetMessage("log_create_index")})
+	indexRows := nt.DataModel()["index"].(map[string]nt.MI)
 	for ikey, ifield := range indexRows {
 		sqlString := "CREATE INDEX "
 		if ifield.Unique {
@@ -480,7 +481,7 @@ func (ds *SQLDriver) createIndex(logData []SM, trans *sql.Tx) ([]SM, error) {
 		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"stamp":   time.Now().Format(nt.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -493,12 +494,12 @@ func (ds *SQLDriver) createIndex(logData []SM, trans *sql.Tx) ([]SM, error) {
 // insertData - insert data
 func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 
-	model := ntura.DataModel()["model"].(IM)
+	model := nt.DataModel()["model"].(IM)
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format(ntura.TimeLayout),
+		"stamp":   time.Now().Format(nt.TimeLayout),
 		"state":   "create",
-		"message": ntura.GetMessage("log_init_data")})
-	dataRows := ntura.DataModel()["data"].(map[string][]IM)
+		"message": ut.GetMessage("log_init_data")})
+	dataRows := nt.DataModel()["data"].(map[string][]IM)
 	dataList := []string{
 		"groups", "currency", "customer", "employee", "address", "contact", "place", "tax", "product",
 		"numberdef", "deffield", "fieldvalue"}
@@ -526,7 +527,7 @@ func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 			_, err := trans.Exec(sqlString, params...)
 			if err != nil {
 				logData = append(logData, SM{
-					"stamp":   time.Now().Format(ntura.TimeLayout),
+					"stamp":   time.Now().Format(nt.TimeLayout),
 					"state":   "err",
 					"message": err.Error()})
 				return logData, err
@@ -554,17 +555,17 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	var err error
 	if ds.db == nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"stamp":   time.Now().Format(nt.TimeLayout),
 			"state":   "err",
-			"message": ntura.GetMessage("missing_driver")})
-		return logData, errors.New(ntura.GetMessage("missing_driver"))
+			"message": ut.GetMessage("missing_driver")})
+		return logData, errors.New(ut.GetMessage("missing_driver"))
 	}
 
 	logData = append(logData, SM{
 		"database": ds.alias,
-		"stamp":    time.Now().Format(ntura.TimeLayout),
+		"stamp":    time.Now().Format(nt.TimeLayout),
 		"state":    "create",
-		"message":  ntura.GetMessage("log_start_process")})
+		"message":  ut.GetMessage("log_start_process")})
 
 	logData, err = ds.dropData(logData)
 	if err != nil {
@@ -574,7 +575,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	trans, err := ds.db.Begin()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"stamp":   time.Now().Format(nt.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -607,7 +608,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"stamp":   time.Now().Format(nt.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -617,7 +618,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	err = trans.Commit()
 	if err != nil {
 		logData = append(logData, SM{
-			"stamp":   time.Now().Format(ntura.TimeLayout),
+			"stamp":   time.Now().Format(nt.TimeLayout),
 			"state":   "err",
 			"message": err.Error()})
 		return logData, err
@@ -625,16 +626,16 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 
 	//compact
 	logData = append(logData, SM{
-		"stamp":   time.Now().Format(ntura.TimeLayout),
+		"stamp":   time.Now().Format(nt.TimeLayout),
 		"state":   "create",
-		"message": ntura.GetMessage("log_rebuilding")})
+		"message": ut.GetMessage("log_rebuilding")})
 	switch ds.engine {
 	case "postgres", "sqlite", "sqlite3":
 		sqlString := "vacuum"
 		_, err = ds.db.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
-				"stamp":   time.Now().Format(ntura.TimeLayout),
+				"stamp":   time.Now().Format(nt.TimeLayout),
 				"state":   "err",
 				"message": err.Error()})
 			return logData, err
@@ -644,7 +645,7 @@ func (ds *SQLDriver) CreateDatabase(logData []SM) ([]SM, error) {
 	return logData, nil
 }
 
-func (ds *SQLDriver) getFilterString(filter ntura.Filter, start bool, sqlString string, params []interface{}) (string, []interface{}) {
+func (ds *SQLDriver) getFilterString(filter nt.Filter, start bool, sqlString string, params []interface{}) (string, []interface{}) {
 	if start {
 		sqlString += "("
 	} else if !filter.Or {
@@ -679,7 +680,7 @@ func (ds *SQLDriver) getFilterString(filter ntura.Filter, start bool, sqlString 
 	return sqlString, params
 }
 
-func (ds *SQLDriver) decodeSQL(queries []ntura.Query) (string, []interface{}, error) {
+func (ds *SQLDriver) decodeSQL(queries []nt.Query) (string, []interface{}, error) {
 	sqlString := ""
 	params := make([]interface{}, 0)
 	for qi := 0; qi < len(queries); qi++ {
@@ -706,7 +707,7 @@ func (ds *SQLDriver) decodeSQL(queries []ntura.Query) (string, []interface{}, er
 }
 
 //Query is a basic nosql friendly queries the database
-func (ds *SQLDriver) Query(queries []ntura.Query, trans interface{}) ([]IM, error) {
+func (ds *SQLDriver) Query(queries []nt.Query, trans interface{}) ([]IM, error) {
 	sqlString, params, err := ds.decodeSQL(queries)
 	if err != nil {
 		return nil, err
@@ -791,7 +792,7 @@ func (ds *SQLDriver) QuerySQL(sqlString string, params []interface{}, trans inte
 		switch trans.(type) {
 		case *sql.Tx:
 		default:
-			return result, errors.New(ntura.GetMessage("invalid_trans"))
+			return result, errors.New(ut.GetMessage("invalid_trans"))
 		}
 	}
 
@@ -851,7 +852,7 @@ func (ds *SQLDriver) lastInsertID(model string, result sql.Result, trans interfa
 }
 
 //Update is a basic nosql friendly update/insert/delete and returns the update/insert id
-func (ds *SQLDriver) Update(options ntura.Update) (int64, error) {
+func (ds *SQLDriver) Update(options nt.Update) (int64, error) {
 	sqlString := ""
 	id := options.IDKey
 	params := make([]interface{}, 0)
@@ -881,7 +882,7 @@ func (ds *SQLDriver) Update(options ntura.Update) (int64, error) {
 		switch options.Trans.(type) {
 		case *sql.Tx:
 		default:
-			return id, errors.New(ntura.GetMessage("invalid_trans"))
+			return id, errors.New(ut.GetMessage("invalid_trans"))
 		}
 	}
 	//println(sqlString)
@@ -911,7 +912,7 @@ func (ds *SQLDriver) CommitTransaction(trans interface{}) error {
 	switch trans.(type) {
 	case *sql.Tx:
 	default:
-		return errors.New(ntura.GetMessage("invalid_trans"))
+		return errors.New(ut.GetMessage("invalid_trans"))
 	}
 	return trans.(*sql.Tx).Commit()
 }
@@ -921,7 +922,7 @@ func (ds *SQLDriver) RollbackTransaction(trans interface{}) error {
 	switch trans.(type) {
 	case *sql.Tx:
 	default:
-		return errors.New(ntura.GetMessage("invalid_trans"))
+		return errors.New(ut.GetMessage("invalid_trans"))
 	}
 	return trans.(*sql.Tx).Rollback()
 }
@@ -970,7 +971,7 @@ func (ds *SQLDriver) getID2Refnumber(options IM) (string, IL, error) {
 
 	const whereDelete = " and deleted = 0"
 	useDeleted := func(value interface{}, whereString string) string {
-		if value == "false" {
+		if !ut.ToBoolean(value, false) {
 			return whereString
 		}
 		return ""
@@ -1093,7 +1094,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 
 	keys := map[string]func(options IM) (string, IL, error){
 		"barcode": func(options IM) (string, IL, error) {
-			sqlString = filterValue("false", options["useDeleted"],
+			sqlString = filterValue(false, options["useDeleted"],
 				`select barcode.id from barcode 
 				inner join product on barcode.product_id = product.id
 				where product.deleted = 0 and `, `select id from barcode where `)
@@ -1104,7 +1105,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 		},
 
 		"customer": func(options IM) (string, IL, error) {
-			sqlString = filterValue("true", options["extraInfo"],
+			sqlString = filterValue(true, options["extraInfo"],
 				fmt.Sprintf(`select c.id as id, ct.groupvalue as custtype, c.terms as terms, c.custname as custname, 
 						c.taxnumber as taxnumber, addr.zipcode as zipcode, addr.city as city, addr.street as street 
 					from customer c 
@@ -1129,7 +1130,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where c.custnumber = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], " and c.deleted = 0", "")
+			sqlString += filterValue(false, options["useDeleted"], " and c.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1139,7 +1140,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where e.calnumber = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], " and e.deleted = 0", "")
+			sqlString += filterValue(false, options["useDeleted"], " and e.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1148,7 +1149,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refType", "refnumber"}, ` where groupname = %s and groupvalue = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], " and deleted=0", "")
+			sqlString += filterValue(false, options["useDeleted"], " and deleted=0", "")
 			return sqlString, params, nil
 		},
 
@@ -1158,7 +1159,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where df.fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], " and df.deleted=0", "")
+			sqlString += filterValue(false, options["useDeleted"], " and df.deleted=0", "")
 			return sqlString, params, nil
 		},
 
@@ -1167,7 +1168,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refID", "refnumber"}, ` where ref_id = %s and fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], whereDelete, "")
+			sqlString += filterValue(false, options["useDeleted"], whereDelete, "")
 			return sqlString, params, nil
 		},
 
@@ -1182,7 +1183,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 				inner join groups dir on t.direction = dir.id 
 				left join currency cu on t.curr = cu.curr `,
 				options["refnumber"])
-			sqlString += filterValue("false", options["useDeleted"], " where t.deleted = 0 and it.deleted = 0", "")
+			sqlString += filterValue(false, options["useDeleted"], " where t.deleted = 0 and it.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1193,7 +1194,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
 				inner join groups ttype on t.transtype = ttype.id 
 				inner join groups dir on t.direction = dir.id `, options["refnumber"])
-			sqlString += filterValue("false", options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1205,7 +1206,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 				inner join trans t on it.trans_id = t.id and t.transnumber = '%s' 
 				inner join groups ttype on t.transtype = ttype.id 
 				inner join groups dir on t.direction = dir.id `, options["refnumber"])
-			sqlString += filterValue("false", options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` where t.deleted = 0 and it.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1218,7 +1219,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			sqlString += whereString
 			sqlString += filterValue("price", options["pricetype"],
 				` and pr.discount is null`, ` and pr.discount is not null`)
-			sqlString += filterValue("false", options["useDeleted"], " and p.deleted = 0 and pr.deleted = 0", "")
+			sqlString += filterValue(false, options["useDeleted"], " and p.deleted = 0 and pr.deleted = 0", "")
 			return sqlString, params, nil
 		},
 
@@ -1229,7 +1230,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where p.partnumber = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], ` and p.deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` and p.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1240,7 +1241,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where p.planumber = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], ` and p.deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` and p.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1253,7 +1254,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 		},
 
 		"trans": func(options IM) (string, IL, error) {
-			sqlString = filterValue("false", options["useDeleted"],
+			sqlString = filterValue(false, options["useDeleted"],
 				`select t.id as id, ttype.groupvalue as transtype, dir.groupvalue as direction, cu.digit as digit 
 				from trans t 
 				inner join groups ttype on t.transtype = ttype.id 
@@ -1275,7 +1276,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refnumber"}, ` where ref_id is null and fieldname = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], ` and deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` and deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1290,7 +1291,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			whereString, params = ds.getQueryKeyOption(options,
 				SL{"refID1", "refID2"}, ` where l.ref_id_1 = %s and l.ref_id_2 = %s `, params)
 			sqlString += whereString
-			sqlString += filterValue("false", options["useDeleted"], ` and l.deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` and l.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1309,7 +1310,7 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			} else {
 				sqlString += ` and r.place_id is null `
 			}
-			sqlString += filterValue("false", options["useDeleted"], ` and r.deleted = 0`, "")
+			sqlString += filterValue(false, options["useDeleted"], ` and r.deleted = 0`, "")
 			return sqlString, params, nil
 		},
 
@@ -1357,26 +1358,6 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			sqlString += whereString
 			return sqlString, params, nil
 		},
-
-		"ui_reportfields": func(options IM) (string, IL, error) {
-			sqlString =
-				`select rf.id as id from ui_reportfields rf 
-			  inner join ui_report r on rf.report_id = r.id `
-			whereString, params = ds.getQueryKeyOption(options,
-				SL{"refnumber", "fieldname"}, ` and r.reportkey = %s where rf.fieldname = %s `, params)
-			sqlString += whereString
-			return sqlString, params, nil
-		},
-
-		"ui_reportsources": func(options IM) (string, IL, error) {
-			sqlString =
-				`select rs.id as id from ui_reportsources rs 
-			  inner join ui_report r on rs.report_id = r.id `
-			whereString, params = ds.getQueryKeyOption(options,
-				SL{"refnumber", "dataset"}, ` and r.reportkey = %s where rs.dataset = %s `, params)
-			sqlString += whereString
-			return sqlString, params, nil
-		},
 	}
 
 	if _, found := keys[options["nervatype"].(string)]; found {
@@ -1385,14 +1366,13 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 
 	switch options["nervatype"] {
 
-	case "employee", "pattern", "project", "tool", "currency", "numberdef",
-		"ui_language", "ui_report", "ui_menu":
+	case "employee", "pattern", "project", "tool", "currency", "numberdef", "ui_report", "ui_menu":
 
 		sqlString = fmt.Sprintf(`select * from %s where %s `, options["nervatype"], options["refField"])
 		whereString, params = ds.getQueryKeyOption(options,
 			SL{"refnumber"}, ` = %s `, params)
 		sqlString += whereString
-		sqlString += filterValue("false", options["useDeleted"], whereDelete, "")
+		sqlString += filterValue(false, options["useDeleted"], whereDelete, "")
 		return sqlString, params, nil
 
 	case "address", "contact":
@@ -1407,11 +1387,11 @@ func (ds *SQLDriver) getRefnumber2ID(options IM) (string, IL, error) {
 			options["refField"], options["refnumber"])
 		whereString = fmt.Sprintf(`where %s.deleted = 0 and %s.deleted = 0`,
 			options["refType"], options["nervatype"])
-		sqlString += filterValue("false", options["useDeleted"], whereString, "")
+		sqlString += filterValue(false, options["useDeleted"], whereString, "")
 		return sqlString, params, nil
 
 	default:
-		return sqlString, params, errors.New(ntura.GetMessage("invalid_refnumber"))
+		return sqlString, params, errors.New(ut.GetMessage("invalid_refnumber"))
 	}
 
 }
@@ -1459,7 +1439,7 @@ func (ds *SQLDriver) getUpdateDeffields(options IM) (string, IL, error) {
 		sqlString += whereString
 		return sqlString, params, nil
 	}
-	return sqlString, params, errors.New(ntura.GetMessage("missing_fieldname"))
+	return sqlString, params, errors.New(ut.GetMessage("missing_fieldname"))
 }
 
 func (ds *SQLDriver) getIntegrity(options IM) (string, IL, error) {
@@ -1774,7 +1754,7 @@ func (ds *SQLDriver) getIntegrity(options IM) (string, IL, error) {
 			return keys[options["nervatype"].(string)](options)
 		}
 	}
-	return sqlString, params, errors.New(ntura.GetMessage("integrity_error"))
+	return sqlString, params, errors.New(ut.GetMessage("integrity_error"))
 }
 
 //QueryKey - complex data queries
@@ -1861,17 +1841,6 @@ func (ds *SQLDriver) QueryKey(options IM, trans interface{}) (result []IM, err e
 			sqlString += whereString
 			whereString, params = ds.getQueryKeyOption(options, SL{"report_id"}, ` where r.id=%s`, params)
 			sqlString += whereString
-			return sqlString, params, nil
-		},
-
-		"reportfields": func(options IM) (string, IL, error) {
-			params := IL{options["report_id"]}
-			sqlString =
-				`select rf.fieldname as fieldname, ft.groupvalue as fieldtype, rf.dataset as dataset, wt.groupvalue as wheretype, rf.sqlstr as sqlstr
-				from ui_reportfields rf
-				inner join groups ft on rf.fieldtype=ft.id
-				inner join groups wt on rf.wheretype=wt.id
-				where rf.report_id=` + ds.getPrmString(1)
 			return sqlString, params, nil
 		},
 
@@ -2012,7 +1981,7 @@ func (ds *SQLDriver) QueryKey(options IM, trans interface{}) (result []IM, err e
 			return result, err
 		}
 	} else {
-		return result, errors.New(ntura.GetMessage("missing_fieldname"))
+		return result, errors.New(ut.GetMessage("missing_fieldname"))
 	}
 
 	//print(sqlString)

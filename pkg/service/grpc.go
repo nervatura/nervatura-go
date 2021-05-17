@@ -9,561 +9,553 @@ import (
 	"strconv"
 	"strings"
 
-	ntura "github.com/nervatura/nervatura-go/pkg/nervatura"
+	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 	pb "github.com/nervatura/nervatura-go/pkg/proto"
+	ut "github.com/nervatura/nervatura-go/pkg/utils"
 )
 
 // RPCService implements the Nervatura API service
 type RPCService struct {
-	GetNervaStore func(database string) *ntura.NervaStore
+	GetNervaStore func(database string) *nt.NervaStore
+	GetTokenKeys  func() map[string]map[string]string
 	pb.UnimplementedAPIServer
 }
 
-func (srv *RPCService) itemMap(key string, data ntura.IM) *pb.ResponseGet_Value {
+func (srv *RPCService) itemMap(key string, data nt.IM) *pb.ResponseGet_Value {
 	metaMap := func(data interface{}) []*pb.MetaData {
 		metadata := []*pb.MetaData{}
-		if mdata, valid := data.([]ntura.IM); valid {
+		if mdata, valid := data.([]nt.IM); valid {
 			for i := 0; i < len(mdata); i++ {
 				metadata = append(metadata, &pb.MetaData{
-					Id:        ntura.ToInteger(mdata[i]["id"]),
-					Fieldname: ntura.ToString(mdata[i]["fieldname"], ""),
-					Fieldtype: ntura.ToString(mdata[i]["fieldtype"], ""),
-					Value:     ntura.ToString(mdata[i]["value"], ""),
-					Notes:     ntura.ToString(mdata[i]["notes"], ""),
+					Id:        ut.ToInteger(mdata[i]["id"], 0),
+					Fieldname: ut.ToString(mdata[i]["fieldname"], ""),
+					Fieldtype: ut.ToString(mdata[i]["fieldtype"], ""),
+					Value:     ut.ToString(mdata[i]["value"], ""),
+					Notes:     ut.ToString(mdata[i]["notes"], ""),
 				})
 			}
 		}
 		return metadata
 	}
 
-	itemMap := map[string]func(data ntura.IM) *pb.ResponseGet_Value{
-		"address": func(data ntura.IM) *pb.ResponseGet_Value {
+	itemMap := map[string]func(data nt.IM) *pb.ResponseGet_Value{
+		"address": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Address{Address: &pb.Address{
-					Id:        ntura.ToInteger(data["id"]),
-					Nervatype: ntura.ToInteger(data["nervatype"]),
-					RefId:     ntura.ToInteger(data["ref_id"]),
-					Country:   ntura.ToString(data["country"], ""),
-					State:     ntura.ToString(data["state"], ""),
-					Zipcode:   ntura.ToString(data["zipcode"], ""),
-					City:      ntura.ToString(data["city"], ""),
-					Street:    ntura.ToString(data["street"], ""),
-					Notes:     ntura.ToString(data["notes"], ""),
+					Id:        ut.ToInteger(data["id"], 0),
+					Nervatype: ut.ToInteger(data["nervatype"], 0),
+					RefId:     ut.ToInteger(data["ref_id"], 0),
+					Country:   ut.ToString(data["country"], ""),
+					State:     ut.ToString(data["state"], ""),
+					Zipcode:   ut.ToString(data["zipcode"], ""),
+					City:      ut.ToString(data["city"], ""),
+					Street:    ut.ToString(data["street"], ""),
+					Notes:     ut.ToString(data["notes"], ""),
 					Metadata:  metaMap(data["metadata"]),
 				}}}
 		},
-		"barcode": func(data ntura.IM) *pb.ResponseGet_Value {
+		"barcode": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Barcode{Barcode: &pb.Barcode{
-					Id:          ntura.ToInteger(data["id"]),
-					Code:        ntura.ToString(data["code"], ""),
-					ProductId:   ntura.ToInteger(data["product_id"]),
-					Description: ntura.ToString(data["description"], ""),
-					Barcodetype: ntura.ToInteger(data["barcodetype"]),
-					Qty:         ntura.ToFloat(data["qty"]),
-					Defcode:     ntura.ToBoolean(data["defcode"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Code:        ut.ToString(data["code"], ""),
+					ProductId:   ut.ToInteger(data["product_id"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Barcodetype: ut.ToInteger(data["barcodetype"], 0),
+					Qty:         ut.ToFloat(data["qty"], 0),
+					Defcode:     ut.ToBoolean(data["defcode"], false),
 				}}}
 		},
-		"contact": func(data ntura.IM) *pb.ResponseGet_Value {
+		"contact": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Contact{Contact: &pb.Contact{
-					Id:        ntura.ToInteger(data["id"]),
-					Nervatype: ntura.ToInteger(data["nervatype"]),
-					RefId:     ntura.ToInteger(data["ref_id"]),
-					Firstname: ntura.ToString(data["firstname"], ""),
-					Surname:   ntura.ToString(data["surname"], ""),
-					Status:    ntura.ToString(data["status"], ""),
-					Phone:     ntura.ToString(data["phone"], ""),
-					Fax:       ntura.ToString(data["fax"], ""),
-					Mobil:     ntura.ToString(data["mobil"], ""),
-					Email:     ntura.ToString(data["email"], ""),
-					Notes:     ntura.ToString(data["notes"], ""),
+					Id:        ut.ToInteger(data["id"], 0),
+					Nervatype: ut.ToInteger(data["nervatype"], 0),
+					RefId:     ut.ToInteger(data["ref_id"], 0),
+					Firstname: ut.ToString(data["firstname"], ""),
+					Surname:   ut.ToString(data["surname"], ""),
+					Status:    ut.ToString(data["status"], ""),
+					Phone:     ut.ToString(data["phone"], ""),
+					Fax:       ut.ToString(data["fax"], ""),
+					Mobil:     ut.ToString(data["mobil"], ""),
+					Email:     ut.ToString(data["email"], ""),
+					Notes:     ut.ToString(data["notes"], ""),
 					Metadata:  metaMap(data["metadata"]),
 				}}}
 		},
-		"currency": func(data ntura.IM) *pb.ResponseGet_Value {
+		"currency": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Currency{Currency: &pb.Currency{
-					Id:          ntura.ToInteger(data["id"]),
-					Curr:        ntura.ToString(data["curr"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					Digit:       ntura.ToInteger(data["digit"]),
-					Defrate:     ntura.ToFloat(data["defrate"]),
-					Cround:      ntura.ToInteger(data["cround"]),
+					Id:          ut.ToInteger(data["id"], 0),
+					Curr:        ut.ToString(data["curr"], ""),
+					Description: ut.ToString(data["description"], ""),
+					Digit:       ut.ToInteger(data["digit"], 0),
+					Defrate:     ut.ToFloat(data["defrate"], 0),
+					Cround:      ut.ToInteger(data["cround"], 0),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"customer": func(data ntura.IM) *pb.ResponseGet_Value {
+		"customer": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Customer{Customer: &pb.Customer{
-					Id:          ntura.ToInteger(data["id"]),
-					Custtype:    ntura.ToInteger(data["custtype"]),
-					Custnumber:  ntura.ToString(data["custnumber"], ""),
-					Custname:    ntura.ToString(data["custname"], ""),
-					Taxnumber:   ntura.ToString(data["taxnumber"], ""),
-					Account:     ntura.ToString(data["account"], ""),
-					Notax:       ntura.ToBoolean(data["notax"], false),
-					Terms:       ntura.ToInteger(data["terms"]),
-					Creditlimit: ntura.ToFloat(data["creditlimit"]),
-					Discount:    ntura.ToFloat(data["discount"]),
-					Notes:       ntura.ToString(data["notes"], ""),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Custtype:    ut.ToInteger(data["custtype"], 0),
+					Custnumber:  ut.ToString(data["custnumber"], ""),
+					Custname:    ut.ToString(data["custname"], ""),
+					Taxnumber:   ut.ToString(data["taxnumber"], ""),
+					Account:     ut.ToString(data["account"], ""),
+					Notax:       ut.ToBoolean(data["notax"], false),
+					Terms:       ut.ToInteger(data["terms"], 0),
+					Creditlimit: ut.ToFloat(data["creditlimit"], 0),
+					Discount:    ut.ToFloat(data["discount"], 0),
+					Notes:       ut.ToString(data["notes"], ""),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"deffield": func(data ntura.IM) *pb.ResponseGet_Value {
+		"deffield": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Deffield{Deffield: &pb.Deffield{
-					Id:          ntura.ToInteger(data["id"]),
-					Fieldname:   ntura.ToString(data["fieldname"], ""),
-					Nervatype:   ntura.ToInteger(data["nervatype"]),
-					Subtype:     ntura.ToInteger(data["subtype"]),
-					Fieldtype:   ntura.ToInteger(data["fieldtype"]),
-					Description: ntura.ToString(data["description"], ""),
-					Valuelist:   ntura.ToString(data["valuelist"], ""),
-					Addnew:      ntura.ToBoolean(data["addnew"], false),
-					Visible:     ntura.ToBoolean(data["visible"], false),
-					Readonly:    ntura.ToBoolean(data["readonly"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Fieldname:   ut.ToString(data["fieldname"], ""),
+					Nervatype:   ut.ToInteger(data["nervatype"], 0),
+					Subtype:     ut.ToIntPointer(data["subtype"], 0),
+					Fieldtype:   ut.ToInteger(data["fieldtype"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Valuelist:   ut.ToString(data["valuelist"], ""),
+					Addnew:      ut.ToBoolean(data["addnew"], false),
+					Visible:     ut.ToBoolean(data["visible"], false),
+					Readonly:    ut.ToBoolean(data["readonly"], false),
 				}}}
 		},
-		"employee": func(data ntura.IM) *pb.ResponseGet_Value {
+		"employee": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Employee{Employee: &pb.Employee{
-					Id:              ntura.ToInteger(data["id"]),
-					Empnumber:       ntura.ToString(data["empnumber"], ""),
-					Username:        ntura.ToString(data["username"], ""),
-					Usergroup:       ntura.ToInteger(data["Usergroup"]),
-					Startdate:       ntura.ToString(data["startdate"], ""),
-					Enddate:         ntura.ToString(data["enddate"], ""),
-					Department:      ntura.ToInteger(data["department"]),
-					RegistrationKey: ntura.ToString(data["registration_key"], ""),
-					Inactive:        ntura.ToBoolean(data["inactive"], false),
+					Id:              ut.ToInteger(data["id"], 0),
+					Empnumber:       ut.ToString(data["empnumber"], ""),
+					Username:        ut.ToStringPointer(data["username"], ""),
+					Usergroup:       ut.ToInteger(data["Usergroup"], 0),
+					Startdate:       ut.ToStringPointer(data["startdate"], ""),
+					Enddate:         ut.ToStringPointer(data["enddate"], ""),
+					Department:      ut.ToIntPointer(data["department"], 0),
+					RegistrationKey: ut.ToString(data["registration_key"], ""),
+					Inactive:        ut.ToBoolean(data["inactive"], false),
 					Metadata:        metaMap(data["metadata"]),
 				}}}
 		},
-		"event": func(data ntura.IM) *pb.ResponseGet_Value {
+		"event": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Event{Event: &pb.Event{
-					Id:          ntura.ToInteger(data["id"]),
-					Calnumber:   ntura.ToString(data["calnumber"], ""),
-					Nervatype:   ntura.ToInteger(data["nervatype"]),
-					RefId:       ntura.ToInteger(data["ref_id"]),
-					Uid:         ntura.ToString(data["uid"], ""),
-					Eventgroup:  ntura.ToInteger(data["eventgroup"]),
-					Fromdate:    ntura.ToString(data["fromdate"], ""),
-					Todate:      ntura.ToString(data["todate"], ""),
-					Subject:     ntura.ToString(data["subject"], ""),
-					Place:       ntura.ToString(data["place"], ""),
-					Description: ntura.ToString(data["description"], ""),
+					Id:          ut.ToInteger(data["id"], 0),
+					Calnumber:   ut.ToString(data["calnumber"], ""),
+					Nervatype:   ut.ToInteger(data["nervatype"], 0),
+					RefId:       ut.ToInteger(data["ref_id"], 0),
+					Uid:         ut.ToString(data["uid"], ""),
+					Eventgroup:  ut.ToIntPointer(data["eventgroup"], 0),
+					Fromdate:    ut.ToString(data["fromdate"], ""),
+					Todate:      ut.ToStringPointer(data["todate"], ""),
+					Subject:     ut.ToString(data["subject"], ""),
+					Place:       ut.ToString(data["place"], ""),
+					Description: ut.ToString(data["description"], ""),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"fieldvalue": func(data ntura.IM) *pb.ResponseGet_Value {
+		"fieldvalue": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Fieldvalue{Fieldvalue: &pb.Fieldvalue{
-					Id:        ntura.ToInteger(data["id"]),
-					RefId:     ntura.ToInteger(data["ref_id"]),
-					Fieldname: ntura.ToString(data["fieldname"], ""),
-					Value:     ntura.ToString(data["value"], ""),
-					Notes:     ntura.ToString(data["notes"], ""),
+					Id:        ut.ToInteger(data["id"], 0),
+					RefId:     ut.ToIntPointer(data["ref_id"], 0),
+					Fieldname: ut.ToString(data["fieldname"], ""),
+					Value:     ut.ToString(data["value"], ""),
+					Notes:     ut.ToString(data["notes"], ""),
 				}}}
 		},
-		"groups": func(data ntura.IM) *pb.ResponseGet_Value {
+		"groups": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Groups{Groups: &pb.Groups{
-					Id:          ntura.ToInteger(data["id"]),
-					Groupname:   ntura.ToString(data["groupname"], ""),
-					Groupvalue:  ntura.ToString(data["groupvalue"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Groupname:   ut.ToString(data["groupname"], ""),
+					Groupvalue:  ut.ToString(data["groupvalue"], ""),
+					Description: ut.ToString(data["description"], ""),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 				}}}
 		},
-		"item": func(data ntura.IM) *pb.ResponseGet_Value {
+		"item": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Item{Item: &pb.Item{
-					Id:          ntura.ToInteger(data["id"]),
-					TransId:     ntura.ToInteger(data["trans_id"]),
-					ProductId:   ntura.ToInteger(data["product_id"]),
-					Unit:        ntura.ToString(data["unit"], ""),
-					Qty:         ntura.ToFloat(data["qty"]),
-					Fxprice:     ntura.ToFloat(data["fxprice"]),
-					Netamount:   ntura.ToFloat(data["netamount"]),
-					Discount:    ntura.ToFloat(data["discount"]),
-					TaxId:       ntura.ToInteger(data["tax_id"]),
-					Vatamount:   ntura.ToFloat(data["vatamount"]),
-					Amount:      ntura.ToFloat(data["amount"]),
-					Description: ntura.ToString(data["description"], ""),
-					Deposit:     ntura.ToBoolean(data["deposit"], false),
-					Ownstock:    ntura.ToFloat(data["ownstock"]),
-					Actionprice: ntura.ToBoolean(data["actionprice"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					TransId:     ut.ToInteger(data["trans_id"], 0),
+					ProductId:   ut.ToInteger(data["product_id"], 0),
+					Unit:        ut.ToString(data["unit"], ""),
+					Qty:         ut.ToFloat(data["qty"], 0),
+					Fxprice:     ut.ToFloat(data["fxprice"], 0),
+					Netamount:   ut.ToFloat(data["netamount"], 0),
+					Discount:    ut.ToFloat(data["discount"], 0),
+					TaxId:       ut.ToInteger(data["tax_id"], 0),
+					Vatamount:   ut.ToFloat(data["vatamount"], 0),
+					Amount:      ut.ToFloat(data["amount"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Deposit:     ut.ToBoolean(data["deposit"], false),
+					Ownstock:    ut.ToFloat(data["ownstock"], 0),
+					Actionprice: ut.ToBoolean(data["actionprice"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"link": func(data ntura.IM) *pb.ResponseGet_Value {
+		"link": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Link{Link: &pb.Link{
-					Id:          ntura.ToInteger(data["id"]),
-					Nervatype_1: ntura.ToInteger(data["nervatype_1"]),
-					RefId_1:     ntura.ToInteger(data["ref_id_1"]),
-					Nervatype_2: ntura.ToInteger(data["nervatype_2"]),
-					RefId_2:     ntura.ToInteger(data["ref_id_2"]),
+					Id:          ut.ToInteger(data["id"], 0),
+					Nervatype_1: ut.ToInteger(data["nervatype_1"], 0),
+					RefId_1:     ut.ToInteger(data["ref_id_1"], 0),
+					Nervatype_2: ut.ToInteger(data["nervatype_2"], 0),
+					RefId_2:     ut.ToInteger(data["ref_id_2"], 0),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"log": func(data ntura.IM) *pb.ResponseGet_Value {
+		"log": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Log{Log: &pb.Log{
-					Id:         ntura.ToInteger(data["id"]),
-					Nervatype:  ntura.ToInteger(data["nervatype"]),
-					RefId:      ntura.ToInteger(data["ref_id"]),
-					EmployeeId: ntura.ToInteger(data["employee_id"]),
-					Crdate:     ntura.ToString(data["crdate"], ""),
-					Logstate:   ntura.ToInteger(data["logstate"]),
+					Id:         ut.ToInteger(data["id"], 0),
+					Nervatype:  ut.ToIntPointer(data["nervatype"], 0),
+					RefId:      ut.ToIntPointer(data["ref_id"], 0),
+					EmployeeId: ut.ToInteger(data["employee_id"], 0),
+					Crdate:     ut.ToString(data["crdate"], ""),
+					Logstate:   ut.ToInteger(data["logstate"], 0),
 					Metadata:   metaMap(data["metadata"]),
 				}}}
 		},
-		"movement": func(data ntura.IM) *pb.ResponseGet_Value {
+		"movement": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Movement{Movement: &pb.Movement{
-					Id:           ntura.ToInteger(data["id"]),
-					TransId:      ntura.ToInteger(data["trans_id"]),
-					Shippingdate: ntura.ToString(data["shippingdate"], ""),
-					Movetype:     ntura.ToInteger(data["movetype"]),
-					ProductId:    ntura.ToInteger(data["product_id"]),
-					ToolId:       ntura.ToInteger(data["tool_id"]),
-					PlaceId:      ntura.ToInteger(data["place_id"]),
-					Qty:          ntura.ToFloat(data["qty"]),
-					Description:  ntura.ToString(data["description"], ""),
-					Shared:       ntura.ToBoolean(data["shared"], false),
+					Id:           ut.ToInteger(data["id"], 0),
+					TransId:      ut.ToInteger(data["trans_id"], 0),
+					Shippingdate: ut.ToString(data["shippingdate"], ""),
+					Movetype:     ut.ToInteger(data["movetype"], 0),
+					ProductId:    ut.ToIntPointer(data["product_id"], 0),
+					ToolId:       ut.ToIntPointer(data["tool_id"], 0),
+					PlaceId:      ut.ToIntPointer(data["place_id"], 0),
+					Qty:          ut.ToFloat(data["qty"], 0),
+					Description:  ut.ToString(data["description"], ""),
+					Shared:       ut.ToBoolean(data["shared"], false),
 					Metadata:     metaMap(data["metadata"]),
 				}}}
 		},
-		"numberdef": func(data ntura.IM) *pb.ResponseGet_Value {
+		"numberdef": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Numberdef{Numberdef: &pb.Numberdef{
-					Id:          ntura.ToInteger(data["id"]),
-					Numberkey:   ntura.ToString(data["numberkey"], ""),
-					Prefix:      ntura.ToString(data["prefix"], ""),
-					Curvalue:    ntura.ToInteger(data["curvalue"]),
-					Isyear:      ntura.ToBoolean(data["isyear"], false),
-					Sep:         ntura.ToString(data["sep"], ""),
-					Len:         ntura.ToInteger(data["len"]),
-					Description: ntura.ToString(data["description"], ""),
-					Visible:     ntura.ToBoolean(data["visible"], false),
-					Readonly:    ntura.ToBoolean(data["readonly"], false),
-					Orderby:     ntura.ToInteger(data["orderby"]),
+					Id:          ut.ToInteger(data["id"], 0),
+					Numberkey:   ut.ToString(data["numberkey"], ""),
+					Prefix:      ut.ToString(data["prefix"], ""),
+					Curvalue:    ut.ToInteger(data["curvalue"], 0),
+					Isyear:      ut.ToBoolean(data["isyear"], false),
+					Sep:         ut.ToString(data["sep"], ""),
+					Len:         ut.ToInteger(data["len"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Visible:     ut.ToBoolean(data["visible"], false),
+					Readonly:    ut.ToBoolean(data["readonly"], false),
+					Orderby:     ut.ToInteger(data["orderby"], 0),
 				}}}
 		},
-		"pattern": func(data ntura.IM) *pb.ResponseGet_Value {
+		"pattern": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Pattern{Pattern: &pb.Pattern{
-					Id:          ntura.ToInteger(data["id"]),
-					Description: ntura.ToString(data["description"], ""),
-					Transtype:   ntura.ToInteger(data["transtype"]),
-					Notes:       ntura.ToString(data["notes"], ""),
-					Defpattern:  ntura.ToBoolean(data["defpattern"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Transtype:   ut.ToInteger(data["transtype"], 0),
+					Notes:       ut.ToString(data["notes"], ""),
+					Defpattern:  ut.ToBoolean(data["defpattern"], false),
 				}}}
 		},
-		"payment": func(data ntura.IM) *pb.ResponseGet_Value {
+		"payment": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Payment{Payment: &pb.Payment{
-					Id:       ntura.ToInteger(data["id"]),
-					TransId:  ntura.ToInteger(data["trans_id"]),
-					Paiddate: ntura.ToString(data["paiddate"], ""),
-					Amount:   ntura.ToFloat(data["amount"]),
-					Notes:    ntura.ToString(data["notes"], ""),
+					Id:       ut.ToInteger(data["id"], 0),
+					TransId:  ut.ToInteger(data["trans_id"], 0),
+					Paiddate: ut.ToString(data["paiddate"], ""),
+					Amount:   ut.ToFloat(data["amount"], 0),
+					Notes:    ut.ToString(data["notes"], ""),
 					Metadata: metaMap(data["metadata"]),
 				}}}
 		},
-		"place": func(data ntura.IM) *pb.ResponseGet_Value {
+		"place": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Place{Place: &pb.Place{
-					Id:          ntura.ToInteger(data["id"]),
-					Planumber:   ntura.ToString(data["planumber"], ""),
-					Placetype:   ntura.ToInteger(data["placetype"]),
-					Description: ntura.ToString(data["description"], ""),
-					Curr:        ntura.ToString(data["curr"], ""),
-					Defplace:    ntura.ToBoolean(data["defplace"], false),
-					Notes:       ntura.ToString(data["notes"], ""),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Planumber:   ut.ToString(data["planumber"], ""),
+					Placetype:   ut.ToInteger(data["placetype"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Curr:        ut.ToStringPointer(data["curr"], ""),
+					Defplace:    ut.ToBoolean(data["defplace"], false),
+					Notes:       ut.ToString(data["notes"], ""),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"price": func(data ntura.IM) *pb.ResponseGet_Value {
+		"price": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Price{Price: &pb.Price{
-					Id:          ntura.ToInteger(data["id"]),
-					ProductId:   ntura.ToInteger(data["product_id"]),
-					Validfrom:   ntura.ToString(data["validfrom"], ""),
-					Validto:     ntura.ToString(data["validto"], ""),
-					Curr:        ntura.ToString(data["curr"], ""),
-					Qty:         ntura.ToFloat(data["qty"]),
-					Pricevalue:  ntura.ToFloat(data["pricevalue"]),
-					Vendorprice: ntura.ToBoolean(data["vendorprice"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					ProductId:   ut.ToInteger(data["product_id"], 0),
+					Validfrom:   ut.ToString(data["validfrom"], ""),
+					Validto:     ut.ToStringPointer(data["validto"], ""),
+					Curr:        ut.ToString(data["curr"], ""),
+					Qty:         ut.ToFloat(data["qty"], 0),
+					Pricevalue:  ut.ToFloat(data["pricevalue"], 0),
+					Vendorprice: ut.ToBoolean(data["vendorprice"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"product": func(data ntura.IM) *pb.ResponseGet_Value {
+		"product": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Product{Product: &pb.Product{
-					Id:          ntura.ToInteger(data["id"]),
-					Partnumber:  ntura.ToString(data["partnumber"], ""),
-					Protype:     ntura.ToInteger(data["protype"]),
-					Description: ntura.ToString(data["description"], ""),
-					Unit:        ntura.ToString(data["unit"], ""),
-					TaxId:       ntura.ToInteger(data["tax_id"]),
-					Notes:       ntura.ToString(data["notes"], ""),
-					Webitem:     ntura.ToBoolean(data["webitem"], false),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Partnumber:  ut.ToString(data["partnumber"], ""),
+					Protype:     ut.ToInteger(data["protype"], 0),
+					Description: ut.ToString(data["description"], ""),
+					Unit:        ut.ToString(data["unit"], ""),
+					TaxId:       ut.ToInteger(data["tax_id"], 0),
+					Notes:       ut.ToString(data["notes"], ""),
+					Webitem:     ut.ToBoolean(data["webitem"], false),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"project": func(data ntura.IM) *pb.ResponseGet_Value {
+		"project": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Project{Project: &pb.Project{
-					Id:          ntura.ToInteger(data["id"]),
-					Pronumber:   ntura.ToString(data["pronumber"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					CustomerId:  ntura.ToInteger(data["customer_id"]),
-					Startdate:   ntura.ToString(data["startdate"], ""),
-					Enddate:     ntura.ToString(data["enddate"], ""),
-					Notes:       ntura.ToString(data["notes"], ""),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Pronumber:   ut.ToString(data["pronumber"], ""),
+					Description: ut.ToString(data["description"], ""),
+					CustomerId:  ut.ToIntPointer(data["customer_id"], 0),
+					Startdate:   ut.ToStringPointer(data["startdate"], ""),
+					Enddate:     ut.ToStringPointer(data["enddate"], ""),
+					Notes:       ut.ToString(data["notes"], ""),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"rate": func(data ntura.IM) *pb.ResponseGet_Value {
+		"rate": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Rate{Rate: &pb.Rate{
-					Id:        ntura.ToInteger(data["id"]),
-					Ratetype:  ntura.ToInteger(data["ratetype"]),
-					Ratedate:  ntura.ToString(data["ratedate"], ""),
-					Curr:      ntura.ToString(data["curr"], ""),
-					PlaceId:   ntura.ToInteger(data["place_id"]),
-					Rategroup: ntura.ToInteger(data["rategroup"]),
-					Ratevalue: ntura.ToFloat(data["ratevalue"]),
+					Id:        ut.ToInteger(data["id"], 0),
+					Ratetype:  ut.ToInteger(data["ratetype"], 0),
+					Ratedate:  ut.ToString(data["ratedate"], ""),
+					Curr:      ut.ToString(data["curr"], ""),
+					PlaceId:   ut.ToIntPointer(data["place_id"], 0),
+					Rategroup: ut.ToIntPointer(data["rategroup"], 0),
+					Ratevalue: ut.ToFloat(data["ratevalue"], 0),
 					Metadata:  metaMap(data["metadata"]),
 				}}}
 		},
-		"tax": func(data ntura.IM) *pb.ResponseGet_Value {
+		"tax": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Tax{Tax: &pb.Tax{
-					Id:          ntura.ToInteger(data["id"]),
-					Taxcode:     ntura.ToString(data["taxcode"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					Rate:        ntura.ToFloat(data["rate"]),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Taxcode:     ut.ToString(data["taxcode"], ""),
+					Description: ut.ToString(data["description"], ""),
+					Rate:        ut.ToFloat(data["rate"], 0),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"tool": func(data ntura.IM) *pb.ResponseGet_Value {
+		"tool": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Tool{Tool: &pb.Tool{
-					Id:          ntura.ToInteger(data["id"]),
-					Serial:      ntura.ToString(data["serial"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					ProductId:   ntura.ToInteger(data["product_id"]),
-					Toolgroup:   ntura.ToInteger(data["toolgroup"]),
-					Notes:       ntura.ToString(data["notes"], ""),
-					Inactive:    ntura.ToBoolean(data["inactive"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Serial:      ut.ToString(data["serial"], ""),
+					Description: ut.ToString(data["description"], ""),
+					ProductId:   ut.ToInteger(data["product_id"], 0),
+					Toolgroup:   ut.ToIntPointer(data["toolgroup"], 0),
+					Notes:       ut.ToString(data["notes"], ""),
+					Inactive:    ut.ToBoolean(data["inactive"], false),
 					Metadata:    metaMap(data["metadata"]),
 				}}}
 		},
-		"trans": func(data ntura.IM) *pb.ResponseGet_Value {
+		"trans": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_Trans{Trans: &pb.Trans{
-					Id:             ntura.ToInteger(data["id"]),
-					Transnumber:    ntura.ToString(data["transnumber"], ""),
-					Transtype:      ntura.ToInteger(data["transtype"]),
-					Direction:      ntura.ToInteger(data["direction"]),
-					RefTransnumber: ntura.ToString(data["ref_transnumber"], ""),
-					Crdate:         ntura.ToString(data["crdate"], ""),
-					Transdate:      ntura.ToString(data["transdate"], ""),
-					Duedate:        ntura.ToString(data["duedate"], ""),
-					CustomerId:     ntura.ToInteger(data["customer_id"]),
-					EmployeeId:     ntura.ToInteger(data["employee_id"]),
-					Department:     ntura.ToInteger(data["department"]),
-					ProjectId:      ntura.ToInteger(data["project_id"]),
-					PlaceId:        ntura.ToInteger(data["place_id"]),
-					Paidtype:       ntura.ToInteger(data["paidtype"]),
-					Curr:           ntura.ToString(data["curr"], ""),
-					Notax:          ntura.ToBoolean(data["notax"], false),
-					Paid:           ntura.ToBoolean(data["paid"], false),
-					Acrate:         ntura.ToFloat(data["acrate"]),
-					Notes:          ntura.ToString(data["notes"], ""),
-					Intnotes:       ntura.ToString(data["intnotes"], ""),
-					Fnote:          ntura.ToString(data["fnote"], ""),
-					Transtate:      ntura.ToInteger(data["transtate"]),
-					Closed:         ntura.ToBoolean(data["closed"], false),
+					Id:             ut.ToInteger(data["id"], 0),
+					Transnumber:    ut.ToString(data["transnumber"], ""),
+					Transtype:      ut.ToInteger(data["transtype"], 0),
+					Direction:      ut.ToInteger(data["direction"], 0),
+					RefTransnumber: ut.ToStringPointer(data["ref_transnumber"], ""),
+					Crdate:         ut.ToString(data["crdate"], ""),
+					Transdate:      ut.ToString(data["transdate"], ""),
+					Duedate:        ut.ToStringPointer(data["duedate"], ""),
+					CustomerId:     ut.ToIntPointer(data["customer_id"], 0),
+					EmployeeId:     ut.ToIntPointer(data["employee_id"], 0),
+					Department:     ut.ToIntPointer(data["department"], 0),
+					ProjectId:      ut.ToIntPointer(data["project_id"], 0),
+					PlaceId:        ut.ToIntPointer(data["place_id"], 0),
+					Paidtype:       ut.ToIntPointer(data["paidtype"], 0),
+					Curr:           ut.ToStringPointer(data["curr"], ""),
+					Notax:          ut.ToBoolean(data["notax"], false),
+					Paid:           ut.ToBoolean(data["paid"], false),
+					Acrate:         ut.ToFloat(data["acrate"], 0),
+					Notes:          ut.ToString(data["notes"], ""),
+					Intnotes:       ut.ToString(data["intnotes"], ""),
+					Fnote:          ut.ToString(data["fnote"], ""),
+					Transtate:      ut.ToInteger(data["transtate"], 0),
+					Closed:         ut.ToBoolean(data["closed"], false),
 					Metadata:       metaMap(data["metadata"]),
 				}}}
 		},
-		"ui_audit": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_audit": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiAudit{UiAudit: &pb.UiAudit{
-					Id:          ntura.ToInteger(data["id"]),
-					Usergroup:   ntura.ToInteger(data["usergroup"]),
-					Nervatype:   ntura.ToInteger(data["nervatype"]),
-					Subtype:     ntura.ToInteger(data["subtype"]),
-					Inputfilter: ntura.ToInteger(data["inputfilter"]),
-					Supervisor:  ntura.ToBoolean(data["supervisor"], false),
+					Id:          ut.ToInteger(data["id"], 0),
+					Usergroup:   ut.ToInteger(data["usergroup"], 0),
+					Nervatype:   ut.ToInteger(data["nervatype"], 0),
+					Subtype:     ut.ToIntPointer(data["subtype"], 0),
+					Inputfilter: ut.ToInteger(data["inputfilter"], 0),
+					Supervisor:  ut.ToBoolean(data["supervisor"], false),
 				}}}
 		},
-		"ui_language": func(data ntura.IM) *pb.ResponseGet_Value {
-			return &pb.ResponseGet_Value{
-				Value: &pb.ResponseGet_Value_UiLanguage{UiLanguage: &pb.UiLanguage{
-					Id:          ntura.ToInteger(data["id"]),
-					Lang:        ntura.ToString(data["lang"], ""),
-					Description: ntura.ToString(data["description"], ""),
-				}}}
-		},
-		"ui_menu": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_menu": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiMenu{UiMenu: &pb.UiMenu{
-					Id:          ntura.ToInteger(data["id"]),
-					Menukey:     ntura.ToString(data["menukey"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					Modul:       ntura.ToString(data["modul"], ""),
-					Icon:        ntura.ToString(data["icon"], ""),
-					Funcname:    ntura.ToString(data["funcname"], ""),
-					Url:         ntura.ToBoolean(data["url"], false),
-					Address:     ntura.ToString(data["address"], ""),
+					Id:          ut.ToInteger(data["id"], 0),
+					Menukey:     ut.ToString(data["menukey"], ""),
+					Description: ut.ToString(data["description"], ""),
+					Modul:       ut.ToString(data["modul"], ""),
+					Icon:        ut.ToString(data["icon"], ""),
+					Method:      ut.ToInteger(data["method"], 0),
+					Funcname:    ut.ToString(data["funcname"], ""),
+					Address:     ut.ToString(data["address"], ""),
 				}}}
 		},
-		"ui_menufields": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_menufields": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiMenufields{UiMenufields: &pb.UiMenufields{
-					Id:          ntura.ToInteger(data["id"]),
-					MenuId:      ntura.ToInteger(data["menu_id"]),
-					Fieldname:   ntura.ToString(data["fieldname"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					Fieldtype:   ntura.ToInteger(data["fieldtype"]),
-					Orderby:     ntura.ToInteger(data["orderby"]),
+					Id:          ut.ToInteger(data["id"], 0),
+					MenuId:      ut.ToInteger(data["menu_id"], 0),
+					Fieldname:   ut.ToString(data["fieldname"], ""),
+					Description: ut.ToString(data["description"], ""),
+					Fieldtype:   ut.ToInteger(data["fieldtype"], 0),
+					Orderby:     ut.ToInteger(data["orderby"], 0),
 				}}}
 		},
-		"ui_message": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_message": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiMessage{UiMessage: &pb.UiMessage{
-					Id:        ntura.ToInteger(data["id"]),
-					Secname:   ntura.ToString(data["secname"], ""),
-					Fieldname: ntura.ToString(data["fieldname"], ""),
-					Lang:      ntura.ToString(data["lang"], ""),
-					Msg:       ntura.ToString(data["msg"], ""),
+					Id:        ut.ToInteger(data["id"], 0),
+					Secname:   ut.ToString(data["secname"], ""),
+					Fieldname: ut.ToString(data["fieldname"], ""),
+					Lang:      ut.ToString(data["lang"], ""),
+					Msg:       ut.ToString(data["msg"], ""),
 				}}}
 		},
-		"ui_printqueue": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_printqueue": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiPrintqueue{UiPrintqueue: &pb.UiPrintqueue{
-					Id:         ntura.ToInteger(data["id"]),
-					Nervatype:  ntura.ToInteger(data["nervatype"]),
-					RefId:      ntura.ToInteger(data["ref_id"]),
-					Qty:        ntura.ToFloat(data["qty"]),
-					EmployeeId: ntura.ToInteger(data["employee_id"]),
-					ReportId:   ntura.ToInteger(data["report_id"]),
-					Crdate:     ntura.ToString(data["crdate"], ""),
+					Id:         ut.ToInteger(data["id"], 0),
+					Nervatype:  ut.ToIntPointer(data["nervatype"], 0),
+					RefId:      ut.ToInteger(data["ref_id"], 0),
+					Qty:        ut.ToFloat(data["qty"], 0),
+					EmployeeId: ut.ToIntPointer(data["employee_id"], 0),
+					ReportId:   ut.ToInteger(data["report_id"], 0),
+					Crdate:     ut.ToString(data["crdate"], ""),
 				}}}
 		},
-		"ui_report": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_report": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiReport{UiReport: &pb.UiReport{
-					Id:          ntura.ToInteger(data["id"]),
-					Reportkey:   ntura.ToString(data["reportkey"], ""),
-					Nervatype:   ntura.ToInteger(data["nervatype"]),
-					Transtype:   ntura.ToInteger(data["transtype"]),
-					Direction:   ntura.ToInteger(data["direction"]),
-					Repname:     ntura.ToString(data["repname"], ""),
-					Description: ntura.ToString(data["description"], ""),
-					Label:       ntura.ToString(data["label"], ""),
-					Filetype:    ntura.ToInteger(data["filetype"]),
-					Report:      ntura.ToString(data["report"], ""),
+					Id:          ut.ToInteger(data["id"], 0),
+					Reportkey:   ut.ToString(data["reportkey"], ""),
+					Nervatype:   ut.ToInteger(data["nervatype"], 0),
+					Transtype:   ut.ToIntPointer(data["transtype"], 0),
+					Direction:   ut.ToIntPointer(data["direction"], 0),
+					Repname:     ut.ToString(data["repname"], ""),
+					Description: ut.ToString(data["description"], ""),
+					Label:       ut.ToString(data["label"], ""),
+					Filetype:    ut.ToInteger(data["filetype"], 0),
+					Report:      ut.ToString(data["report"], ""),
 				}}}
 		},
-		"ui_reportfields": func(data ntura.IM) *pb.ResponseGet_Value {
-			return &pb.ResponseGet_Value{
-				Value: &pb.ResponseGet_Value_UiReportfields{UiReportfields: &pb.UiReportfields{
-					Id:          ntura.ToInteger(data["id"]),
-					ReportId:    ntura.ToInteger(data["report_id"]),
-					Fieldname:   ntura.ToString(data["fieldname"], ""),
-					Fieldtype:   ntura.ToInteger(data["fieldtype"]),
-					Wheretype:   ntura.ToInteger(data["wheretype"]),
-					Description: ntura.ToString(data["description"], ""),
-					Orderby:     ntura.ToInteger(data["orderby"]),
-					Sqlstr:      ntura.ToString(data["sqlstr"], ""),
-					Parameter:   ntura.ToBoolean(data["parameter"], false),
-					Dataset:     ntura.ToString(data["dataset"], ""),
-					Defvalue:    ntura.ToString(data["defvalue"], ""),
-					Valuelist:   ntura.ToString(data["valuelist"], ""),
-				}}}
-		},
-		"ui_reportsources": func(data ntura.IM) *pb.ResponseGet_Value {
-			return &pb.ResponseGet_Value{
-				Value: &pb.ResponseGet_Value_UiReportsources{UiReportsources: &pb.UiReportsources{
-					Id:       ntura.ToInteger(data["id"]),
-					ReportId: ntura.ToInteger(data["report_id"]),
-					Dataset:  ntura.ToString(data["dataset"], ""),
-					Sqlstr:   ntura.ToString(data["sqlstr"], ""),
-				}}}
-		},
-		"ui_userconfig": func(data ntura.IM) *pb.ResponseGet_Value {
+		"ui_userconfig": func(data nt.IM) *pb.ResponseGet_Value {
 			return &pb.ResponseGet_Value{
 				Value: &pb.ResponseGet_Value_UiUserconfig{UiUserconfig: &pb.UiUserconfig{
-					Id:         ntura.ToInteger(data["id"]),
-					EmployeeId: ntura.ToInteger(data["employee_id"]),
-					Section:    ntura.ToString(data["section"], ""),
-					Cfgroup:    ntura.ToString(data["cfgroup"], ""),
-					Cfname:     ntura.ToString(data["cfname"], ""),
-					Cfvalue:    ntura.ToString(data["cfvalue"], ""),
-					Orderby:    ntura.ToInteger(data["orderby"]),
+					Id:         ut.ToInteger(data["id"], 0),
+					EmployeeId: ut.ToIntPointer(data["employee_id"], 0),
+					Section:    ut.ToStringPointer(data["section"], ""),
+					Cfgroup:    ut.ToString(data["cfgroup"], ""),
+					Cfname:     ut.ToString(data["cfname"], ""),
+					Cfvalue:    ut.ToStringPointer(data["cfvalue"], ""),
+					Orderby:    ut.ToInteger(data["orderby"], 0),
 				}}}
 		},
 	}
 	return itemMap[key](data)
 }
 
+func getValue(value interface{}) *pb.Value {
+	if value == nil {
+		return &pb.Value{Value: &pb.Value_Text{Text: "null"}}
+	}
+	if boolValue, valid := value.(bool); valid {
+		return &pb.Value{Value: &pb.Value_Boolean{Boolean: boolValue}}
+	}
+	if intValue, valid := value.(int64); valid {
+		return &pb.Value{Value: &pb.Value_Number{Number: ut.ToFloat(intValue, 0)}}
+	}
+	if floatValue, valid := value.(float64); valid {
+		return &pb.Value{Value: &pb.Value_Number{Number: floatValue}}
+	}
+	return &pb.Value{Value: &pb.Value_Text{Text: ut.ToString(value, "")}}
+}
+
+func getIValue(value *pb.Value) interface{} {
+	switch v := value.Value.(type) {
+	case *pb.Value_Boolean:
+		return v.Boolean
+	case *pb.Value_Number:
+		return v.Number
+	case *pb.Value_Text:
+		if v.Text == "null" || v.Text == "" {
+			return nil
+		}
+		return v.Text
+	}
+	return nil
+}
+
 func (srv *RPCService) rowMap(values interface{}) *pb.ResponseRows {
 	encodeMap := func(values interface{}) *pb.ResponseRows_Item {
 		row := &pb.ResponseRows_Item{
-			Values: make(ntura.SM),
+			Values: make(map[string]*pb.Value),
 		}
 
 		switch v := values.(type) {
-		case ntura.SM:
-			for fieldname, value := range v {
-				row.Values[fieldname] = value
+		case nt.SM:
+			for fieldName, sValue := range v {
+				row.Values[fieldName] = getValue(sValue)
 			}
-		case ntura.IM:
-			for fieldname, value := range v {
-				row.Values[fieldname] = ntura.ToString(value, "")
+		case nt.IM:
+			for fieldName, iValue := range v {
+				row.Values[fieldName] = getValue(iValue)
 			}
 		}
 		return row
 	}
 
 	rows := &pb.ResponseRows{}
-	switch v := values.(type) {
-	case []ntura.IM:
-		for index := 0; index < len(v); index++ {
-			rows.Items = append(rows.Items, encodeMap(v[index]))
+	if imap, valid := values.([]nt.IM); valid {
+		for index := 0; index < len(imap); index++ {
+			rows.Items = append(rows.Items, encodeMap(imap[index]))
 		}
-	case []ntura.SM:
-		for index := 0; index < len(v); index++ {
-			rows.Items = append(rows.Items, encodeMap(v[index]))
+	}
+	if smap, valid := values.([]nt.SM); valid {
+		for index := 0; index < len(smap); index++ {
+			rows.Items = append(rows.Items, encodeMap(smap[index]))
 		}
 	}
 	return rows
 }
 
-func (srv *RPCService) fieldsToIMap(values map[string]*pb.RequestField) ntura.IM {
-	iMap := make(ntura.IM)
+func (srv *RPCService) fieldsToIMap(values map[string]*pb.Value) nt.IM {
+	iMap := make(nt.IM)
 	for fieldname, value := range values {
-		switch v := value.Value.(type) {
-		case *pb.RequestField_Boolean:
-			iMap[fieldname] = v.Boolean
-		case *pb.RequestField_Number:
-			iMap[fieldname] = v.Number
-		case *pb.RequestField_Text:
-			iMap[fieldname] = v.Text
-		}
+		iMap[fieldname] = getIValue(value)
 	}
 	return iMap
 }
@@ -576,7 +568,7 @@ func (srv *RPCService) TokenAuth(authorization []string, parent context.Context)
 	if tokenStr == "" {
 		return ctx, errors.New("Unauthorized")
 	}
-	claim, err := ntura.TokenDecode(tokenStr)
+	claim, err := ut.TokenDecode(tokenStr)
 	if err != nil {
 		return ctx, err
 	}
@@ -590,11 +582,11 @@ func (srv *RPCService) TokenAuth(authorization []string, parent context.Context)
 	if nstore == nil {
 		return ctx, errors.New("Unauthorized")
 	}
-	err = (&ntura.API{NStore: nstore}).TokenLogin(ntura.IM{"token": tokenStr})
+	err = (&nt.API{NStore: nstore}).TokenLogin(nt.IM{"token": tokenStr, "keys": srv.GetTokenKeys()})
 	if err != nil {
 		return ctx, err
 	}
-	ctx = context.WithValue(tokenCtx, NstoreCtxKey, &ntura.API{NStore: nstore})
+	ctx = context.WithValue(tokenCtx, NstoreCtxKey, &nt.API{NStore: nstore})
 	return ctx, nil
 }
 
@@ -610,25 +602,25 @@ func (srv *RPCService) ApiKeyAuth(authorization []string, parent context.Context
 		return ctx, errors.New("Unauthorized")
 	}
 	nstore := srv.GetNervaStore("")
-	ctx = context.WithValue(parent, NstoreCtxKey, &ntura.API{NStore: nstore})
+	ctx = context.WithValue(parent, NstoreCtxKey, &nt.API{NStore: nstore})
 	return ctx, nil
 }
 
 // UserLogin - Logs in user by username and password
 func (srv *RPCService) UserLogin(ctx context.Context, req *pb.RequestUserLogin) (res *pb.ResponseUserLogin, err error) {
 	if req.Database == "" {
-		return res, errors.New(ntura.GetMessage("missing_database"))
+		return res, errors.New(ut.GetMessage("missing_database"))
 	}
 	nstore := srv.GetNervaStore(req.Database)
-	login := ntura.IM{"username": req.Username, "password": req.Password, "database": req.Database}
-	token, engine, err := (&ntura.API{NStore: nstore}).UserLogin(login)
+	login := nt.IM{"username": req.Username, "password": req.Password, "database": req.Database}
+	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(login)
 	return &pb.ResponseUserLogin{Token: token, Engine: engine}, err
 }
 
 // User (employee or customer) password change.
 func (srv *RPCService) UserPassword(ctx context.Context, req *pb.RequestUserPassword) (res *pb.ResponseEmpty, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
-	options := ntura.IM{"username": req.Username, "custnumber": req.Custnumber,
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
+	options := nt.IM{"username": req.Username, "custnumber": req.Custnumber,
 		"password": req.Password, "confirm": req.Confirm}
 	if req.Username != "" {
 		if api.NStore.User.Scope != "admin" {
@@ -655,7 +647,7 @@ func (srv *RPCService) UserPassword(ctx context.Context, req *pb.RequestUserPass
 
 // TokenDecode - decoded JWT token but doesn't validate the signature.
 func (srv *RPCService) TokenDecode(ctx context.Context, req *pb.RequestTokenDecode) (*pb.ResponseTokenDecode, error) {
-	mClaims, err := ntura.TokenDecode(req.Value)
+	mClaims, err := ut.TokenDecode(req.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -668,7 +660,7 @@ func (srv *RPCService) TokenDecode(ctx context.Context, req *pb.RequestTokenDeco
 
 // TokenLogin - JWT token auth.
 func (srv *RPCService) TokenLogin(ctx context.Context, req *pb.RequestEmpty) (*pb.ResponseTokenLogin, error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	user := &pb.ResponseTokenLogin{
 		Id: api.NStore.User.Id, Username: api.NStore.User.Username, Empnumber: api.NStore.User.Empnumber,
 		Usergroup: api.NStore.User.Usergroup, Scope: api.NStore.User.Scope, Department: api.NStore.User.Department,
@@ -681,17 +673,17 @@ func (srv *RPCService) TokenRefresh(ctx context.Context, req *pb.RequestEmpty) (
 	if ctx.Value(NstoreCtxKey) == nil {
 		return res, errors.New("Unauthorized")
 	}
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	token, err := api.TokenRefresh()
 	return &pb.ResponseTokenRefresh{Value: token}, err
 }
 
 // TokenLogin - JWT token auth.
 func (srv *RPCService) DatabaseCreate(ctx context.Context, req *pb.RequestDatabaseCreate) (log *pb.ResponseDatabaseCreate, err error) {
-	options := ntura.IM{
+	options := nt.IM{
 		"database": req.Alias, "demo": strconv.FormatBool(req.Demo),
 	}
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	results, err := api.DatabaseCreate(options)
 	if err != nil {
 		return log, err
@@ -705,8 +697,8 @@ func (srv *RPCService) Get(ctx context.Context, req *pb.RequestGet) (res *pb.Res
 	res = &pb.ResponseGet{
 		Values: []*pb.ResponseGet_Value{},
 	}
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
-	options := ntura.IM{
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
+	options := nt.IM{
 		"nervatype": pb.DataType_name[int32(req.Nervatype)], "metadata": req.Metadata,
 	}
 	if len(req.Ids) > 0 {
@@ -715,8 +707,8 @@ func (srv *RPCService) Get(ctx context.Context, req *pb.RequestGet) (res *pb.Res
 			ids = append(ids, strconv.FormatInt(req.Ids[i], 10))
 		}
 		options["ids"] = strings.Join(ids, ",")
-	} else if len(req.Filters) > 0 {
-		options["filters"] = strings.Join(req.Filters, ",")
+	} else if len(req.Filter) > 0 {
+		options["filter"] = strings.Join(req.Filter, "|")
 	}
 	results, err := api.Get(options)
 
@@ -730,8 +722,8 @@ func (srv *RPCService) Get(ctx context.Context, req *pb.RequestGet) (res *pb.Res
 // Add/update one or more items
 func (srv *RPCService) Update(ctx context.Context, req *pb.RequestUpdate) (res *pb.ResponseUpdate, err error) {
 	res = &pb.ResponseUpdate{}
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
-	options := []ntura.IM{}
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
+	options := []nt.IM{}
 	for i := 0; i < len(req.Items); i++ {
 		item := srv.fieldsToIMap(req.Items[i].Values)
 		item["keys"] = srv.fieldsToIMap(req.Items[i].Keys)
@@ -743,25 +735,25 @@ func (srv *RPCService) Update(ctx context.Context, req *pb.RequestUpdate) (res *
 
 // Delete - delete a record
 func (srv *RPCService) Delete(ctx context.Context, req *pb.RequestDelete) (res *pb.ResponseEmpty, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
-	options := ntura.IM{"nervatype": pb.DataType_name[int32(req.Nervatype)], "id": int(req.Id), "key": req.Key}
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
+	options := nt.IM{"nervatype": pb.DataType_name[int32(req.Nervatype)], "id": int(req.Id), "key": req.Key}
 	err = api.Delete(options)
 	return &pb.ResponseEmpty{}, err
 }
 
 // Run raw SQL queries in safe mode
 func (srv *RPCService) View(ctx context.Context, req *pb.RequestView) (res *pb.ResponseView, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseView{
 		Values: make(map[string]*pb.ResponseRows),
 	}
-	options := []ntura.IM{}
+	options := []nt.IM{}
 	for i := 0; i < len(req.Options); i++ {
 		values := []interface{}{}
 		for vi := 0; vi < len(req.Options[i].Values); vi++ {
-			values = append(values, req.Options[i].Values[vi])
+			values = append(values, getIValue(req.Options[i].Values[vi]))
 		}
-		prm := ntura.IM{
+		prm := nt.IM{
 			"key":    req.Options[i].Key,
 			"text":   req.Options[i].Text,
 			"values": values,
@@ -779,9 +771,9 @@ func (srv *RPCService) View(ctx context.Context, req *pb.RequestView) (res *pb.R
 
 // Call a server-side function
 func (srv *RPCService) Function(ctx context.Context, req *pb.RequestFunction) (res *pb.ResponseFunction, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseFunction{}
-	options := ntura.IM{
+	options := nt.IM{
 		"key":    req.Key,
 		"values": srv.fieldsToIMap(req.Values),
 	}
@@ -789,20 +781,20 @@ func (srv *RPCService) Function(ctx context.Context, req *pb.RequestFunction) (r
 	if err != nil {
 		return res, err
 	}
-	res.Value, err = ntura.ConvertToByte(result)
+	res.Value, err = ut.ConvertToByte(result)
 	return res, err
 }
 
 // List all available Nervatura Report.
 func (srv *RPCService) ReportList(ctx context.Context, req *pb.RequestReportList) (res *pb.ResponseReportList, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseReportList{
 		Items: []*pb.ResponseReportList_Info{},
 	}
 	if api.NStore.User.Scope != "admin" {
 		return res, errors.New("Unauthorized")
 	}
-	options := ntura.IM{
+	options := nt.IM{
 		"label": req.Label,
 	}
 	results, err := api.ReportList(options)
@@ -825,12 +817,12 @@ func (srv *RPCService) ReportList(ctx context.Context, req *pb.RequestReportList
 
 // Install a report to the database.
 func (srv *RPCService) ReportInstall(ctx context.Context, req *pb.RequestReportInstall) (res *pb.ResponseReportInstall, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseReportInstall{}
 	if api.NStore.User.Scope != "admin" {
 		return res, errors.New("Unauthorized")
 	}
-	options := ntura.IM{
+	options := nt.IM{
 		"reportkey": req.Reportkey,
 	}
 	res.Id, err = api.ReportInstall(options)
@@ -842,12 +834,12 @@ func (srv *RPCService) ReportInstall(ctx context.Context, req *pb.RequestReportI
 
 // Delete a report from the database.
 func (srv *RPCService) ReportDelete(ctx context.Context, req *pb.RequestReportDelete) (res *pb.ResponseEmpty, err error) {
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseEmpty{}
 	if api.NStore.User.Scope != "admin" {
 		return res, errors.New("Unauthorized")
 	}
-	options := ntura.IM{
+	options := nt.IM{
 		"reportkey": req.Reportkey,
 	}
 	err = api.ReportDelete(options)
@@ -855,25 +847,23 @@ func (srv *RPCService) ReportDelete(ctx context.Context, req *pb.RequestReportDe
 }
 
 func (srv *RPCService) Report(ctx context.Context, req *pb.RequestReport) (res *pb.ResponseReport, err error) {
-	orientation := []string{"portrait", "landscape"}
-	size := []string{"a3", "a4", "a5", "letter", "legal"}
-	output := []string{"auto", "xml", "tmp"}
-	nervatype := []string{"none", "customer", "employee", "event", "place", "product", "project", "tool", "trans"}
-
-	api := ctx.Value(NstoreCtxKey).(*ntura.API)
+	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseReport{}
-	options := ntura.IM{
+	options := nt.IM{
 		"reportkey":   req.Reportkey,
-		"orientation": orientation[req.Orientation],
-		"size":        size[req.Size],
-		"output":      output[req.Output],
-		"nervatype":   nervatype[req.Type],
+		"orientation": pb.ReportOrientation_name[int32(req.Orientation)],
+		"size":        pb.ReportSize_name[int32(req.Size)],
+		"output":      pb.ReportOutput_name[int32(req.Output)],
 		"refnumber":   req.Refnumber,
+		"template":    req.Template,
 		"filters":     srv.fieldsToIMap(req.Filters),
+	}
+	if req.Type != pb.ReportType_report_none {
+		options["nervatype"] = strings.TrimPrefix(pb.ReportType_name[int32(req.Type)], "report_")
 	}
 	results, err := api.Report(options)
 	if err == nil {
-		res.Value, err = ntura.ConvertToByte(results)
+		res.Value, err = ut.ConvertToByte(results)
 	}
 	return res, err
 }
