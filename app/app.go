@@ -20,6 +20,7 @@ import (
 
 // App - Nervatura Application
 type App struct {
+	version   string
 	services  map[string]srv.APIService
 	defConn   nt.DataDriver
 	infoLog   *log.Logger
@@ -33,8 +34,9 @@ func registerService(name string, server srv.APIService) {
 	services[name] = server
 }
 
-func New() (app *App, err error) {
+func New(version string) (app *App, err error) {
 	app = &App{
+		version:   version,
 		services:  services,
 		tokenKeys: make(map[string]map[string]string),
 	}
@@ -44,7 +46,7 @@ func New() (app *App, err error) {
 	if os.Getenv("NT_APP_LOG_FILE") != "" {
 		f, err := os.OpenFile(os.Getenv("NT_APP_LOG_FILE"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
-			app.errorLog.Printf("error opening log file: %v\n", err)
+			app.errorLog.Printf(ut.GetMessage("error_opening_log"), err)
 		} else {
 			app.infoLog = log.New(f, "INFO: ", log.LstdFlags)
 			app.errorLog = log.New(f, "ERROR: ", log.LstdFlags)
@@ -54,19 +56,19 @@ func New() (app *App, err error) {
 
 	err = app.checkDefaultConn()
 	if err != nil {
-		app.errorLog.Printf("error checking default database connection: %v\n", err)
+		app.errorLog.Printf(ut.GetMessage("error_checking_def_db"), err)
 		return nil, err
 	}
 
 	err = app.setPrivateKey()
 	if err != nil {
-		app.errorLog.Printf("error loading private key: %v\n", err)
+		app.errorLog.Printf(ut.GetMessage("error_private_key"), err)
 		return nil, err
 	}
 
 	err = app.startService("cli")
 	if err != nil {
-		app.errorLog.Printf("error starting cli service: %v\n", err)
+		app.errorLog.Printf(ut.GetMessage("error_starting_cli"), err)
 		return nil, err
 	}
 
@@ -99,8 +101,8 @@ func (app *App) setPrivateKey() error {
 }
 
 func (app *App) startServer() {
-	app.infoLog.Println("skipping cli, start Nervatura server")
-	app.infoLog.Printf("enabled database driver(s): %s.\n", strings.Join(db.Drivers, ","))
+	app.infoLog.Println(ut.GetMessage("skipping_cli"))
+	app.infoLog.Printf(ut.GetMessage("enabled_drivers"), strings.Join(db.Drivers, ","))
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -117,7 +119,7 @@ func (app *App) startServer() {
 			return app.startService("http")
 		})
 	} else {
-		app.infoLog.Println("http rest api is disabled")
+		app.infoLog.Println(ut.GetMessage("http_disabled"))
 	}
 
 	if _, found := services["grpc"]; found && ut.GetEnvValue("bool", os.Getenv("NT_GRPC_ENABLED")).(bool) {
@@ -125,7 +127,7 @@ func (app *App) startServer() {
 			return app.startService("grpc")
 		})
 	} else {
-		app.infoLog.Println("grpc api is disabled")
+		app.infoLog.Println(ut.GetMessage("grpc_disabled"))
 	}
 
 	select {
@@ -135,7 +137,7 @@ func (app *App) startServer() {
 		break
 	}
 
-	app.infoLog.Println("received shutdown signal")
+	app.infoLog.Println(ut.GetMessage("shutdown_signal"))
 
 	cancel()
 
@@ -146,7 +148,7 @@ func (app *App) startServer() {
 
 	err := g.Wait()
 	if err != nil {
-		app.errorLog.Printf("application returning an error: %v\n", err)
+		app.errorLog.Printf(ut.GetMessage("application_error"), err)
 		os.Exit(2)
 	}
 }

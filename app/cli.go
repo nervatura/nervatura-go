@@ -69,31 +69,26 @@ func (s *cliServer) parseFlags() (err error) {
 	var cmds = []string{"server", "Delete", "Function", "Get", "Update", "View",
 		"UserPassword", "TokenLogin", "TokenRefresh", "UserLogin", "DatabaseCreate",
 		"Report", "ReportDelete", "ReportInstall", "ReportList", "TokenDecode"}
+	var cmds_o = []string{"Delete", "Function", "Get", "Update", "UserPassword",
+		"UserLogin", "DatabaseCreate", "Report", "ReportDelete", "ReportInstall", "ReportList"}
+	var cmds_nt = []string{"Update"}
+	var cmds_d = []string{"Update", "View"}
+	var cmds_k = []string{"DatabaseCreate"}
 
 	var help bool
-	flag.BoolVar(&help, "help", false, "Program usage")
+	flag.BoolVar(&help, "help", false, ut.GetMessage("cli_usage"))
 	var cmd string
-	flag.StringVar(&cmd, "c", "server", `Available commands:
-`+strings.Join(cmds[:10], ", ")+`,
-`+strings.Join(cmds[10:], ", "))
+	flag.StringVar(&cmd, "c", "server", ut.GetMessage("cli_flag_c")+strings.Join(cmds[:10], ", ")+",\n"+strings.Join(cmds[10:], ", "))
 	var token string
-	flag.StringVar(&token, "t", "",
-		`Bearer token parameter. Required for the following command: Delete, 
-		 Function, Get, Update, View, UserPassword, TokenLogin, TokenRefresh,
-		 Report, ReportDelete, ReportInstall, ReportList, TokenDecode`)
+	flag.StringVar(&token, "t", "", ut.GetMessage("cli_flag_t"))
 	var options string
-	flag.StringVar(&options, "o", "",
-		`Options: JSON Object string. Required for the following commands:
-Delete, Function, Get, Update, UserPassword, UserLogin,
-DatabaseCreate, Report, ReportDelete, ReportInstall, ReportList`)
+	flag.StringVar(&options, "o", "", ut.GetMessage("cli_flag_o")+strings.Join(cmds_o[:8], ", ")+",\n"+strings.Join(cmds_o[8:], ", "))
 	var ntype string
-	flag.StringVar(&ntype, "nt", "", "Command nervatype parameter. Required for the following command: Update")
+	flag.StringVar(&ntype, "nt", "", ut.GetMessage("cli_flag_nt")+strings.Join(cmds_nt, ", "))
 	var data string
-	flag.StringVar(&data, "d", "",
-		`Data: JSON Array string. Required for the following commands: Update, View`)
+	flag.StringVar(&data, "d", "", ut.GetMessage("cli_flag_d")+strings.Join(cmds_d, ", "))
 	var key string
-	flag.StringVar(&key, "k", "",
-		`API key. Required for the following commands: DatabaseCreate`)
+	flag.StringVar(&key, "k", "", ut.GetMessage("cli_flag_k")+strings.Join(cmds_k, ", "))
 
 	flag.Usage = func() {
 		flag.PrintDefaults()
@@ -121,7 +116,7 @@ DatabaseCreate, Report, ReportDelete, ReportInstall, ReportList`)
 	}
 
 	if len(flag.Args()) > 1 {
-		return errors.New("invalid parameters: " + strings.Join(flag.Args(), ","))
+		return errors.New(ut.GetMessage("invalid_parameter") + ": " + strings.Join(flag.Args(), ","))
 	}
 
 	return nil
@@ -129,34 +124,34 @@ DatabaseCreate, Report, ReportDelete, ReportInstall, ReportList`)
 
 func (s *cliServer) checkRequired() (err error) {
 	if _, found := s.args["token"]; !found && s.args["cmd"] != "UserLogin" && s.args["cmd"] != "DatabaseCreate" {
-		return errors.New("missing required parameter: token(-t)")
+		return errors.New(ut.GetMessage("missing_parameter") + ": token(-t)")
 	}
 	switch s.args["cmd"] {
 	case "Delete", "Function", "Get", "UserPassword",
 		"UserLogin", "Report", "ReportDelete", "ReportInstall", "ReportList":
 		if _, found := s.args["options"]; !found {
-			return errors.New("missing required parameter: options(-o)")
+			return errors.New(ut.GetMessage("missing_parameter") + ": options(-o)")
 		}
 
 	case "DatabaseCreate":
 		if _, found := s.args["options"]; !found {
-			return errors.New("missing required parameter: options(-o)")
+			return errors.New(ut.GetMessage("missing_parameter") + ": options(-o)")
 		}
 		if _, found := s.args["key"]; !found {
-			return errors.New("missing required parameter: API key(-k)")
+			return errors.New(ut.GetMessage("missing_parameter") + ": API key(-k)")
 		}
 
 	case "View":
 		if _, found := s.args["data"]; !found {
-			return errors.New("missing required parameter: data(-d)")
+			return errors.New(ut.GetMessage("missing_parameter") + ": data(-d)")
 		}
 
 	case "Update":
 		if _, found := s.args["nervatype"]; !found {
-			return errors.New("missing required parameter: nervatype(-nt)")
+			return errors.New(ut.GetMessage("missing_parameter") + ": nervatype(-nt)")
 		}
 		if _, found := s.args["data"]; !found {
-			return errors.New("missing required parameter: data(-d)")
+			return errors.New(ut.GetMessage("missing_parameter") + ": data(-d)")
 		}
 
 	}
@@ -184,14 +179,14 @@ func (s *cliServer) parseCommand() (result string, err error) {
 	var options nt.IM
 	if _, found := s.args["options"]; found {
 		if ut.ConvertFromByte([]byte(s.args["options"]), &options); err != nil {
-			return "", errors.New("invalid options json")
+			return "", errors.New(ut.GetMessage("invalid_json"))
 		}
 	}
 
 	var data []nt.IM
 	if _, found := s.args["data"]; found {
 		if ut.ConvertFromByte([]byte(s.args["data"]), &data); err != nil {
-			return "", errors.New("invalid data json")
+			return "", errors.New(ut.GetMessage("invalid_json"))
 		}
 	}
 
@@ -237,7 +232,7 @@ func (s *cliServer) parseCommand() (result string, err error) {
 		},
 	}
 	if _, found := apiMap[s.args["cmd"]]; !found {
-		return "", errors.New("Invalid program command: " + s.args["cmd"] + " (-c)")
+		return "", errors.New(ut.GetMessage("invalid_command") + ": " + s.args["cmd"] + " (-c)")
 	}
 	return apiMap[s.args["cmd"]](api), nil
 }

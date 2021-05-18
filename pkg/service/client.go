@@ -41,7 +41,7 @@ func (cli *ClientService) LoadManifest() (err error) {
 func (cli *ClientService) Render(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := cli.templates.ExecuteTemplate(w, "client.html", cli.Manifest); err != nil {
-		http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
+		http.Error(w, ut.GetMessage("error_internal"), http.StatusInternalServerError)
 	}
 }
 

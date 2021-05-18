@@ -47,7 +47,7 @@ func (s *rpcServer) StartService() error {
 		if os.Getenv("NT_TLS_CERT_FILE") != "" && os.Getenv("NT_TLS_KEY_FILE") != "" {
 			cert, err := tls.LoadX509KeyPair(os.Getenv("NT_TLS_CERT_FILE"), os.Getenv("NT_TLS_KEY_FILE"))
 			if err != nil {
-				s.app.errorLog.Printf("failed to load key pair: %v\n", err)
+				s.app.errorLog.Printf(ut.GetMessage("error_key_pair"), err)
 				os.Exit(2)
 			}
 			cred = credentials.NewServerTLSFromCert(&cert)
@@ -58,7 +58,7 @@ func (s *rpcServer) StartService() error {
 	addr := fmt.Sprintf(":%d", ut.GetEnvValue("int", os.Getenv("NT_GRPC_PORT")).(int))
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		s.app.errorLog.Printf("grpc server: failed to listen %v\n", err)
+		s.app.errorLog.Printf(ut.GetMessage("error_grpc_server"), err)
 		os.Exit(2)
 	}
 
@@ -72,8 +72,7 @@ func (s *rpcServer) StartService() error {
 
 	pb.RegisterAPIServer(s.server, &s.service)
 
-	s.app.infoLog.Printf("GRPC server serving at: %s. SSL/TLS authentication: %v.\n",
-		os.Getenv("NT_GRPC_PORT"), s.tlsEnabled)
+	s.app.infoLog.Printf(ut.GetMessage("grpc_serving"), os.Getenv("NT_GRPC_PORT"), s.tlsEnabled)
 
 	return s.server.Serve(ln)
 }
@@ -81,7 +80,7 @@ func (s *rpcServer) StartService() error {
 // StopService - Stop Nervatura RPC server
 func (s *rpcServer) StopService(interface{}) error {
 	if s.server != nil {
-		s.app.infoLog.Println("stopping GRPC server")
+		s.app.infoLog.Println(ut.GetMessage("grpc_stopping"))
 		s.server.GracefulStop()
 	}
 	return nil

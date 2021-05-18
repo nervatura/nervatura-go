@@ -562,11 +562,11 @@ func (srv *RPCService) fieldsToIMap(values map[string]*pb.Value) nt.IM {
 
 func (srv *RPCService) TokenAuth(authorization []string, parent context.Context) (ctx context.Context, err error) {
 	if len(authorization) < 1 {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	tokenStr := strings.TrimPrefix(authorization[0], "Bearer ")
 	if tokenStr == "" {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	claim, err := ut.TokenDecode(tokenStr)
 	if err != nil {
@@ -580,7 +580,7 @@ func (srv *RPCService) TokenAuth(authorization []string, parent context.Context)
 	}
 	nstore := srv.GetNervaStore(database)
 	if nstore == nil {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	err = (&nt.API{NStore: nstore}).TokenLogin(nt.IM{"token": tokenStr, "keys": srv.GetTokenKeys()})
 	if err != nil {
@@ -592,14 +592,14 @@ func (srv *RPCService) TokenAuth(authorization []string, parent context.Context)
 
 func (srv *RPCService) ApiKeyAuth(authorization []string, parent context.Context) (ctx context.Context, err error) {
 	if len(authorization) < 1 {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	apiKey := strings.Trim(authorization[0], " ")
 	if apiKey == "" {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	if os.Getenv("NT_API_KEY") != apiKey {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	nstore := srv.GetNervaStore("")
 	ctx = context.WithValue(parent, NstoreCtxKey, &nt.API{NStore: nstore})
@@ -624,12 +624,12 @@ func (srv *RPCService) UserPassword(ctx context.Context, req *pb.RequestUserPass
 		"password": req.Password, "confirm": req.Confirm}
 	if req.Username != "" {
 		if api.NStore.User.Scope != "admin" {
-			return res, errors.New("Unauthorized")
+			return res, errors.New(ut.GetMessage("error_unauthorized"))
 		}
 	}
 	if req.Custnumber != "" {
 		if api.NStore.User.Scope != "admin" {
-			return res, errors.New("Unauthorized")
+			return res, errors.New(ut.GetMessage("error_unauthorized"))
 		}
 	}
 	if req.Username == "" {
@@ -671,7 +671,7 @@ func (srv *RPCService) TokenLogin(ctx context.Context, req *pb.RequestEmpty) (*p
 // TokenRefresh - Refreshes JWT token by checking at database whether refresh token exists.
 func (srv *RPCService) TokenRefresh(ctx context.Context, req *pb.RequestEmpty) (res *pb.ResponseTokenRefresh, err error) {
 	if ctx.Value(NstoreCtxKey) == nil {
-		return res, errors.New("Unauthorized")
+		return res, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	token, err := api.TokenRefresh()
@@ -792,7 +792,7 @@ func (srv *RPCService) ReportList(ctx context.Context, req *pb.RequestReportList
 		Items: []*pb.ResponseReportList_Info{},
 	}
 	if api.NStore.User.Scope != "admin" {
-		return res, errors.New("Unauthorized")
+		return res, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	options := nt.IM{
 		"label": req.Label,
@@ -820,7 +820,7 @@ func (srv *RPCService) ReportInstall(ctx context.Context, req *pb.RequestReportI
 	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseReportInstall{}
 	if api.NStore.User.Scope != "admin" {
-		return res, errors.New("Unauthorized")
+		return res, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	options := nt.IM{
 		"reportkey": req.Reportkey,
@@ -837,7 +837,7 @@ func (srv *RPCService) ReportDelete(ctx context.Context, req *pb.RequestReportDe
 	api := ctx.Value(NstoreCtxKey).(*nt.API)
 	res = &pb.ResponseEmpty{}
 	if api.NStore.User.Scope != "admin" {
-		return res, errors.New("Unauthorized")
+		return res, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	options := nt.IM{
 		"reportkey": req.Reportkey,

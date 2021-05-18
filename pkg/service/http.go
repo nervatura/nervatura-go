@@ -65,7 +65,7 @@ func (srv *HTTPService) TokenLogin(w http.ResponseWriter, r *http.Request) (ctx 
 		tokenStr = bearer[7:]
 	}
 	if tokenStr == "" {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	claim, err := ut.TokenDecode(tokenStr)
 	if err != nil {
@@ -74,7 +74,7 @@ func (srv *HTTPService) TokenLogin(w http.ResponseWriter, r *http.Request) (ctx 
 	database := ut.ToString(claim["database"], "")
 	nstore := srv.GetNervaStore(database)
 	if nstore == nil {
-		return ctx, errors.New("Unauthorized")
+		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	err = (&nt.API{NStore: nstore}).TokenLogin(nt.IM{"token": tokenStr, "keys": srv.GetTokenKeys()})
 	if err != nil {
@@ -95,7 +95,7 @@ func (srv *HTTPService) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	nstore := srv.GetNervaStore(data["database"].(string))
 	if nstore == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(data)
@@ -104,7 +104,7 @@ func (srv *HTTPService) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	nstore := r.Context().Value(NstoreCtxKey).(*nt.NervaStore)
@@ -117,13 +117,13 @@ func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, found := data["username"]; found {
 		if nstore.User.Scope != "admin" {
-			srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+			srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 			return
 		}
 	}
 	if _, found := data["custnumber"]; found {
 		if nstore.User.Scope != "admin" {
-			srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+			srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 			return
 		}
 	}
@@ -142,7 +142,7 @@ func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	tokenStr, err := (&nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}).TokenRefresh()
@@ -151,7 +151,7 @@ func (srv *HTTPService) TokenRefresh(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) GetFilter(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
@@ -169,7 +169,7 @@ func (srv *HTTPService) GetFilter(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) GetIds(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
@@ -181,7 +181,7 @@ func (srv *HTTPService) GetIds(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) View(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
@@ -197,7 +197,7 @@ func (srv *HTTPService) View(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) Function(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
@@ -213,7 +213,7 @@ func (srv *HTTPService) Function(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) Update(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
@@ -229,7 +229,7 @@ func (srv *HTTPService) Update(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) Delete(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
@@ -242,7 +242,7 @@ func (srv *HTTPService) Delete(w http.ResponseWriter, r *http.Request) {
 func (srv *HTTPService) DatabaseCreate(w http.ResponseWriter, r *http.Request) {
 	apiKey := r.Header.Get("X-Api-Key")
 	if os.Getenv("NT_API_KEY") != apiKey {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	data := nt.IM{"database": r.URL.Query().Get("alias"), "demo": r.URL.Query().Get("demo")}
@@ -252,14 +252,14 @@ func (srv *HTTPService) DatabaseCreate(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) ReportList(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
 	params := nt.IM{"label": r.URL.Query().Get("label")}
 	api := &nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}
 	if api.NStore.User.Scope != "admin" {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	results, err := api.ReportList(params)
@@ -268,14 +268,14 @@ func (srv *HTTPService) ReportList(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) ReportInstall(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
 	params := nt.IM{"reportkey": r.URL.Query().Get("reportkey")}
 	api := &nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}
 	if api.NStore.User.Scope != "admin" {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	results, err := api.ReportInstall(params)
@@ -284,14 +284,14 @@ func (srv *HTTPService) ReportInstall(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) ReportDelete(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 
 	params := nt.IM{"reportkey": r.URL.Query().Get("reportkey")}
 	api := &nt.API{NStore: r.Context().Value(NstoreCtxKey).(*nt.NervaStore)}
 	if api.NStore.User.Scope != "admin" {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	err := api.ReportDelete(params)
@@ -335,7 +335,7 @@ func reportFilters(values url.Values, body io.ReadCloser) nt.IM {
 
 func (srv *HTTPService) Report(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(NstoreCtxKey) == nil {
-		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New("Unauthorized"))
+		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 

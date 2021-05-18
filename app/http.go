@@ -49,6 +49,7 @@ func (s *httpServer) StartService() error {
 	}
 
 	s.admin = srv.AdminService{
+		Version:       s.app.version,
 		GetNervaStore: s.app.GetNervaStore,
 		GetTokenKeys: func() map[string]map[string]string {
 			return s.app.tokenKeys
@@ -83,19 +84,19 @@ func (s *httpServer) setPublicKeys() {
 	if publicUrl != "" {
 		res, err := http.Get(publicUrl)
 		if err != nil {
-			s.app.errorLog.Printf("external token loading: %v\n", err)
+			s.app.errorLog.Printf(ut.GetMessage("error_external_token"), err)
 			return
 		}
 		defer res.Body.Close()
 		data, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			s.app.errorLog.Printf("external token loading: %v\n", err)
+			s.app.errorLog.Printf(ut.GetMessage("error_external_token"), err)
 			return
 		}
 		var tokenKeys map[string]string
 		err = ut.ConvertFromByte(data, &tokenKeys)
 		if err != nil {
-			s.app.errorLog.Printf("external token loading: %v\n", err)
+			s.app.errorLog.Printf(ut.GetMessage("error_external_token"), err)
 		}
 		for key, value := range tokenKeys {
 			s.app.tokenKeys[key] = map[string]string{
@@ -117,8 +118,7 @@ func (s *httpServer) startServer() error {
 	s.tlsEnabled = ut.GetEnvValue("bool", os.Getenv("NT_HTTP_TLS_ENABLED")).(bool) &&
 		os.Getenv("NT_TLS_CERT_FILE") != "" && os.Getenv("NT_TLS_KEY_FILE") != ""
 
-	s.app.infoLog.Printf("HTTP server serving at: %s. SSL/TLS authentication: %v.\n",
-		os.Getenv("NT_HTTP_PORT"), s.tlsEnabled)
+	s.app.infoLog.Printf(ut.GetMessage("http_serving"), os.Getenv("NT_HTTP_PORT"), s.tlsEnabled)
 	if s.tlsEnabled {
 		if err := s.server.ListenAndServeTLS(os.Getenv("NT_TLS_CERT_FILE"), os.Getenv("NT_TLS_KEY_FILE")); err != http.ErrServerClosed {
 			return err
@@ -134,7 +134,7 @@ func (s *httpServer) startServer() error {
 
 func (s *httpServer) StopService(ctx interface{}) error {
 	if s.server != nil {
-		s.app.infoLog.Println("stopping HTTP server")
+		s.app.infoLog.Println(ut.GetMessage("http_stopping"))
 		return s.server.Shutdown(ctx.(context.Context))
 	}
 	return nil
@@ -211,7 +211,7 @@ func (s *httpServer) tokenAuth(next http.Handler) http.Handler {
 func (s *httpServer) setRoutes() {
 	// Register static dirs.
 	var publicFS, _ = fs.Sub(ut.Public, "static")
-	FileServer(s.mux, "/", http.FS(publicFS))
+	s.fileServer("/", http.FS(publicFS))
 
 	s.mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		home := ut.ToString(os.Getenv("NT_HTTP_HOME"), "/")
@@ -286,19 +286,20 @@ func (s *httpServer) setRoutes() {
 
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
-func FileServer(r chi.Router, path string, root http.FileSystem) {
+func (s *httpServer) fileServer(path string, root http.FileSystem) {
 
 	if strings.ContainsAny(path, "{}*") {
-		panic("FileServer does not permit any URL parameters.")
+		s.app.errorLog.Println(ut.GetMessage("error_fileserver"))
+		return
 	}
 
 	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
+		s.mux.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
 		path += "/"
 	}
 	path += "*"
 
-	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+	s.mux.Get(path, func(w http.ResponseWriter, r *http.Request) {
 		rctx := chi.RouteContext(r.Context())
 		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
 		fs := http.StripPrefix(pathPrefix, http.FileServer(root))

@@ -35,12 +35,12 @@ func (srv *CLIService) TokenDecode(token string) string {
 func (srv *CLIService) TokenLogin(token string, tokenKeys map[string]map[string]string) (*nt.API, string) {
 	claim, err := ut.TokenDecode(token)
 	if err != nil {
-		return nil, respondData(0, nil, 401, errors.New("Unauthorized"))
+		return nil, respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	database := ut.ToString(claim["database"], "")
 	nstore := srv.GetNervaStore(database)
 	if nstore == nil {
-		return nil, respondData(0, nil, 401, errors.New("Unauthorized"))
+		return nil, respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	api := (&nt.API{NStore: nstore})
 	err = api.TokenLogin(nt.IM{"token": token, "keys": tokenKeys})
@@ -61,7 +61,7 @@ func (srv *CLIService) UserPassword(api *nt.API, options nt.IM) string {
 	custnumber := ut.ToString(options["custnumber"], "")
 	if username != "" || custnumber != "" {
 		if api.NStore.User.Scope != "admin" {
-			return respondData(0, nil, 401, errors.New("Unauthorized"))
+			return respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 		}
 		if custnumber == "" && api.NStore.Customer != nil {
 			options["custnumber"] = api.NStore.Customer["custnumber"]
@@ -106,7 +106,7 @@ func (srv *CLIService) Delete(api *nt.API, options nt.IM) string {
 
 func (srv *CLIService) DatabaseCreate(apiKey string, options nt.IM) string {
 	if os.Getenv("NT_API_KEY") != apiKey {
-		return respondData(0, nil, 401, errors.New("Unauthorized"))
+		return respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	log, err := (&nt.API{NStore: srv.GetNervaStore("")}).DatabaseCreate(options)
 	return respondData(200, log, 400, err)
@@ -114,7 +114,7 @@ func (srv *CLIService) DatabaseCreate(apiKey string, options nt.IM) string {
 
 func (srv *CLIService) ReportList(api *nt.API, options nt.IM) string {
 	if api.NStore.User.Scope != "admin" {
-		return respondData(0, nil, 401, errors.New("Unauthorized"))
+		return respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	results, err := api.ReportList(options)
 	return respondData(200, results, 400, err)
@@ -122,7 +122,7 @@ func (srv *CLIService) ReportList(api *nt.API, options nt.IM) string {
 
 func (srv *CLIService) ReportInstall(api *nt.API, options nt.IM) string {
 	if api.NStore.User.Scope != "admin" {
-		return respondData(0, nil, 401, errors.New("Unauthorized"))
+		return respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	results, err := api.ReportInstall(options)
 	return respondData(200, results, 400, err)
@@ -130,7 +130,7 @@ func (srv *CLIService) ReportInstall(api *nt.API, options nt.IM) string {
 
 func (srv *CLIService) ReportDelete(api *nt.API, options nt.IM) string {
 	if api.NStore.User.Scope != "admin" {
-		return respondData(0, nil, 401, errors.New("Unauthorized"))
+		return respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	err := api.ReportDelete(options)
 	return respondData(204, nil, 400, err)

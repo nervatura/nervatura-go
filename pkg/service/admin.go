@@ -13,6 +13,7 @@ import (
 
 // AdminService implements the Nervatura Admin GUI
 type AdminService struct {
+	Version       string
 	GetNervaStore func(database string) *nt.NervaStore
 	templates     *template.Template
 	GetTokenKeys  func() map[string]map[string]string
@@ -27,12 +28,13 @@ func (adm *AdminService) LoadTemplates() (err error) {
 func (adm *AdminService) render(w http.ResponseWriter, template string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := adm.templates.ExecuteTemplate(w, template, data); err != nil {
-		http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
+		http.Error(w, ut.GetMessage("error_internal"), http.StatusInternalServerError)
 	}
 }
 
-func parseData(r *http.Request) nt.IM {
+func (adm *AdminService) parseData(r *http.Request) nt.IM {
 	return nt.IM{
+		"version": adm.Version, "view_version": ut.GetMessage("view_version"),
 		"theme": r.PostFormValue("theme"), "menu": r.PostFormValue("menu"),
 		"token":    r.PostFormValue("token"),
 		"database": r.PostFormValue("database"), "demo": r.PostFormValue("demo"),
@@ -59,12 +61,12 @@ func parseData(r *http.Request) nt.IM {
 }
 
 func (adm *AdminService) Home(w http.ResponseWriter, r *http.Request) {
-	data := parseData(r)
+	data := adm.parseData(r)
 	adm.render(w, "login", data)
 }
 
 func (adm *AdminService) Login(w http.ResponseWriter, r *http.Request) {
-	data := parseData(r)
+	data := adm.parseData(r)
 	if data["database"] == "" {
 		data["errors"].(nt.SM)["login"] = ut.GetMessage("missing_database")
 		adm.render(w, "login", data)
@@ -83,7 +85,7 @@ func (adm *AdminService) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if nstore.User.Scope != "admin" {
-		data["errors"].(nt.SM)["login"] = "Admin rights required"
+		data["errors"].(nt.SM)["login"] = ut.GetMessage("admin_rights")
 		adm.render(w, "login", data)
 		return
 	}
@@ -93,7 +95,7 @@ func (adm *AdminService) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (adm *AdminService) Menu(w http.ResponseWriter, r *http.Request) {
-	data := parseData(r)
+	data := adm.parseData(r)
 	switch data["menu"] {
 	case "database":
 		adm.render(w, "database", data)
@@ -113,7 +115,7 @@ func (adm *AdminService) Menu(w http.ResponseWriter, r *http.Request) {
 }
 
 func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
-	data := parseData(r)
+	data := adm.parseData(r)
 	unauthorized := func(errMsg string) {
 		data["errors"].(nt.SM)["login"] = errMsg
 		adm.render(w, "login", data)
@@ -135,7 +137,7 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 	case "password":
 		err = (&nt.API{NStore: nstore}).UserPassword(data)
 		if err == nil {
-			data["success"] = "Successful password change"
+			data["success"] = ut.GetMessage("password_change")
 			data["password"] = ""
 			data["confirm"] = ""
 		}
@@ -145,13 +147,13 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 		var id int64
 		id, err = (&nt.API{NStore: nstore}).ReportInstall(nt.IM{"reportkey": ut.ToString(data["reportkey"], "")})
 		if err == nil {
-			data["success"] = fmt.Sprintf("Result id: %d", id)
+			data["success"] = fmt.Sprintf(ut.GetMessage("result_id"), id)
 			data["reportkey"] = ""
 		}
 	case "delete":
 		err = (&nt.API{NStore: nstore}).ReportDelete(nt.IM{"reportkey": ut.ToString(data["reportkey"], "")})
 		if err == nil {
-			data["success"] = "Successful delete"
+			data["success"] = ut.GetMessage("successful_delete")
 			data["reportkey"] = ""
 		}
 	}
@@ -162,9 +164,9 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (adm *AdminService) Database(w http.ResponseWriter, r *http.Request) {
-	data := parseData(r)
+	data := adm.parseData(r)
 	if os.Getenv("NT_API_KEY") != data["apikey"] {
-		data["errors"].(nt.SM)["database"] = "Invalid API KEY value"
+		data["errors"].(nt.SM)["database"] = ut.GetMessage("invalid_api_key")
 		adm.render(w, "database", data)
 		return
 	}

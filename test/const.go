@@ -4,6 +4,7 @@ import (
 	"os"
 )
 
+const version = "test"
 const alias = "test"
 const username = "admin"
 

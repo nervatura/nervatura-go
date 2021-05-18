@@ -42,7 +42,7 @@ func TestCliDatabaseCreate(t *testing.T) {
 	os.Args = append(os.Args, "-c", "DatabaseCreate")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-k", apiKey)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestCliUserLogin(t *testing.T) {
 	os.Args = append(os.Args, "-c", "UserLogin")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestCliTokenLogin(t *testing.T) {
 
 	os.Args = append(os.Args, "-c", "TokenLogin")
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestCliTokenRefresh(t *testing.T) {
 
 	os.Args = append(os.Args, "-c", "TokenRefresh")
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestCliTokenDecode(t *testing.T) {
 
 	os.Args = append(os.Args, "-c", "TokenDecode")
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +119,7 @@ func TestCliUserPassword(t *testing.T) {
 	os.Args = append(os.Args, "-c", "UserPassword")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestCliDelete(t *testing.T) {
 	os.Args = append(os.Args, "-c", "Delete")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestCliGet(t *testing.T) {
 	os.Args = append(os.Args, "-c", "Get")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +176,7 @@ func TestCliView(t *testing.T) {
 	os.Args = append(os.Args, "-c", "View")
 	os.Args = append(os.Args, "-d", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestCliFunction(t *testing.T) {
 	os.Args = append(os.Args, "-c", "Function")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +238,7 @@ func TestCliUpdate(t *testing.T) {
 	os.Args = append(os.Args, "-nt", "address")
 	os.Args = append(os.Args, "-d", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +267,7 @@ func TestCliReport(t *testing.T) {
 	os.Args = append(os.Args, "-c", "Report")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestCliReportList(t *testing.T) {
 	os.Args = append(os.Args, "-c", "ReportList")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,7 +299,7 @@ func TestCliReportDelete(t *testing.T) {
 	os.Args = append(os.Args, "-c", "ReportDelete")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func TestCliReportInstall(t *testing.T) {
 	os.Args = append(os.Args, "-c", "ReportInstall")
 	os.Args = append(os.Args, "-o", encodeOptions(options))
 	os.Args = append(os.Args, "-t", token)
-	app, err := app.New()
+	app, err := app.New(version)
 	if err != nil {
 		t.Fatal(err)
 	}

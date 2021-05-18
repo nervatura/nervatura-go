@@ -5,7 +5,7 @@ ARG APP_MODULES=all
 # Move to working directory (/build).
 WORKDIR /build
 
-RUN apk add --no-cache upx
+RUN apk add --no-cache upx make
 
 # Copy and download dependency using go mod.
 COPY go.mod go.sum ./
@@ -16,8 +16,7 @@ COPY . .
 
 # Set necessary environmet variables needed for our image and build the API server.
 ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-RUN go build -tags ${APP_MODULES} -ldflags="-s -w" -o nervatura .
-RUN upx --best --lzma nervatura
+RUN make release TAGS=${APP_MODULES}
 
 FROM scratch
 

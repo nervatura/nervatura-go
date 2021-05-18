@@ -1,7 +1,7 @@
 APP_NAME = nervatura
+VNUM = v5.0.0-beta-1
 # all http grpc postgres mysql sqlite
 TAGS = all
-VNUM = 5.0.0
 
 security:
 	gosec -quiet ./...
@@ -10,7 +10,7 @@ test: security
 	go test -cover ./...
 
 build:
-	CGO_ENABLED=0 go build -tags "$(TAGS)" -ldflags="-w -s" -o $(APP_NAME) main.go
+	CGO_ENABLED=0 go build -tags "$(TAGS)" -ldflags="-w -s -X main.Version=$(VNUM)" -o $(APP_NAME) main.go
 
 run:
 	./$(APP_NAME)

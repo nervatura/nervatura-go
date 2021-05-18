@@ -1,6 +1,14 @@
 {{ define "database" }}
 {{ template "header" . }}
 <div class="page {{if not .theme }} light {{else}} {{ .theme }} {{end}}">
+  <div class="row full primary bold" >
+    <div class="cell padding-normal" >
+      <span>Nervatura Admin</span>
+    </div>
+    <div class="cell padding-normal align-right" >
+      <span>{{ .view_version }}: {{ .version }}</span>
+    </div>
+  </div>
   <form action="/admin" method="POST" novalidate id="menu">
     <input type="hidden" name="formID" value="menu">
     <input type="hidden" name="pageID" value="database">

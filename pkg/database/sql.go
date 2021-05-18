@@ -250,7 +250,7 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string) error {
 	engine := strings.Split(connStr, "://")[0]
 	if len(Drivers) > 0 {
 		if !ut.Contains(Drivers, engine) && !ut.Contains(Drivers, "all") {
-			return errors.New("Invalid database types. Valid value(s): " + strings.Join(Drivers, ","))
+			return errors.New(ut.GetMessage("invalid_dbs_types") + " " + strings.Join(Drivers, ","))
 		}
 	}
 	switch engine {
@@ -258,7 +258,7 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string) error {
 		connStr = strings.ReplaceAll(connStr, "sqlite://", "")
 	case "postgres", "mysql", "mssql":
 	default:
-		return errors.New("valid database types: sqlite, postgres, mysql, mssql")
+		return errors.New(ut.GetMessage("valid_engine"))
 	}
 	db, err := sql.Open(engine, connStr)
 	if err != nil {
