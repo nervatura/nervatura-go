@@ -1,5 +1,5 @@
 APP_NAME = nervatura
-VNUM = v5.0.0-beta-1
+VNUM = 5.0.0-beta-1
 # all http grpc postgres mysql sqlite
 TAGS = all
 

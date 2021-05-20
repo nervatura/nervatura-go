@@ -490,8 +490,6 @@ func demoData() IM {
 				{"keys": IM{"nervatype_1": "movement", "ref_id_1": "movement/DMDTF/00001~9", "nervatype_2": "movement", "ref_id_2": "movement/DMDTF/00001~10"}}}},
 		"menu": IM{
 			"ui_menu": []IM{
-				{"menukey": "printer", "description": "Default printer", "address": "",
-					"keys": IM{"method": "printer"}},
 				{"menukey": "nextNumber", "description": "Server function example", "funcname": "nextNumber",
 					"keys": IM{"method": "post"}},
 				{"menukey": "google", "description": "Internet URL example", "funcname": "search",

@@ -803,7 +803,6 @@ func DataModel() IM {
 				//method
 				{"groupname": "method", "groupvalue": "get", "description": "GET"},
 				{"groupname": "method", "groupvalue": "post", "description": "POST"},
-				{"groupname": "method", "groupvalue": "printer", "description": "Printer"},
 				//orientation
 				{"groupname": "orientation", "groupvalue": "P", "description": "Portrait"},
 				{"groupname": "orientation", "groupvalue": "L", "description": "Landscape"},
