@@ -20,9 +20,8 @@
 | ReportInstall | [RequestReportInstall](#requestreportinstall) | [ResponseReportInstall](#responsereportinstall) | Install a report to the database. Admin user group membership required. |
 | ReportDelete | [RequestReportDelete](#requestreportdelete) | [ResponseEmpty](#responseempty) | Delete a report from the database. Admin user group membership required. |
 | DatabaseCreate | [RequestDatabaseCreate](#requestdatabasecreate) | [ResponseDatabaseCreate](#responsedatabasecreate) | Create a new Nervatura database |
- <!-- end methods -->
-
- <!-- end services -->
+ 
+ 
 <br />
 
 ---
@@ -147,9 +146,9 @@ project/{pronumber}, tool/{serial}, trans/{transnumber}*
 | street | [ string](#string) |  |
 | notes | [ string](#string) |  |
 | metadata | [repeated MetaData](#metadata) | Address meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Barcode
@@ -157,7 +156,7 @@ RequestUpdate Key->ID keys:
 
 - ```id```: Barcode *code*
 
-- ```barcodetype```: Valid values: *AZTEC, CODABAR, CODE_128, CODE_39, CODE_93, DATA_MATRIX, EAN_13, EAN_8, ITF, MSI, PDF417, QR_CODE, RSS_EXPANDED, RSS14, UPC_A, UPC_E*
+- ```barcodetype```: Valid values: *CODE_128, CODE_39, EAN_13, EAN_8, QR*
 
 - ```product_id```: Product *partnumber*
 
@@ -171,9 +170,9 @@ RequestUpdate Key->ID keys:
 | barcodetype | [ int64](#int64) | Reference to [Groups](#groups).id  (only where groupname = 'barcodetype'). |
 | qty | [ double](#double) | The actual amount of the products identified by the barcode. For example can be used for packaged goods, tray packaging. |
 | defcode | [ bool](#bool) | If more than one bar code is assigned, this will be the default. Because of the uniqueness of the barcode the product is always clearly identifiable, but in reverse case (eg. in case the barcode should be printed on a document) we must assign one being the default for that product. |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Contact
@@ -200,9 +199,9 @@ RequestUpdate Key->ID keys:
 | email | [ string](#string) |  |
 | notes | [ string](#string) |  |
 | metadata | [repeated MetaData](#metadata) | Contact meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Currency
@@ -220,9 +219,9 @@ RequestUpdate Key->ID keys:
 | defrate | [ double](#double) | Default Rate. You can specify an exchange rate vs. the default currency, which will be used by the reports. |
 | cround | [ int64](#int64) | Rounding value for cash. Could be used in case the smallest banknote in circulation for that certain currency is not 1. |
 | metadata | [repeated MetaData](#metadata) | Currency meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Customer
@@ -248,9 +247,9 @@ RequestUpdate Key->ID keys:
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Customer meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Deffield
@@ -277,9 +276,9 @@ RequestUpdate Key->ID keys:
 | addnew | [ bool](#bool) | When selected, the attribute in case of adding a new element (eg a new customer or employee is created) will automatically be created with the default value according to its type and also will be attached to the new element. |
 | visible | [ bool](#bool) | Can appear or not (hidden value) on the entry forms |
 | readonly | [ bool](#bool) | The value of the attribute can not be changed in the program interface |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Employee
@@ -304,9 +303,9 @@ RequestUpdate Key->ID keys:
 | registration_key | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Employee meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Event
@@ -335,9 +334,9 @@ RequestUpdate Key->ID keys:
 | place | [ string](#string) |  |
 | description | [ string](#string) |  |
 | metadata | [repeated MetaData](#metadata) | Event meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Fieldvalue
@@ -355,9 +354,9 @@ RequestUpdate Key->ID keys:
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _ref_id.ref_id | [optional int64](#int64) | Reference to any type.id where type = [Deffield](#deffield).nervatype. If it is null then nervatype = setting. |
 | value | [ string](#string) |  |
 | notes | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Groups
@@ -373,9 +372,9 @@ RequestUpdate Key->ID keys:
 | groupvalue | [ string](#string) |  |
 | description | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Item
@@ -408,9 +407,9 @@ RequestUpdate Key->ID keys:
 | ownstock | [ double](#double) |  |
 | actionprice | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Item meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Link
@@ -433,9 +432,9 @@ RequestUpdate Key->ID keys:
 | nervatype_2 | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'nervatype') |
 | ref_id_2 | [ int64](#int64) | Reference to {nervatype}.id |
 | metadata | [repeated MetaData](#metadata) | Link meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Log
@@ -461,9 +460,9 @@ RequestUpdate Key->ID keys:
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _ref_id.ref_id | [optional int64](#int64) | Reference to {nervatype}.id |
 | logstate | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'logstate') |
 | metadata | [repeated MetaData](#metadata) | Log meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## MetaData
@@ -477,9 +476,9 @@ RequestUpdate Key->ID keys:
 | fieldtype | [ string](#string) | Reference to [Deffield](#deffield).fieldtype. |
 | value | [ string](#string) |  |
 | notes | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Movement
@@ -511,9 +510,9 @@ RequestUpdate Key->ID keys:
 | description | [ string](#string) |  |
 | shared | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Movement meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Numberdef
@@ -535,9 +534,9 @@ RequestUpdate Key->ID keys:
 | visible | [ bool](#bool) |  |
 | readonly | [ bool](#bool) |  |
 | orderby | [ int64](#int64) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Pattern
@@ -553,9 +552,9 @@ RequestUpdate Key->ID keys:
 | transtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'transtype') |
 | notes | [ string](#string) |  |
 | defpattern | [ bool](#bool) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Payment
@@ -574,9 +573,9 @@ RequestUpdate Key->ID keys:
 | amount | [ double](#double) |  |
 | notes | [ string](#string) |  |
 | metadata | [repeated MetaData](#metadata) | Payment meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Place
@@ -598,9 +597,9 @@ RequestUpdate Key->ID keys:
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Place meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Price
@@ -622,9 +621,9 @@ RequestUpdate Key->ID keys:
 | pricevalue | [ double](#double) | Price value |
 | vendorprice | [ bool](#bool) | Supplier (if marked) or customer price. By default the customer price. |
 | metadata | [repeated MetaData](#metadata) | Price meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Product
@@ -649,9 +648,9 @@ RequestUpdate Key->ID keys:
 | webitem | [ bool](#bool) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Product meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Project
@@ -673,9 +672,9 @@ RequestUpdate Key->ID keys:
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Project meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Rate
@@ -700,9 +699,9 @@ RequestUpdate Key->ID keys:
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _rategroup.rategroup | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'rategroup') |
 | ratevalue | [ double](#double) | Rate or interest value |
 | metadata | [repeated MetaData](#metadata) | Rate meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestDatabaseCreate
@@ -713,9 +712,9 @@ New database props.
 | ----- | ---- | ----------- |
 | alias | [ string](#string) | Alias name of the database |
 | demo | [ bool](#bool) | Create a DEMO database |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestDelete
@@ -727,15 +726,15 @@ Delete parameters
 | nervatype | [ DataType](#datatype) |  |
 | id | [ int64](#int64) | The object ID |
 | key | [ string](#string) | Use Key instead of ID |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestEmpty
 No parameters
 
- <!-- end HasFields -->
+
 
 
 ## RequestFunction
@@ -746,9 +745,9 @@ No parameters
 | ----- | ---- | ----------- |
 | key | [ string](#string) | Server function name |
 | values | [map RequestFunction.ValuesEntry](#requestfunctionvaluesentry) | The array of parameter values |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestFunction.ValuesEntry
@@ -759,9 +758,9 @@ No parameters
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
 | value | [ Value](#value) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestGet
@@ -774,9 +773,9 @@ No parameters
 | metadata | [ bool](#bool) |  |
 | ids | [repeated int64](#int64) |  |
 | filter | [repeated string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestReport
@@ -793,9 +792,9 @@ No parameters
 | refnumber | [ string](#string) | Example : DMINV/00001 |
 | template | [ string](#string) | Custom report JSON template |
 | filters | [map RequestReport.FiltersEntry](#requestreportfiltersentry) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestReport.FiltersEntry
@@ -806,9 +805,9 @@ No parameters
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
 | value | [ Value](#value) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestReportDelete
@@ -818,9 +817,9 @@ No parameters
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | reportkey | [ string](#string) | Example : ntr_invoice_en |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestReportInstall
@@ -830,9 +829,9 @@ Admin user group membership required.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | reportkey | [ string](#string) | Example : ntr_invoice_en |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestReportList
@@ -842,9 +841,9 @@ Admin user group membership required.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | label | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestTokenDecode
@@ -854,9 +853,9 @@ Admin user group membership required.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | value | [ string](#string) | Access token code. |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestUpdate
@@ -867,9 +866,9 @@ Admin user group membership required.
 | ----- | ---- | ----------- |
 | nervatype | [ DataType](#datatype) |  |
 | items | [repeated RequestUpdate.Item](#requestupdateitem) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestUpdate.Item
@@ -880,9 +879,9 @@ Admin user group membership required.
 | ----- | ---- | ----------- |
 | values | [map RequestUpdate.Item.ValuesEntry](#requestupdateitemvaluesentry) |  |
 | keys | [map RequestUpdate.Item.KeysEntry](#requestupdateitemkeysentry) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestUpdate.Item.KeysEntry
@@ -893,9 +892,9 @@ Admin user group membership required.
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
 | value | [ Value](#value) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestUpdate.Item.ValuesEntry
@@ -906,9 +905,9 @@ Admin user group membership required.
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
 | value | [ Value](#value) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestUserLogin
@@ -920,9 +919,9 @@ Admin user group membership required.
 | username | [ string](#string) | Employee username or Customer custnumber (email or phone number) |
 | password | [ string](#string) |  |
 | database | [ string](#string) | Optional. Default value: NT_DEFAULT_ALIAS |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestUserPassword
@@ -935,9 +934,9 @@ Admin user group membership required.
 | confirm | [ string](#string) | New password confirmation |
 | username | [ string](#string) | Optional. Only if different from the logged in user. Admin user group membership required. |
 | custnumber | [ string](#string) | Optional. Only if different from the logged in user. Admin user group membership required. |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestView
@@ -947,9 +946,9 @@ Only "select" queries and functions can be executed. Changes to the data are not
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | options | [repeated RequestView.Query](#requestviewquery) | The array of Query object |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## RequestView.Query
@@ -961,9 +960,9 @@ Only "select" queries and functions can be executed. Changes to the data are not
 | key | [ string](#string) | Give the query a unique name |
 | text | [ string](#string) | The SQL query as a string |
 | values | [repeated Value](#value) | The array of parameter values |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseDatabaseCreate
@@ -973,15 +972,15 @@ Result log data
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | details | [ ResponseRows](#responserows) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseEmpty
 Does not return content.
 
- <!-- end HasFields -->
+
 
 
 ## ResponseFunction
@@ -991,9 +990,9 @@ Does not return content.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | value | [ bytes](#bytes) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseGet
@@ -1003,9 +1002,9 @@ Does not return content.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | values | [repeated ResponseGet.Value](#responsegetvalue) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseGet.Value
@@ -1046,9 +1045,9 @@ Does not return content.
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_printqueue | [ UiPrintqueue](#uiprintqueue) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_report | [ UiReport](#uireport) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.ui_userconfig | [ UiUserconfig](#uiuserconfig) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseReport
@@ -1058,9 +1057,9 @@ Does not return content.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | value | [ bytes](#bytes) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseReportInstall
@@ -1070,9 +1069,9 @@ Does not return content.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | id | [ int64](#int64) | Returns a new report ID. |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseReportList
@@ -1082,9 +1081,9 @@ Returns all installable files from the NT_REPORT_DIR directory (empty value: all
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | items | [repeated ResponseReportList.Info](#responsereportlistinfo) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseReportList.Info
@@ -1100,9 +1099,9 @@ Returns all installable files from the NT_REPORT_DIR directory (empty value: all
 | reptype | [ string](#string) |  |
 | filename | [ string](#string) |  |
 | installed | [ bool](#bool) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseRows
@@ -1112,9 +1111,9 @@ Returns all installable files from the NT_REPORT_DIR directory (empty value: all
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | items | [repeated ResponseRows.Item](#responserowsitem) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseRows.Item
@@ -1124,9 +1123,9 @@ Returns all installable files from the NT_REPORT_DIR directory (empty value: all
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | values | [map ResponseRows.Item.ValuesEntry](#responserowsitemvaluesentry) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseRows.Item.ValuesEntry
@@ -1137,9 +1136,9 @@ Returns all installable files from the NT_REPORT_DIR directory (empty value: all
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
 | value | [ Value](#value) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseTokenDecode
@@ -1152,9 +1151,9 @@ Access token claims.
 | database | [ string](#string) |  |
 | exp | [ double](#double) | JWT expiration time |
 | iss | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseTokenLogin
@@ -1169,9 +1168,9 @@ Token user properties
 | usergroup | [ int64](#int64) |  |
 | scope | [ string](#string) |  |
 | department | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseTokenRefresh
@@ -1181,9 +1180,9 @@ Token user properties
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | value | [ string](#string) | Access token code. |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseUpdate
@@ -1193,9 +1192,9 @@ If the ID (or Key) value is missing, it creates a new item.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | values | [repeated int64](#int64) | Returns the all new/updated IDs values. |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseUserLogin
@@ -1206,9 +1205,9 @@ If the ID (or Key) value is missing, it creates a new item.
 | ----- | ---- | ----------- |
 | token | [ string](#string) | Access JWT token |
 | engine | [ string](#string) | Type of database |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseView
@@ -1218,9 +1217,9 @@ If the ID (or Key) value is missing, it creates a new item.
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | values | [map ResponseView.ValuesEntry](#responseviewvaluesentry) | key - results map |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## ResponseView.ValuesEntry
@@ -1231,9 +1230,9 @@ If the ID (or Key) value is missing, it creates a new item.
 | ----- | ---- | ----------- |
 | key | [ string](#string) |  |
 | value | [ ResponseRows](#responserows) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Tax
@@ -1250,9 +1249,9 @@ RequestUpdate Key->ID keys:
 | rate | [ double](#double) | Rate or interest value |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Tax meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Tool
@@ -1275,9 +1274,9 @@ RequestUpdate Key->ID keys:
 | notes | [ string](#string) |  |
 | inactive | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Tool meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Trans
@@ -1330,9 +1329,9 @@ RequestUpdate Key->ID keys:
 | transtate | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'transtate') |
 | closed | [ bool](#bool) |  |
 | metadata | [repeated MetaData](#metadata) | Trans meta data |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiAudit
@@ -1357,9 +1356,9 @@ RequestUpdate Key->ID keys:
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _subtype.subtype | [optional int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'movetype') |
 | inputfilter | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'inputfilter') |
 | supervisor | [ bool](#bool) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiMenu
@@ -1378,9 +1377,9 @@ RequestUpdate Key->ID keys:
 | method | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'method') |
 | funcname | [ string](#string) |  |
 | address | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiMenufields
@@ -1399,9 +1398,9 @@ RequestUpdate Key->ID keys:
 | description | [ string](#string) |  |
 | fieldtype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'fieldtype') |
 | orderby | [ int64](#int64) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiMessage
@@ -1417,9 +1416,9 @@ RequestUpdate Key->ID keys:
 | fieldname | [ string](#string) |  |
 | lang | [ string](#string) |  |
 | msg | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiPrintqueue
@@ -1435,9 +1434,9 @@ RequestUpdate Key->ID keys:
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _employee_id.employee_id | [optional int64](#int64) | Reference to [Employee](#employee).id |
 | report_id | [ int64](#int64) | Reference to [UiReport](#UiReport).id |
 | crdate | [ string](#string) | Date-time |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiReport
@@ -1466,9 +1465,9 @@ RequestUpdate Key->ID keys:
 | label | [ string](#string) |  |
 | filetype | [ int64](#int64) | Reference to [Groups](#groups).id (only where groupname = 'filetype') |
 | report | [ string](#string) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## UiUserconfig
@@ -1488,9 +1487,9 @@ RequestUpdate Key->ID keys:
 | cfname | [ string](#string) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) _cfvalue.cfvalue | [optional string](#string) |  |
 | orderby | [ int64](#int64) |  |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
+
 
 
 ## Value
@@ -1502,10 +1501,10 @@ RequestUpdate Key->ID keys:
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.boolean | [ bool](#bool) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.number | [ double](#double) |  |
 | [**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) value.text | [ string](#string) | google.protobuf.NullValue null = 4; |
- <!-- end Fields -->
+
 <br />
- <!-- end HasFields -->
- <!-- end messages -->
+
+
 
 ---
 # Enums
@@ -1607,8 +1606,8 @@ RequestUpdate Key->ID keys:
 | report_trans | 8 |  |
 
 <br />
- <!-- end Enums -->
- <!-- end Files -->
+
+
 
 ---
 # Scalar Value Types

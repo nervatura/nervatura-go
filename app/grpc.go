@@ -36,6 +36,7 @@ func init() {
 // StartService - Start Nervatura RPC server
 func (s *rpcServer) StartService() error {
 	s.service = srv.RPCService{
+		Config:        s.app.config,
 		GetNervaStore: s.app.GetNervaStore,
 		GetTokenKeys: func() map[string]map[string]string {
 			return s.app.tokenKeys
@@ -43,9 +44,9 @@ func (s *rpcServer) StartService() error {
 	}
 
 	var cred credentials.TransportCredentials
-	if ut.GetEnvValue("bool", os.Getenv("NT_GRPC_TLS_ENABLED")).(bool) {
-		if os.Getenv("NT_TLS_CERT_FILE") != "" && os.Getenv("NT_TLS_KEY_FILE") != "" {
-			cert, err := tls.LoadX509KeyPair(os.Getenv("NT_TLS_CERT_FILE"), os.Getenv("NT_TLS_KEY_FILE"))
+	if s.app.config["NT_GRPC_TLS_ENABLED"].(bool) {
+		if s.app.config["NT_TLS_CERT_FILE"] != "" && s.app.config["NT_TLS_KEY_FILE"] != "" {
+			cert, err := tls.LoadX509KeyPair(s.app.config["NT_TLS_CERT_FILE"].(string), s.app.config["NT_TLS_KEY_FILE"].(string))
 			if err != nil {
 				s.app.errorLog.Printf(ut.GetMessage("error_key_pair"), err)
 				os.Exit(2)
@@ -55,7 +56,7 @@ func (s *rpcServer) StartService() error {
 		}
 	}
 
-	addr := fmt.Sprintf(":%d", ut.GetEnvValue("int", os.Getenv("NT_GRPC_PORT")).(int))
+	addr := fmt.Sprintf(":%d", s.app.config["NT_GRPC_PORT"].(int64))
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		s.app.errorLog.Printf(ut.GetMessage("error_grpc_server"), err)
@@ -72,7 +73,7 @@ func (s *rpcServer) StartService() error {
 
 	pb.RegisterAPIServer(s.server, &s.service)
 
-	s.app.infoLog.Printf(ut.GetMessage("grpc_serving"), os.Getenv("NT_GRPC_PORT"), s.tlsEnabled)
+	s.app.infoLog.Printf(ut.GetMessage("grpc_serving"), s.app.config["NT_GRPC_PORT"].(int64), s.tlsEnabled)
 
 	return s.server.Serve(ln)
 }

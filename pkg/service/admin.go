@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"net/http"
-	"os"
+	"path"
 	"text/template"
 
 	db "github.com/nervatura/nervatura-go/pkg/database"
@@ -13,14 +13,14 @@ import (
 
 // AdminService implements the Nervatura Admin GUI
 type AdminService struct {
-	Version       string
+	Config        map[string]interface{}
 	GetNervaStore func(database string) *nt.NervaStore
 	templates     *template.Template
 	GetTokenKeys  func() map[string]map[string]string
 }
 
 func (adm *AdminService) LoadTemplates() (err error) {
-	adm.templates, err = template.ParseFS(ut.Static, "static/views/*.html")
+	adm.templates, err = template.ParseFS(ut.Static, path.Join("static", "views", "*.html"))
 	return err
 }
 
@@ -34,7 +34,7 @@ func (adm *AdminService) render(w http.ResponseWriter, template string, data int
 
 func (adm *AdminService) parseData(r *http.Request) nt.IM {
 	return nt.IM{
-		"version": adm.Version, "view_version": ut.GetMessage("view_version"),
+		"version": adm.Config["version"], "view_version": ut.GetMessage("view_version"),
 		"theme": r.PostFormValue("theme"), "menu": r.PostFormValue("menu"),
 		"token":    r.PostFormValue("token"),
 		"database": r.PostFormValue("database"), "demo": r.PostFormValue("demo"),
@@ -165,11 +165,11 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 
 func (adm *AdminService) Database(w http.ResponseWriter, r *http.Request) {
 	data := adm.parseData(r)
-	if os.Getenv("NT_API_KEY") != data["apikey"] {
+	if adm.Config["NT_API_KEY"] != data["apikey"] {
 		data["errors"].(nt.SM)["database"] = ut.GetMessage("invalid_api_key")
 		adm.render(w, "database", data)
 		return
 	}
-	data["result"], _ = (&nt.API{NStore: nt.New(&db.SQLDriver{})}).DatabaseCreate(data)
+	data["result"], _ = (&nt.API{NStore: nt.New(&db.SQLDriver{Config: adm.Config}, adm.Config)}).DatabaseCreate(data)
 	adm.render(w, "database", data)
 }

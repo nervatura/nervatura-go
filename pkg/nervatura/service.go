@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/smtp"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -272,16 +271,13 @@ func (nstore *NervaStore) sendEmail(options IM) (results IM, err error) {
 	}
 
 	delimeter := "**=myohmy689407924327"
-	username := os.Getenv("NT_SMTP_USER")
-	password := os.Getenv("NT_SMTP_PASSWORD")
-	host := os.Getenv("NT_SMTP_HOST")
-	port := os.Getenv("NT_SMTP_PORT")
-	if port == "" {
-		port = "465"
-	}
+	username := ut.ToString(nstore.config["NT_SMTP_USER"], "")
+	password := ut.ToString(nstore.config["NT_SMTP_PASSWORD"], "")
+	host := ut.ToString(nstore.config["NT_SMTP_HOST"], "")
+	port := ut.ToInteger(nstore.config["NT_SMTP_PORT"], 465)
 
 	tlsConfig := tls.Config{ServerName: host, InsecureSkipVerify: true}
-	conn, connErr := tls.Dial("tcp", fmt.Sprintf("%s:%s", host, port), &tlsConfig)
+	conn, connErr := tls.Dial("tcp", fmt.Sprintf("%s:%d", host, port), &tlsConfig)
 	if connErr != nil {
 		return results, connErr
 	}

@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ type API struct {
 }
 
 func (api *API) getHashvalue(refname string) (string, error) {
-	hashtable := os.Getenv("NT_HASHTABLE")
+	hashtable := ut.ToString(api.NStore.config["NT_HASHTABLE"], "")
 	err := api.NStore.ds.CheckHashtable(hashtable)
 	if err != nil {
 		return "", err
@@ -50,10 +51,11 @@ func (api *API) authUser(options IM) error {
 		if database == "" {
 			return errors.New(ut.GetMessage("missing_database"))
 		}
-		if os.Getenv("NT_ALIAS_"+strings.ToUpper(database)) == "" {
+		alias := ut.ToString(api.NStore.config["NT_ALIAS_"+strings.ToUpper(database)], os.Getenv("NT_ALIAS_"+strings.ToUpper(database)))
+		if alias == "" {
 			return errors.New(ut.GetMessage("missing_database"))
 		}
-		err := api.NStore.ds.CreateConnection(database, os.Getenv("NT_ALIAS_"+strings.ToUpper(database)))
+		err := api.NStore.ds.CreateConnection(database, alias)
 		if err != nil {
 			return err
 		}
@@ -123,7 +125,7 @@ func (api *API) TokenRefresh() (string, error) {
 	if api.NStore.Customer != nil {
 		username = api.NStore.Customer["custnumber"].(string)
 	}
-	return ut.CreateToken(username, conn.Alias)
+	return ut.CreateToken(username, conn.Alias, api.NStore.config)
 }
 
 /*
@@ -144,7 +146,7 @@ func (api *API) TokenLogin(options IM) error {
 	if keys, found := options["keys"].(map[string]map[string]string); found {
 		keyMap = keys
 	}
-	data, err := ut.ParseToken(tokenString, keyMap)
+	data, err := ut.ParseToken(tokenString, keyMap, api.NStore.config)
 	if err != nil {
 		return err
 	}
@@ -227,7 +229,7 @@ func (api *API) UserPassword(options IM) error {
 	if err != nil {
 		return err
 	}
-	return api.NStore.ds.UpdateHashtable(os.Getenv("NT_HASHTABLE"), refname, hash)
+	return api.NStore.ds.UpdateHashtable(ut.ToString(api.NStore.config["NT_HASHTABLE"], ""), refname, hash)
 }
 
 /*
@@ -244,10 +246,10 @@ Returns a access token and the type of database.
 */
 func (api *API) UserLogin(options IM) (string, string, error) {
 	if _, found := options["database"]; !found {
-		if os.Getenv("NT_ALIAS_DEFAULT") == "" {
+		if ut.ToString(api.NStore.config["NT_ALIAS_DEFAULT"], "") == "" {
 			return "", "", errors.New(ut.GetMessage("missing_database"))
 		}
-		options["database"] = strings.ToLower(os.Getenv("NT_ALIAS_DEFAULT"))
+		options["database"] = strings.ToLower(ut.ToString(api.NStore.config["NT_ALIAS_DEFAULT"], ""))
 	}
 	password := ut.ToString(options["password"], "")
 	err := api.authUser(options)
@@ -303,7 +305,8 @@ func (api *API) DatabaseCreate(options IM) ([]SM, error) {
 	}
 
 	//check connect
-	if err := api.NStore.ds.CreateConnection(database, os.Getenv("NT_ALIAS_"+strings.ToUpper(database))); err != nil {
+	alias := ut.ToString(api.NStore.config["NT_ALIAS_"+strings.ToUpper(database)], os.Getenv("NT_ALIAS_"+strings.ToUpper(database)))
+	if err := api.NStore.ds.CreateConnection(database, alias); err != nil {
 		logData = append(logData, SM{
 			"stamp":   time.Now().Format(TimeLayout),
 			"state":   "err",
@@ -1084,7 +1087,7 @@ func (api *API) ReportList(options IM) (results []IM, err error) {
 	for index := 0; index < len(reports); index++ {
 		dbReports[ut.ToString(reports[index]["reportkey"], "")] = reports[index]["id"]
 	}
-	reportDir := ut.ToString(options["report_dir"], os.Getenv("NT_REPORT_DIR"))
+	reportDir := ut.ToString(options["report_dir"], ut.ToString(api.NStore.config["NT_REPORT_DIR"], ""))
 	filter := ut.ToString(options["label"], "")
 	results = []IM{}
 
@@ -1113,7 +1116,7 @@ func (api *API) ReportList(options IM) (results []IM, err error) {
 	}
 
 	if reportDir == "" {
-		err = fs.WalkDir(ut.Public, "static/templates", func(path string, d fs.DirEntry, err error) error {
+		err = fs.WalkDir(ut.Public, path.Join("static", "templates"), func(path string, d fs.DirEntry, err error) error {
 			if filepath.Ext(path) == ".json" {
 				if file, err := ut.Public.ReadFile(path); err == nil {
 					fileInfo(file, d.Name())
@@ -1193,10 +1196,10 @@ func (api *API) ReportInstall(options IM) (result int64, err error) {
 	if reportkey == "" {
 		return result, errors.New(ut.GetMessage("missing_required_field") + ": reportkey")
 	}
-	reportDir := ut.ToString(options["report_dir"], os.Getenv("NT_REPORT_DIR"))
+	reportDir := ut.ToString(options["report_dir"], ut.ToString(api.NStore.config["NT_REPORT_DIR"], ""))
 	var file []byte
 	if reportDir == "" {
-		file, err = ut.Public.ReadFile(filepath.Join("static", "templates", reportkey+".json"))
+		file, err = ut.Public.ReadFile(path.Join("static", "templates", reportkey+".json"))
 	} else {
 		file, err = ioutil.ReadFile(filepath.Join(reportDir, reportkey+".json"))
 	}

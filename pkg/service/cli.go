@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"os"
 
 	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
 	ut "github.com/nervatura/nervatura-go/pkg/utils"
@@ -10,6 +9,7 @@ import (
 
 // CLIService implements the Nervatura API service
 type CLIService struct {
+	Config        map[string]interface{}
 	GetNervaStore func(database string) *nt.NervaStore
 }
 
@@ -105,7 +105,7 @@ func (srv *CLIService) Delete(api *nt.API, options nt.IM) string {
 }
 
 func (srv *CLIService) DatabaseCreate(apiKey string, options nt.IM) string {
-	if os.Getenv("NT_API_KEY") != apiKey {
+	if srv.Config["NT_API_KEY"] != apiKey {
 		return respondData(0, nil, 401, errors.New(ut.GetMessage("error_unauthorized")))
 	}
 	log, err := (&nt.API{NStore: srv.GetNervaStore("")}).DatabaseCreate(options)

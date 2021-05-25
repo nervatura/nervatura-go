@@ -25,6 +25,7 @@ func init() {
 // StartService - Start Nervatura CLI server
 func (s *cliServer) StartService() error {
 	s.service = srv.CLIService{
+		Config:        s.app.config,
 		GetNervaStore: s.app.GetNervaStore,
 	}
 	err := s.parseFlags()

@@ -1438,13 +1438,13 @@ func (rpt *Report) setFont() bool {
 		rpt.pdf.AddFont(rpt.FontFamily, "BI", path.Join(rpt.fontDir, rpt.FontFamily+"-BoldItalic.ttf"), nil)
 	} else {
 		rpt.FontFamily = _fontFamily
-		font, _ := ut.Static.Open(path.Join("static", "fonts", rpt.FontFamily+"-Regular.ttf"))
+		font, _ := ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-Regular.ttf"))
 		rpt.pdf.AddFont(rpt.FontFamily, "", "", font)
-		font, _ = ut.Static.Open(path.Join("static", "fonts", rpt.FontFamily+"-Bold.ttf"))
+		font, _ = ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-Bold.ttf"))
 		rpt.pdf.AddFont(rpt.FontFamily, "B", "", font)
-		font, _ = ut.Static.Open(path.Join("static", "fonts", rpt.FontFamily+"-Italic.ttf"))
+		font, _ = ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-Italic.ttf"))
 		rpt.pdf.AddFont(rpt.FontFamily, "I", "", font)
-		font, _ = ut.Static.Open(path.Join("static", "fonts", rpt.FontFamily+"-BoldItalic.ttf"))
+		font, _ = ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-BoldItalic.ttf"))
 		rpt.pdf.AddFont(rpt.FontFamily, "BI", "", font)
 	}
 	return true

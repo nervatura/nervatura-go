@@ -8,18 +8,21 @@ import (
 )
 
 func getAPI() *nt.API {
-	return &nt.API{NStore: nt.New(&db.SQLDriver{})}
+	return &nt.API{NStore: nt.New(&db.SQLDriver{Config: nt.IM{}}, nt.IM{
+		"NT_ALIAS_DEMO": "sqlite://file:data/demo.db?cache=shared&mode=rwc",
+		"NT_HASHTABLE":  "ref17890714",
+	})}
 }
 
 func getLogin() (string, *nt.API, error) {
 	api := getAPI()
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "demo", "username": "admin", "password": ""}
 	token, _, err := api.UserLogin(options)
 	return token, api, err
 }
 
 func TestDatabaseCreate(t *testing.T) {
-	options := nt.IM{"database": alias, "demo": true}
+	options := nt.IM{"database": "demo", "demo": true}
 	_, err := getAPI().DatabaseCreate(options)
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +30,7 @@ func TestDatabaseCreate(t *testing.T) {
 }
 
 func TestApiUserLogin(t *testing.T) {
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "demo", "username": "admin", "password": ""}
 	_, _, err := getAPI().UserLogin(options)
 	if err != nil {
 		t.Fatal(err)

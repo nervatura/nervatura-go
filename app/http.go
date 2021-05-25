@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -39,6 +38,7 @@ func init() {
 func (s *httpServer) StartService() error {
 	s.mux = chi.NewRouter()
 	s.service = srv.HTTPService{
+		Config:        s.app.config,
 		GetNervaStore: s.app.GetNervaStore,
 		GetParam: func(req *http.Request, name string) string {
 			return chi.URLParam(req, name)
@@ -49,7 +49,7 @@ func (s *httpServer) StartService() error {
 	}
 
 	s.admin = srv.AdminService{
-		Version:       s.app.version,
+		Config:        s.app.config,
 		GetNervaStore: s.app.GetNervaStore,
 		GetTokenKeys: func() map[string]map[string]string {
 			return s.app.tokenKeys
@@ -79,8 +79,8 @@ func (s *httpServer) StartService() error {
 }
 
 func (s *httpServer) setPublicKeys() {
-	publicUrl := os.Getenv("NT_TOKEN_PUBLIC_KEY_URL")
-	ktype := ut.ToString(os.Getenv("NT_TOKEN_PUBLIC_KEY_TYPE"), "KEY")
+	publicUrl := s.app.config["NT_TOKEN_PUBLIC_KEY_URL"].(string)
+	ktype := s.app.config["NT_TOKEN_PUBLIC_KEY_TYPE"].(string)
 	if publicUrl != "" {
 		res, err := http.Get(publicUrl)
 		if err != nil {
@@ -111,16 +111,16 @@ func (s *httpServer) setPublicKeys() {
 func (s *httpServer) startServer() error {
 	s.server = &http.Server{
 		Handler:      s.mux,
-		Addr:         fmt.Sprintf(":%d", ut.GetEnvValue("int", os.Getenv("NT_HTTP_PORT")).(int)),
-		ReadTimeout:  ut.GetEnvValue("duration", os.Getenv("NT_HTTP_READ_TIMEOUT")).(time.Duration) * time.Second,
-		WriteTimeout: ut.GetEnvValue("duration", os.Getenv("NT_HTTP_WRITE_TIMEOUT")).(time.Duration) * time.Second,
+		Addr:         fmt.Sprintf(":%d", s.app.config["NT_HTTP_PORT"].(int64)),
+		ReadTimeout:  time.Duration(s.app.config["NT_HTTP_READ_TIMEOUT"].(float64)) * time.Second,
+		WriteTimeout: time.Duration(s.app.config["NT_HTTP_WRITE_TIMEOUT"].(float64)) * time.Second,
 	}
-	s.tlsEnabled = ut.GetEnvValue("bool", os.Getenv("NT_HTTP_TLS_ENABLED")).(bool) &&
-		os.Getenv("NT_TLS_CERT_FILE") != "" && os.Getenv("NT_TLS_KEY_FILE") != ""
+	s.tlsEnabled = s.app.config["NT_HTTP_TLS_ENABLED"].(bool) &&
+		s.app.config["NT_TLS_CERT_FILE"] != "" && s.app.config["NT_TLS_KEY_FILE"] != ""
 
-	s.app.infoLog.Printf(ut.GetMessage("http_serving"), os.Getenv("NT_HTTP_PORT"), s.tlsEnabled)
+	s.app.infoLog.Printf(ut.GetMessage("http_serving"), s.app.config["NT_HTTP_PORT"].(int64), s.tlsEnabled)
 	if s.tlsEnabled {
-		if err := s.server.ListenAndServeTLS(os.Getenv("NT_TLS_CERT_FILE"), os.Getenv("NT_TLS_KEY_FILE")); err != http.ErrServerClosed {
+		if err := s.server.ListenAndServeTLS(s.app.config["NT_TLS_CERT_FILE"].(string), s.app.config["NT_TLS_KEY_FILE"].(string)); err != http.ErrServerClosed {
 			return err
 		}
 	} else {
@@ -158,39 +158,39 @@ func (s *httpServer) setMiddleware() {
 	s.mux.Use(middleware.CleanPath)
 	s.mux.Use(middleware.StripSlashes)
 
-	if ut.GetEnvValue("bool", os.Getenv("NT_CORS_ENABLED")).(bool) {
+	if s.app.config["NT_CORS_ENABLED"].(bool) {
 		s.mux.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   ut.GetEnvValue("slice", os.Getenv("NT_CORS_ALLOW_ORIGINS")).([]string),
-			AllowedMethods:   ut.GetEnvValue("slice", os.Getenv("NT_CORS_ALLOW_METHODS")).([]string),
-			AllowedHeaders:   ut.GetEnvValue("slice", os.Getenv("NT_CORS_ALLOW_HEADERS")).([]string),
-			ExposedHeaders:   ut.GetEnvValue("slice", os.Getenv("NT_CORS_EXPOSE_HEADERS")).([]string),
-			AllowCredentials: ut.GetEnvValue("bool", os.Getenv("NT_CORS_ALLOW_CREDENTIALS")).(bool),
-			MaxAge:           ut.GetEnvValue("int", os.Getenv("NT_CORS_MAX_AGE")).(int),
+			AllowedOrigins:   s.app.config["NT_CORS_ALLOW_ORIGINS"].([]string),
+			AllowedMethods:   s.app.config["NT_CORS_ALLOW_METHODS"].([]string),
+			AllowedHeaders:   s.app.config["NT_CORS_ALLOW_HEADERS"].([]string),
+			ExposedHeaders:   s.app.config["NT_CORS_EXPOSE_HEADERS"].([]string),
+			AllowCredentials: s.app.config["NT_CORS_ALLOW_CREDENTIALS"].(bool),
+			MaxAge:           int(s.app.config["NT_CORS_MAX_AGE"].(int64)),
 		}))
 	}
 
-	if ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_ENABLED")).(bool) {
+	if s.app.config["NT_SECURITY_ENABLED"].(bool) {
 		s.mux.Use(secure.New(secure.Options{
-			AllowedHosts:            ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_ALLOWED_HOSTS")).([]string),
-			AllowedHostsAreRegex:    ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_ALLOWED_HOSTS_ARE_REGEX")).(bool),
-			HostsProxyHeaders:       ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_HOSTS_PROXY_HEADERS")).([]string),
-			SSLRedirect:             ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_SSL_REDIRECT")).(bool),
-			SSLTemporaryRedirect:    ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_SSL_TEMPORARY_REDIRECT")).(bool),
-			SSLHost:                 ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_SSL_HOST")).(string),
-			STSSeconds:              ut.GetEnvValue("int64", os.Getenv("NT_SECURITY_STS_SECONDS")).(int64),
-			STSIncludeSubdomains:    ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_STS_INCLUDE_SUBDOMAINS")).(bool),
-			STSPreload:              ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_STS_PRELOAD")).(bool),
-			ForceSTSHeader:          ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_FORCE_STS_HEADER")).(bool),
-			FrameDeny:               ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_FRAME_DENY")).(bool),
-			CustomFrameOptionsValue: ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_CUSTOM_FRAME_OPTIONS_VALUE")).(string),
-			ContentTypeNosniff:      ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_CONTENT_TYPE_NOSNIFF")).(bool),
-			BrowserXssFilter:        ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_BROWSER_XSS_FILTER")).(bool),
-			ContentSecurityPolicy:   ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_CONTENT_SECURITY_POLICY")).(string),
-			PublicKey:               ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_PUBLIC_KEY")).(string),
-			ReferrerPolicy:          ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_REFERRER_POLICY")).(string),
-			FeaturePolicy:           ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_FEATURE_POLICY")).(string),
-			ExpectCTHeader:          ut.GetEnvValue("slice", os.Getenv("NT_SECURITY_EXPECT_CT_HEADER")).(string),
-			IsDevelopment:           ut.GetEnvValue("bool", os.Getenv("NT_SECURITY_DEVELOPMENT")).(bool),
+			AllowedHosts:            s.app.config["NT_SECURITY_ALLOWED_HOSTS"].([]string),
+			AllowedHostsAreRegex:    s.app.config["NT_SECURITY_ALLOWED_HOSTS_ARE_REGEX"].(bool),
+			HostsProxyHeaders:       s.app.config["NT_SECURITY_HOSTS_PROXY_HEADERS"].([]string),
+			SSLRedirect:             s.app.config["NT_SECURITY_SSL_REDIRECT"].(bool),
+			SSLTemporaryRedirect:    s.app.config["NT_SECURITY_SSL_TEMPORARY_REDIRECT"].(bool),
+			SSLHost:                 s.app.config["NT_SECURITY_SSL_HOST"].(string),
+			STSSeconds:              s.app.config["NT_SECURITY_STS_SECONDS"].(int64),
+			STSIncludeSubdomains:    s.app.config["NT_SECURITY_STS_INCLUDE_SUBDOMAINS"].(bool),
+			STSPreload:              s.app.config["NT_SECURITY_STS_PRELOAD"].(bool),
+			ForceSTSHeader:          s.app.config["NT_SECURITY_FORCE_STS_HEADER"].(bool),
+			FrameDeny:               s.app.config["NT_SECURITY_FRAME_DENY"].(bool),
+			CustomFrameOptionsValue: s.app.config["NT_SECURITY_CUSTOM_FRAME_OPTIONS_VALUE"].(string),
+			ContentTypeNosniff:      s.app.config["NT_SECURITY_CONTENT_TYPE_NOSNIFF"].(bool),
+			BrowserXssFilter:        s.app.config["NT_SECURITY_BROWSER_XSS_FILTER"].(bool),
+			ContentSecurityPolicy:   s.app.config["NT_SECURITY_CONTENT_SECURITY_POLICY"].(string),
+			PublicKey:               s.app.config["NT_SECURITY_PUBLIC_KEY"].(string),
+			ReferrerPolicy:          s.app.config["NT_SECURITY_REFERRER_POLICY"].(string),
+			FeaturePolicy:           s.app.config["NT_SECURITY_FEATURE_POLICY"].(string),
+			ExpectCTHeader:          s.app.config["NT_SECURITY_EXPECT_CT_HEADER"].(string),
+			IsDevelopment:           s.app.config["NT_SECURITY_DEVELOPMENT"].(bool),
 		}).Handler)
 	}
 
@@ -214,7 +214,7 @@ func (s *httpServer) setRoutes() {
 	s.fileServer("/", http.FS(publicFS))
 
 	s.mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		home := ut.ToString(os.Getenv("NT_HTTP_HOME"), "/")
+		home := s.app.config["NT_HTTP_HOME"].(string)
 		if home != "/" {
 			http.Redirect(w, r, home, http.StatusSeeOther)
 		}
@@ -247,7 +247,7 @@ func (s *httpServer) setRoutes() {
 	})
 	s.mux.Route("/api", func(r chi.Router) {
 		r.Post("/database", s.service.DatabaseCreate)
-		r.Get("/config", s.service.Config)
+		r.Get("/config", s.service.ClientConfig)
 		r.Group(func(r chi.Router) {
 			r.Use(s.tokenAuth)
 			r.Post("/function", s.service.Function)

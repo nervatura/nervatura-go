@@ -44,7 +44,7 @@ func TestRpcDatabaseCreate(t *testing.T) {
 	conn, client := getClient(t)
 	defer conn.Close()
 
-	md := metadata.Pairs("X-Api-Key", apiKey)
+	md := metadata.Pairs("X-Api-Key", "TEST_API_KEY")
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	resp, err := client.DatabaseCreate(ctx, &pb.RequestDatabaseCreate{Alias: "demo", Demo: true})

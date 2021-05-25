@@ -8,13 +8,16 @@ import (
 )
 
 func getNstore() *nt.NervaStore {
-	return nt.New(&db.SQLDriver{})
+	return nt.New(&db.SQLDriver{Config: nt.IM{}}, nt.IM{
+		"NT_ALIAS_TEST": "sqlite://file:data/demo.db?cache=shared&mode=rwc",
+		"NT_HASHTABLE":  "ref17890714",
+	})
 }
 
 func TestUpdateData(t *testing.T) {
 
 	nstore := getNstore()
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -33,7 +36,7 @@ func TestUpdateData(t *testing.T) {
 func TestDeleteData(t *testing.T) {
 
 	nstore := getNstore()
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +54,7 @@ func TestDeleteData(t *testing.T) {
 func TestGetInfofromRefnumber(t *testing.T) {
 	nstore := getNstore()
 
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -64,19 +67,19 @@ func TestGetInfofromRefnumber(t *testing.T) {
 		{"barcode", "BC0123456789"},
 		{"customer", "DMCUST/00001"},
 		{"event", "DMEVT/00001"},
-		{"groups", "barcodetype~AZTEC"},
+		{"groups", "barcodetype~QR"},
 		{"fieldvalue", "DMCUST/00001~~sample_customer_date~1"},
 		{"setting", "default_unit"},
 		{"item", "DMINV/00001~1"},
 		{"payment", "DMPMT/00001~1"},
 		{"movement", "DMCORR/00001~1"},
-		{"price", "DMPROD/00001~price~2019-04-05~EUR~0"},
+		{"price", "DMPROD/00001~price~2020-04-05~EUR~0"},
 		{"product", "DMPROD/00001"},
 		{"place", "bank"},
 		{"tax", "15%"},
 		{"trans", "DMINV/00001"},
 		{"link", "movement~DMDEL/00001~2~~item~DMORD/00001~2"},
-		{"ui_menufields", "mnu_exp_1~number_1"},
+		{"ui_menufields", "nextNumber~step"},
 	}
 	for index := 0; index < len(params); index++ {
 		options := nt.IM{
@@ -92,7 +95,7 @@ func TestGetInfofromRefnumber(t *testing.T) {
 func TestGetRefnumber(t *testing.T) {
 	nstore := getNstore()
 
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +129,7 @@ func TestGetRefnumber(t *testing.T) {
 func TestGetDataAudit(t *testing.T) {
 	nstore := getNstore()
 
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -141,7 +144,7 @@ func TestGetDataAudit(t *testing.T) {
 func TestGetObjectAudit(t *testing.T) {
 	nstore := getNstore()
 
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -159,7 +162,7 @@ func TestGetObjectAudit(t *testing.T) {
 func TestGetGroups(t *testing.T) {
 	nstore := getNstore()
 
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)
@@ -178,7 +181,7 @@ func TestGetGroups(t *testing.T) {
 func TestGetDatabaseSettings(t *testing.T) {
 	nstore := getNstore()
 
-	options := nt.IM{"database": alias, "username": username, "password": password}
+	options := nt.IM{"database": "test", "username": "admin", "password": ""}
 	_, _, err := (&nt.API{NStore: nstore}).UserLogin(options)
 	if err != nil {
 		t.Fatal(err)

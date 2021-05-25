@@ -5,7 +5,6 @@ package service
 import (
 	"context"
 	"errors"
-	"os"
 	"strconv"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 
 // RPCService implements the Nervatura API service
 type RPCService struct {
+	Config        map[string]interface{}
 	GetNervaStore func(database string) *nt.NervaStore
 	GetTokenKeys  func() map[string]map[string]string
 	pb.UnimplementedAPIServer
@@ -598,7 +598,7 @@ func (srv *RPCService) ApiKeyAuth(authorization []string, parent context.Context
 	if apiKey == "" {
 		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
-	if os.Getenv("NT_API_KEY") != apiKey {
+	if srv.Config["NT_API_KEY"] != apiKey {
 		return ctx, errors.New(ut.GetMessage("error_unauthorized"))
 	}
 	nstore := srv.GetNervaStore("")

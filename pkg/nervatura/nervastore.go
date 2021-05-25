@@ -21,13 +21,15 @@ type NervaStore struct {
 	User     *User
 	Customer IM
 	models   IM
+	config   IM
 }
 
 // New returns a pointer to a new NervaStore instance.
-func New(driver DataDriver) (nstore *NervaStore) {
+func New(driver DataDriver, config IM) (nstore *NervaStore) {
 	nstore = new(NervaStore)
 	nstore.models = DataModel()["model"].(IM)
 	nstore.ds = driver
+	nstore.config = config
 	return
 }
 

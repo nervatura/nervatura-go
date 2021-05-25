@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 
@@ -20,6 +19,7 @@ import (
 
 // HTTPService implements the Nervatura API service
 type HTTPService struct {
+	Config        map[string]interface{}
 	GetNervaStore func(database string) *nt.NervaStore
 	GetParam      func(req *http.Request, name string) string
 	GetTokenKeys  func() map[string]map[string]string
@@ -48,10 +48,10 @@ func (srv *HTTPService) respondMessage(w http.ResponseWriter, code int, payload 
 	}
 }
 
-func (srv *HTTPService) Config(w http.ResponseWriter, r *http.Request) {
+func (srv *HTTPService) ClientConfig(w http.ResponseWriter, r *http.Request) {
 	config := nt.IM{}
-	if os.Getenv("NT_CLIENT_CONFIG") != "" {
-		if content, err := ioutil.ReadFile(os.Getenv("NT_CLIENT_CONFIG")); err == nil {
+	if srv.Config["NT_CLIENT_CONFIG"] != "" {
+		if content, err := ioutil.ReadFile(srv.Config["NT_CLIENT_CONFIG"].(string)); err == nil {
 			_ = ut.ConvertFromByte(content, &config)
 		}
 	}
@@ -241,12 +241,12 @@ func (srv *HTTPService) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (srv *HTTPService) DatabaseCreate(w http.ResponseWriter, r *http.Request) {
 	apiKey := r.Header.Get("X-Api-Key")
-	if os.Getenv("NT_API_KEY") != apiKey {
+	if srv.Config["NT_API_KEY"] != apiKey {
 		srv.respondMessage(w, 0, nil, http.StatusUnauthorized, errors.New(ut.GetMessage("error_unauthorized")))
 		return
 	}
 	data := nt.IM{"database": r.URL.Query().Get("alias"), "demo": r.URL.Query().Get("demo")}
-	log, err := (&nt.API{NStore: nt.New(&db.SQLDriver{})}).DatabaseCreate(data)
+	log, err := (&nt.API{NStore: nt.New(&db.SQLDriver{Config: srv.Config}, srv.Config)}).DatabaseCreate(data)
 	srv.respondMessage(w, http.StatusOK, log, http.StatusBadRequest, err)
 }
 

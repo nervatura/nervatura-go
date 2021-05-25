@@ -8,7 +8,7 @@ import (
 	"errors"
 	"image/color"
 	"io"
-	"os"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -16,10 +16,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-//go:embed static/views static/message.json static/fonts
+//go:embed static/views static/message.json
 var Static embed.FS
 
-//go:embed static/client static/css static/templates
+//go:embed static/client static/css static/templates static/fonts
 var Public embed.FS
 
 func GetMD5Hash(text string) string {
@@ -277,39 +277,6 @@ func Contains(a []string, x string) bool {
 	return false
 }
 
-// GetEnvValue convert env. string to go type
-func GetEnvValue(ctype string, value string) interface{} {
-	switch ctype {
-	case "bool":
-		if strings.ToUpper(value) == "TRUE" {
-			return true
-		}
-		return false
-	case "slice":
-		return strings.Split(value, ",")
-	case "int":
-		ivalue, err := strconv.Atoi(value)
-		if err == nil {
-			return ivalue
-		}
-		return 0
-	case "int64":
-		ivalue, err := strconv.ParseInt(value, 10, 64)
-		if err == nil {
-			return ivalue
-		}
-		return 0
-	case "duration":
-		value, err := strconv.ParseFloat(value, 64)
-		if err == nil {
-			return time.Duration(value)
-		}
-		return time.Duration(0)
-	default:
-		return value
-	}
-}
-
 func ConvertToByte(data interface{}) ([]byte, error) {
 	//var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	return json.Marshal(data)
@@ -338,7 +305,7 @@ func GetMessage(key string) string {
 /*
 CreateToken - create/refresh a Nervatura JWT token
 */
-func CreateToken(username, database string) (string, error) {
+func CreateToken(username, database string, config map[string]interface{}) (string, error) {
 	// ntClaims is a custom Nervatura claims type
 	type ntClaims struct {
 		Username string `json:"username"`
@@ -346,18 +313,18 @@ func CreateToken(username, database string) (string, error) {
 		jwt.StandardClaims
 	}
 
-	expirationTime := time.Now().Add(GetEnvValue("duration", os.Getenv("NT_TOKEN_EXP")).(time.Duration) * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(ToFloat(config["NT_TOKEN_EXP"], 1)) * time.Hour)
 	claims := ntClaims{
 		username,
 		database,
 		jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
-			Issuer:    os.Getenv("NT_TOKEN_ISS"),
+			Issuer:    ToString(config["NT_TOKEN_ISS"], "nervatura"),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = os.Getenv("NT_TOKEN_KID")
-	return token.SignedString([]byte(os.Getenv("NT_TOKEN_PRIVATE_KEY")))
+	token.Header["kid"] = ToString(config["NT_TOKEN_KID"], GetMD5Hash("nervatura"))
+	return token.SignedString([]byte(ToString(config["NT_TOKEN_PRIVATE_KEY"], GetMD5Hash(time.Now().Format("20060102")))))
 }
 
 /*
@@ -390,17 +357,17 @@ func parsePEM(key map[string]string) (interface{}, error) {
 /*
 ParseToken - Parse, validate, and return a token data.
 */
-func ParseToken(tokenString string, keyMap map[string]map[string]string) (map[string]interface{}, error) {
+func ParseToken(tokenString string, keyMap map[string]map[string]string, config map[string]interface{}) (map[string]interface{}, error) {
 	data := make(map[string]interface{})
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("Unexpected signing method: " + token.Header["alg"].(string))
 		}
-		kid := ToString(token.Header["kid"], os.Getenv("NT_TOKEN_KID"))
+		kid := ToString(token.Header["kid"], ToString(config["NT_TOKEN_KID"], GetMD5Hash("nervatura")))
 		if keyMap, found := keyMap[kid]; found {
 			return parsePEM(keyMap)
 		}
-		return []byte(os.Getenv("NT_TOKEN_PRIVATE_KEY")), nil
+		return []byte(ToString(config["NT_TOKEN_PRIVATE_KEY"], GetMD5Hash(time.Now().Format("20060102")))), nil
 	})
 	if err != nil {
 		return data, err
@@ -416,10 +383,10 @@ func ParseToken(tokenString string, keyMap map[string]map[string]string) (map[st
 	}
 
 	if _, found := claims["database"]; !found {
-		if os.Getenv("NT_ALIAS_DEFAULT") == "" {
+		if ToString(config["NT_ALIAS_DEFAULT"], "") == "" {
 			return data, errors.New(GetMessage("missing_database"))
 		}
-		data["database"] = os.Getenv("NT_ALIAS_DEFAULT")
+		data["database"] = ToString(config["NT_ALIAS_DEFAULT"], "")
 	}
 	data["database"] = claims["database"]
 	data["username"] = ""
@@ -437,4 +404,16 @@ func ParseToken(tokenString string, keyMap map[string]map[string]string) (map[st
 	}
 	return data, nil
 
+}
+
+func RandString(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789")
+	var b strings.Builder
+	for i := 0; i < length; i++ {
+		b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+	return b.String()
 }

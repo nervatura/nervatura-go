@@ -2256,7 +2256,7 @@ func (x *Address) GetMetadata() []*MetaData {
 //
 //- ```id```: Barcode *code*
 //
-//- ```barcodetype```: Valid values: *AZTEC, CODABAR, CODE_128, CODE_39, CODE_93, DATA_MATRIX, EAN_13, EAN_8, ITF, MSI, PDF417, QR_CODE, RSS_EXPANDED, RSS14, UPC_A, UPC_E*
+//- ```barcodetype```: Valid values: *CODE_128, CODE_39, EAN_13, EAN_8, QR*
 //
 //- ```product_id```: Product *partnumber*
 type Barcode struct {

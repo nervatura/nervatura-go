@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -44,6 +43,7 @@ type SQLDriver struct {
 	connStr string
 	engine  string
 	db      *sql.DB
+	Config  IM
 }
 
 var dropList = []string{
@@ -268,9 +268,9 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string) error {
 	if err != nil {
 		return err
 	}
-	db.SetMaxOpenConns(ut.GetEnvValue("int", os.Getenv("SQL_MAX_OPEN_CONNS")).(int))
-	db.SetMaxIdleConns(ut.GetEnvValue("int", os.Getenv("SQL_MAX_IDLE_CONNS")).(int))
-	db.SetConnMaxLifetime(time.Minute * time.Duration(ut.GetEnvValue("int", os.Getenv("SQL_CONN_MAX_LIFETIME")).(int)))
+	db.SetMaxOpenConns(int(ut.ToInteger(ds.Config["SQL_MAX_OPEN_CONNS"], 10)))
+	db.SetMaxIdleConns(int(ut.ToInteger(ds.Config["SQL_MAX_IDLE_CONNS"], 3)))
+	db.SetConnMaxLifetime(time.Minute * time.Duration(int(ut.ToInteger(ds.Config["SQL_CONN_MAX_LIFETIME"], 15))))
 	ds.db = db
 	ds.alias = alias
 	ds.engine = engine

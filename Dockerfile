@@ -21,7 +21,7 @@ RUN make release TAGS=${APP_MODULES}
 FROM scratch
 
 # Copy binary and config files from /build to root folder of scratch container.
-COPY --from=builder ["/build/nervatura", "/build/.env", "/"]
+COPY --from=builder ["/build/nervatura", "/"]
 
 # Export necessary port.
 EXPOSE 5000

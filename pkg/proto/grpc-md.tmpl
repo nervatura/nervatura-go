@@ -1,16 +1,16 @@
 {{range .Files}}
 
 {{range .Services -}}
----
 # {{.Description}}
+
+Nervatura [gRPC](https://grpc.io/) specification.
 
 | Method Name | Request Type | Response Type | Description |
 | --- | --- | --- | --- |
 {{range .Methods -}}
 | {{.Name}} | [{{.RequestLongType}}](#{{.RequestLongType | lower | replace "." ""}}) | [{{.ResponseLongType}}](#{{.ResponseLongType | lower | replace "." ""}}) | {{ .Description}} |
-{{end}} <!-- end methods -->
-
-{{end}} <!-- end services -->
+{{end}} 
+{{end}} 
 <br />
 
 ---
@@ -44,10 +44,10 @@
 | ----- | ---- | ----------- |
 {{range .Fields -}}
 	| {{if .IsOneof}}[**oneof**](https://developers.google.com/protocol-buffers/docs/proto3#oneof) {{.OneofDecl}}.{{end}}{{.Name}} | [{{if .IsMap}}map {{else}}{{.Label}} {{end}}{{.LongType}}](#{{.LongType | lower | replace "." ""}}) | {{if .Description}}{{.Description}}{{if .DefaultValue}} Default: {{.DefaultValue}}{{end}}{{else}}{{end}} |
-{{end}} <!-- end Fields -->
+{{end}}
 <br />
-{{end}} <!-- end HasFields -->
-{{end}} <!-- end messages -->
+{{end}}
+{{end}}
 
 ---
 # Enums
@@ -63,8 +63,8 @@
 	| {{.Name}} | {{.Number}} | {{if .Description}}[{{.Description}}](#{{.Description | lower | replace "." ""}}){{end}} |
 {{end}}
 <br />
-{{end}} <!-- end Enums -->
-{{end}} <!-- end Files -->
+{{end}}
+{{end}}
 
 ---
 # Scalar Value Types
