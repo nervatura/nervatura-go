@@ -5,7 +5,7 @@ import (
 	"strings"
 	"text/template"
 
-	ut "github.com/nervatura/nervatura-go/pkg/utils"
+	ut "github.com/nervatura/nervatura-service/pkg/utils"
 )
 
 // ClientService serve the Nervatura Client

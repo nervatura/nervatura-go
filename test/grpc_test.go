@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	pb "github.com/nervatura/nervatura-go/pkg/proto"
+	pb "github.com/nervatura/nervatura-service/pkg/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

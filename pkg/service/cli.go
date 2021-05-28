@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
-	ut "github.com/nervatura/nervatura-go/pkg/utils"
+	nt "github.com/nervatura/nervatura-service/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-service/pkg/utils"
 )
 
 // CLIService implements the Nervatura API service

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nervatura/nervatura-go/app"
-	ut "github.com/nervatura/nervatura-go/pkg/utils"
+	"github.com/nervatura/nervatura-service/app"
+	ut "github.com/nervatura/nervatura-service/pkg/utils"
 )
 
 func encodeOptions(data interface{}) string {

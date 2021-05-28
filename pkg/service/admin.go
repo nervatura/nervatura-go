@@ -6,9 +6,9 @@ import (
 	"path"
 	"text/template"
 
-	db "github.com/nervatura/nervatura-go/pkg/database"
-	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
-	ut "github.com/nervatura/nervatura-go/pkg/utils"
+	db "github.com/nervatura/nervatura-service/pkg/database"
+	nt "github.com/nervatura/nervatura-service/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-service/pkg/utils"
 )
 
 // AdminService implements the Nervatura Admin GUI

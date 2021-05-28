@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	db "github.com/nervatura/nervatura-go/pkg/database"
-	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
-	ut "github.com/nervatura/nervatura-go/pkg/utils"
+	db "github.com/nervatura/nervatura-service/pkg/database"
+	nt "github.com/nervatura/nervatura-service/pkg/nervatura"
+	ut "github.com/nervatura/nervatura-service/pkg/utils"
 )
 
 // HTTPService implements the Nervatura API service

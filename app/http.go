@@ -15,8 +15,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
-	srv "github.com/nervatura/nervatura-go/pkg/service"
-	ut "github.com/nervatura/nervatura-go/pkg/utils"
+	srv "github.com/nervatura/nervatura-service/pkg/service"
+	ut "github.com/nervatura/nervatura-service/pkg/utils"
 	"github.com/unrolled/secure"
 )
 

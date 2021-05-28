@@ -3,8 +3,8 @@ package test
 import (
 	"testing"
 
-	db "github.com/nervatura/nervatura-go/pkg/database"
-	nt "github.com/nervatura/nervatura-go/pkg/nervatura"
+	db "github.com/nervatura/nervatura-service/pkg/database"
+	nt "github.com/nervatura/nervatura-service/pkg/nervatura"
 )
 
 func getNstore() *nt.NervaStore {

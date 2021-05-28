@@ -32,4 +32,9 @@ C#, C++, Dart, Go, Java, Kotlin, Node, Objective-C, PHP, Python, Ruby
 
 [**Installation**](https://nervatura.github.io/nervatura/#installation) and [**Quick Start**](https://nervatura.github.io/nervatura/#quick-start)
 
-More info see http://www.nervatura.com.
+More info see 
+
+http://www.nervatura.com
+
+[![GoDoc](https://godoc.org/github.com/nervatura/nervatura-service?status.svg)](https://godoc.org/github.com/nervatura/nervatura-service)
+
