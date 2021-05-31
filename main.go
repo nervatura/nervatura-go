@@ -13,6 +13,8 @@ It is a general open-data model, which can store all information generated in th
 The Nervatura service is small and fast. A single ~6 MB file contains all the necessary dependencies.
 The framework includes:
 
+• CLI (command line) API
+
 • standard HTTP RESTful API (https://nervatura.github.io/nervatura/api) for client communication
 
 • HTTP/2-based gRPC API (https://nervatura.github.io/nervatura/grpc) for server-side communication

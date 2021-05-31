@@ -231,6 +231,7 @@ func (pi *PageItem) setPageItem(fieldname string, value interface{}) error {
 			"Height": func(value interface{}) {
 				pi.Item.(*VGap).Height = ut.ToFloat(value, 0)
 			},
+			"Visible": func(value interface{}) {},
 		},
 		"hline": {
 			"Width": func(value interface{}) {
@@ -242,6 +243,7 @@ func (pi *PageItem) setPageItem(fieldname string, value interface{}) error {
 			"BorderColor": func(value interface{}) {
 				pi.Item.(*HLine).BorderColor = ut.ToRGBA(value, pi.Item.(*HLine).BorderColor)
 			},
+			"Visible": func(value interface{}) {},
 		},
 		"html": {
 			"Fieldname": func(value interface{}) {

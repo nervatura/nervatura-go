@@ -204,7 +204,7 @@ func (nstore *NervaStore) getReportCSV(reportTemplate, datarows IM, base64Encodi
 					fieldname := ut.ToString(columns[ci], "")
 					if lbFound {
 						if label, lbValue := labels[fieldname]; lbValue {
-							fieldname = label.(string)
+							fieldname = ut.ToString(label, "")
 						}
 					}
 					row = append(row, fieldname)
@@ -215,7 +215,7 @@ func (nstore *NervaStore) getReportCSV(reportTemplate, datarows IM, base64Encodi
 					row := make([]string, 0)
 					for ci := 0; ci < len(columns); ci++ {
 						if value, vcol := data[i][ut.ToString(columns[ci], "")]; vcol {
-							row = append(row, value.(string))
+							row = append(row, ut.ToString(value, ""))
 						}
 					}
 					rows = append(rows, row)

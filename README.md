@@ -18,6 +18,7 @@ The framework is based on Nervatura Object [**MODEL**](https://nervatura.github.
 
 The Nervatura service is small and fast. A single ~6 MB file contains all the necessary dependencies.
 The framework includes:
+- CLI (command line) API
 - standard HTTP [**RESTful API**](https://nervatura.github.io/nervatura/api) for client communication
 - HTTP/2-based [**gRPC API**](https://nervatura.github.io/nervatura/grpc) for server-side communication
 - JWT generation, external token validation, SSL/TLS support and other HTTP security [settings](https://github.com/nervatura/nervatura-service/blob/master/.env.example)
