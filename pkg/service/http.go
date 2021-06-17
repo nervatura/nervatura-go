@@ -99,7 +99,7 @@ func (srv *HTTPService) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(data)
-	srv.respondMessage(w, http.StatusOK, nt.SM{"token": token, "engine": engine}, http.StatusBadRequest, err)
+	srv.respondMessage(w, http.StatusOK, nt.SM{"token": token, "engine": engine, "version": srv.Config["version"].(string)}, http.StatusBadRequest, err)
 }
 
 func (srv *HTTPService) UserPassword(w http.ResponseWriter, r *http.Request) {

@@ -1357,7 +1357,7 @@ func (nstore *NervaStore) GetRefnumber(options IM) (IM, error) {
 			}
 			info["index"] = rows[0]["count"]
 			if infoData["retfield"] == "fieldname" {
-				info[infoData["retfield"].(string)] = infoData["fieldname"].(string) + "~" + strconv.FormatInt(info["index"].(int64), 64)
+				info[infoData["retfield"].(string)] = infoData["fieldname"].(string) + "~" + strconv.FormatInt(info["index"].(int64), 10)
 			}
 			head, err := nstore.GetRefnumber(IM{
 				"nervatype": info["headNervatype"], "ref_id": info["refId"],

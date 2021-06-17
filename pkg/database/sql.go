@@ -95,6 +95,7 @@ func (ds *SQLDriver) decodeEngine(sqlStr string) string {
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDate, ", '%Y-%m-%d')")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmsDateTime, "date_format(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcFmeDateTime, ", '%Y-%m-%d %H:%i')")
+		sqlStr = strings.ReplaceAll(sqlStr, " groups", " `groups`")
 	case "mssql":
 		sqlStr = strings.ReplaceAll(sqlStr, dcCasInt, "cast(")
 		sqlStr = strings.ReplaceAll(sqlStr, dcCaeInt, " as int)")
@@ -256,7 +257,9 @@ func (ds *SQLDriver) CreateConnection(alias, connStr string) error {
 	switch engine {
 	case "sqlite":
 		connStr = strings.ReplaceAll(connStr, "sqlite://", "")
-	case "postgres", "mysql", "mssql":
+	case "mysql":
+		connStr = strings.TrimPrefix(connStr, engine+"://")
+	case "postgres", "mssql":
 	default:
 		return errors.New(ut.GetMessage("valid_engine"))
 	}
@@ -339,6 +342,13 @@ func (ds *SQLDriver) UpdateHashtable(hashtable, refname, value string) error {
 	return err
 }
 
+func (ds *SQLDriver) tableName(name string) string {
+	if ds.engine == "mysql" {
+		return "`" + name + "`"
+	}
+	return name
+}
+
 //dropData - drop all tables if exist
 func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 
@@ -359,16 +369,10 @@ func (ds *SQLDriver) dropData(logData []SM) ([]SM, error) {
 
 	for index := 0; index < len(dropList); index++ {
 		sqlString := ""
-		if ds.engine == "mysql" {
-			sqlString = "SET FOREIGN_KEY_CHECKS=0; "
-		}
 		if ds.engine == "mssql" {
-			sqlString += "DROP TABLE " + dropList[index] + ";"
+			sqlString = "DROP TABLE " + dropList[index] + ";"
 		} else {
-			sqlString += "DROP TABLE IF EXISTS " + dropList[index] + ";"
-		}
-		if ds.engine == "mysql" {
-			sqlString = " SET FOREIGN_KEY_CHECKS=1;"
+			sqlString = "DROP TABLE IF EXISTS " + ds.tableName(dropList[index]) + ";"
 		}
 		_, err := trans.Exec(sqlString)
 		if err != nil {
@@ -394,7 +398,7 @@ func (ds *SQLDriver) createTableFields(sqlString, fieldname, indexName string, f
 	sqlString += fieldname
 	if field.References != nil {
 		reference := ds.getDataType("reference")
-		reference = strings.ReplaceAll(reference, "foreign_key", field.References[0]+"(id)")
+		reference = strings.ReplaceAll(reference, "foreign_key", ds.tableName(field.References[0])+"(id)")
 		reference = strings.ReplaceAll(reference, "field_name", fieldname)
 		reference = strings.ReplaceAll(reference, "index_name", fieldname+"__idx")
 		reference = strings.ReplaceAll(reference, "constraint_name", indexName+"__"+fieldname+"__constraint")
@@ -437,7 +441,7 @@ func (ds *SQLDriver) createTable(logData []SM, trans *sql.Tx) ([]SM, error) {
 	model := nt.DataModel()["model"].(IM)
 
 	for index := 0; index < len(createList); index++ {
-		sqlString := "CREATE TABLE " + createList[index] + "("
+		sqlString := "CREATE TABLE " + ds.tableName(createList[index]) + "("
 		for fld := 0; fld < len(model[createList[index]].(IM)["_fields"].(SL)); fld++ {
 			fieldname := model[createList[index]].(IM)["_fields"].(SL)[fld]
 			field := model[createList[index]].(IM)[fieldname].(nt.MF)
@@ -472,12 +476,13 @@ func (ds *SQLDriver) createIndex(logData []SM, trans *sql.Tx) ([]SM, error) {
 		if ifield.Unique {
 			sqlString = "CREATE UNIQUE INDEX "
 		}
-		sqlString += ikey + " ON " + ifield.Model + "("
+		sqlString += ikey + " ON " + ds.tableName(ifield.Model) + "("
 		for index := 0; index < len(ifield.Fields); index++ {
 			sqlString += ifield.Fields[index] + ", "
 		}
 		sqlString += ");"
 		sqlString = strings.ReplaceAll(sqlString, ", );", ");")
+		//println(sqlString)
 		_, err := trans.Exec(sqlString)
 		if err != nil {
 			logData = append(logData, SM{
@@ -522,7 +527,7 @@ func (ds *SQLDriver) insertData(logData []SM, trans *sql.Tx) ([]SM, error) {
 				fldValues = append(fldValues, ds.getPrmString(len(params)))
 			}
 			sqlString := insertID + fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s);",
-				mname, strings.Join(fldNames, ","), strings.Join(fldValues, ","))
+				ds.tableName(mname), strings.Join(fldNames, ","), strings.Join(fldValues, ","))
 			//println(sqlString)
 			_, err := trans.Exec(sqlString, params...)
 			if err != nil {
@@ -736,7 +741,7 @@ func initQueryCols(engine string, cols []*sql.ColumnType) ([]interface{}, []stri
 		case "DOUBLE", "FLOAT8", "DECIMAL(19,4)", "DECIMAL", "NUMERIC":
 			values[i] = new(sql.NullFloat64)
 		case "DATETIME", "TIMESTAMP", "DATE":
-			if engine != "sqlite" {
+			if engine == "postgres" {
 				values[i] = new(sql.NullTime)
 			}
 		}

@@ -1,5 +1,7 @@
 package nervatura
 
+import "time"
+
 //ModelField - Model (table/document) field description
 type ModelField struct {
 	Type       string //Valid values:"id",integer","float","string","text","date","datetime"
@@ -1054,7 +1056,7 @@ func DataModel() IM {
 				{"fieldname": "default_taxcode", "value": "20%"},
 				{"fieldname": "false_bool", "value": "FALSE"},
 				{"fieldname": "invoice_copy", "value": "2"},
-				{"fieldname": "transyear", "value": "2019"},
+				{"fieldname": "transyear", "value": time.Now().Format("2006")},
 				{"fieldname": "true_bool", "value": "TRUE"},
 				{"fieldname": "audit_control", "value": "false"},
 				{"fieldname": "invoice_from_inventory", "value": "false"},

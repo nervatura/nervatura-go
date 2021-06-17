@@ -187,6 +187,43 @@
       </div>
     </div>
     {{end}}
+    <div class="row full primary bold" >
+      <div class="cell padding-normal" >
+        <span>{{ .view_configuration }}</span>
+      </div>
+      <div class="cell align-right container" >
+        <button class="primary success-color" name="cmd" type="submit" value="env_list" >
+          {{ .view_list }}
+        </button>
+      </div>
+    </div>
+    {{if .env_result}}
+    <div class="container section" >
+      <div class="results small">
+        <div class="row nowrap" >
+          <div class="trow bold" >
+            <div class="cell padding-small" >
+              {{ .view_envkey }}
+            </div>
+            <div class="cell padding-small" >
+              {{ .view_envvalue }}
+            </div>
+          </div>
+          {{range .env_result}}
+          <div class="trow" >
+            <div class="cell padding-small" >
+              {{ .envkey }}
+            </div>
+            <div class="cell padding-small" >
+              {{ .envvalue }}
+            </div>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    {{end}}
+
   </form>
 </div>
 {{ template "footer" . }}

@@ -17,3 +17,5 @@
 vendor
 build
 .scannerwork
+dist/
+.env

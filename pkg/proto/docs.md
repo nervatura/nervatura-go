@@ -1,7 +1,8 @@
 
 
----
 # Nervatura gRPC API
+
+Nervatura [gRPC](https://grpc.io/) specification. For more examples, see [Node.js sample application](https://github.com/nervatura/nervatura-express)
 
 | Method Name | Request Type | Response Type | Description |
 | --- | --- | --- | --- |
@@ -1205,6 +1206,7 @@ If the ID (or Key) value is missing, it creates a new item.
 | ----- | ---- | ----------- |
 | token | [ string](#string) | Access JWT token |
 | engine | [ string](#string) | Type of database |
+| version | [ string](#string) | Service version |
 
 <br />
 

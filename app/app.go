@@ -24,6 +24,7 @@ type App struct {
 	defConn   nt.DataDriver
 	infoLog   *log.Logger
 	errorLog  *log.Logger
+	httpLog   *log.Logger
 	tokenKeys map[string]map[string]string
 	config    map[string]interface{}
 }
@@ -45,14 +46,24 @@ func New(version string) (app *App, err error) {
 
 	app.infoLog = log.New(os.Stdout, "INFO: ", log.LstdFlags)
 	app.errorLog = log.New(os.Stdout, "ERROR: ", log.LstdFlags)
-	app.setConfig()
-	if app.config["NT_APP_LOG_FILE"] != "" {
-		f, err := os.OpenFile(app.config["NT_APP_LOG_FILE"].(string), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	app.httpLog = log.New(os.Stdout, "", log.LstdFlags)
+	if os.Getenv("NT_APP_LOG_FILE") != "" {
+		f, err := os.OpenFile(os.Getenv("NT_APP_LOG_FILE"), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
 			app.errorLog.Printf(ut.GetMessage("error_opening_log"), err)
 		} else {
 			app.infoLog = log.New(f, "INFO: ", log.LstdFlags)
 			app.errorLog = log.New(f, "ERROR: ", log.LstdFlags)
+		}
+		defer f.Close()
+	}
+	app.setConfig()
+	if app.config["NT_HTTP_LOG_FILE"] != "" {
+		f, err := os.OpenFile(app.config["NT_HTTP_LOG_FILE"].(string), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			app.errorLog.Printf(ut.GetMessage("error_opening_log"), err)
+		} else {
+			app.httpLog = log.New(f, "", log.LstdFlags)
 		}
 		defer f.Close()
 	}
@@ -93,6 +104,10 @@ func (app *App) setConfig() {
 	app.config["NT_HTTP_READ_TIMEOUT"] = ut.ToFloat(os.Getenv("NT_HTTP_READ_TIMEOUT"), 30)
 	app.config["NT_HTTP_WRITE_TIMEOUT"] = ut.ToFloat(os.Getenv("NT_HTTP_WRITE_TIMEOUT"), 30)
 	app.config["NT_HTTP_HOME"] = ut.ToString(os.Getenv("NT_HTTP_HOME"), "/admin")
+	app.config["NT_HTTP_LOG_FILE"] = ut.ToString(os.Getenv("NT_HTTP_LOG_FILE"), "")
+	if app.config["NT_HTTP_LOG_FILE"] == "" && os.Getenv("SNAP_COMMON") != "" {
+		app.config["NT_HTTP_LOG_FILE"] = os.Getenv("SNAP_COMMON") + "/http.log"
+	}
 
 	app.config["NT_GRPC_ENABLED"] = ut.ToBoolean(os.Getenv("NT_GRPC_ENABLED"), true)
 	app.config["NT_GRPC_PORT"] = ut.ToInteger(os.Getenv("NT_GRPC_PORT"), 9200)
@@ -170,6 +185,9 @@ func (app *App) setConfig() {
 		if _, err := os.Stat("data"); err == nil {
 			app.config["NT_ALIAS_DEMO"] = "sqlite://file:data/demo.db?cache=shared&mode=rwc"
 		}
+		if os.Getenv("SNAP_COMMON") != "" {
+			app.config["NT_ALIAS_DEMO"] = "sqlite://file:" + os.Getenv("SNAP_COMMON") + "/demo.db?cache=shared&mode=rwc"
+		}
 	}
 
 	info := []string{"NT_API_KEY", "NT_TOKEN_KID", "NT_TOKEN_PRIVATE_KEY"}
@@ -215,20 +233,28 @@ func (app *App) startServer() {
 
 	g, ctx := errgroup.WithContext(ctx)
 
+	http_disabled := false
 	if _, found := services["http"]; found && app.config["NT_HTTP_ENABLED"].(bool) {
 		g.Go(func() error {
 			return app.startService("http")
 		})
 	} else {
+		http_disabled = true
 		app.infoLog.Println(ut.GetMessage("http_disabled"))
 	}
 
+	grpc_disabled := false
 	if _, found := services["grpc"]; found && app.config["NT_GRPC_ENABLED"].(bool) {
 		g.Go(func() error {
 			return app.startService("grpc")
 		})
 	} else {
+		grpc_disabled = true
 		app.infoLog.Println(ut.GetMessage("grpc_disabled"))
+	}
+
+	if http_disabled && grpc_disabled {
+		return
 	}
 
 	select {

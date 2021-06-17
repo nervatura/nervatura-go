@@ -53,7 +53,7 @@ func (srv *CLIService) UserLogin(options nt.IM) string {
 	}
 	nstore := srv.GetNervaStore(options["database"].(string))
 	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(options)
-	return respondData(200, nt.SM{"token": token, "engine": engine}, 400, err)
+	return respondData(200, nt.SM{"token": token, "engine": engine, "version": srv.Config["version"].(string)}, 400, err)
 }
 
 func (srv *CLIService) UserPassword(api *nt.API, options nt.IM) string {

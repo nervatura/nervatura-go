@@ -64,6 +64,13 @@ input {
   display: block;
 }
 
+.env {
+  border-radius: 3px;
+  font-size: 14px;
+  padding: 7px;
+  white-space:nowrap;
+}
+
 input[type=color]{
   height: 34px;
   border: none;

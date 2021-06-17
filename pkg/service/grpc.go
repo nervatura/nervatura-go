@@ -614,7 +614,7 @@ func (srv *RPCService) UserLogin(ctx context.Context, req *pb.RequestUserLogin) 
 	nstore := srv.GetNervaStore(req.Database)
 	login := nt.IM{"username": req.Username, "password": req.Password, "database": req.Database}
 	token, engine, err := (&nt.API{NStore: nstore}).UserLogin(login)
-	return &pb.ResponseUserLogin{Token: token, Engine: engine}, err
+	return &pb.ResponseUserLogin{Token: token, Engine: engine, Version: srv.Config["version"].(string)}, err
 }
 
 // User (employee or customer) password change.

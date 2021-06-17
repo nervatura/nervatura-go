@@ -55,9 +55,11 @@ import (
 	"github.com/nervatura/nervatura-service/app"
 )
 
-var Version string
+var (
+	version = "dev"
+)
 
 func main() {
-	fmt.Printf("Version: %s\n", Version)
-	app.New(Version)
+	fmt.Printf("Version: %s\n", version)
+	app.New(version)
 }

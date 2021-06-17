@@ -1,0 +1,9 @@
+## 5.0.0-beta.2
+- mysql database connection bug fixes
+- upgrade mysql support to v8
+- API UserLogin response: + service version
+- ADMIN GUI: configurations list
+- Client bug fixes and service version control
+- prebuild dist: arm64
+- snapcrafts support
+- new env. value: NT_HTTP_LOG_FILE

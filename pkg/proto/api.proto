@@ -108,6 +108,7 @@ message RequestUserLogin {
 message ResponseUserLogin {
   string token = 1; // Access JWT token
   string engine = 2; // Type of database
+  string version = 3; // Service version
 }
 
 message RequestTokenDecode {

@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -148,10 +149,20 @@ func (s *httpServer) ConnectApp(app interface{}) {
 	s.app = app.(*App)
 }
 
+func (s *httpServer) Logger(next http.Handler) http.Handler {
+	color := true
+	if runtime.GOOS == "windows" {
+		color = false
+	}
+	DefaultLogger := middleware.RequestLogger(
+		&middleware.DefaultLogFormatter{Logger: s.app.httpLog, NoColor: !color})
+	return DefaultLogger(next)
+}
+
 // Register middleware.
 func (s *httpServer) setMiddleware() {
 
-	s.mux.Use(middleware.Logger)
+	s.mux.Use(s.Logger)
 	s.mux.Use(middleware.RequestID)
 	s.mux.Use(middleware.Recoverer)
 

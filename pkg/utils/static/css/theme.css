@@ -96,14 +96,14 @@ select:focus, select:hover:not(:disabled), button:focus, button:hover:not(:disab
 }
 
 .light input, .light textarea , .light select, .light option, .light .rtf, .light .toggle, 
-.light .link, .light .results {
+.light .link, .light .results, .light .env {
   color: var(--dark);
   background-color: white;
   font-family: var(--font-family);
 }
 
 .light input, .light textarea , .light select, .light button, .light .border, 
-.light .ui-table table, .light .toggle, .light .link, .light .list, .light .dialog {
+.light .ui-table table, .light .toggle, .light .link, .light .list, .light .dialog, .light .env {
   border: 1px solid rgba(var(--dark-rgb),0.2);
 }
 
@@ -135,14 +135,14 @@ select:focus, select:hover:not(:disabled), button:focus, button:hover:not(:disab
 }
 
 .dark input, .dark textarea, .dark select, .dark option, .dark .rtf, .dark .toggle, 
-.dark .link, .dark .results {
+.dark .link, .dark .results, .dark .env {
   color: var(--light);
   background-color: black;
   font-family: var(--font-family);
 }
 
 .dark input, .dark textarea, .dark select, .dark button, .dark .border, 
-.dark .ui-table table, .dark .toggle, .dark .link, .dark .list, .dark .dialog   {
+.dark .ui-table table, .dark .toggle, .dark .link, .dark .list, .dark .dialog, .dark .env   {
   border: 1px solid rgba(var(--light-rgb),0.2);
 }
 

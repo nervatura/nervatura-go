@@ -3,7 +3,10 @@ package service
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path"
+	"sort"
+	"strings"
 	"text/template"
 
 	db "github.com/nervatura/nervatura-service/pkg/database"
@@ -57,6 +60,8 @@ func (adm *AdminService) parseData(r *http.Request) nt.IM {
 		"view_name": ut.GetMessage("view_name"), "view_description": ut.GetMessage("view_description"),
 		"view_type": ut.GetMessage("view_type"), "view_filename": ut.GetMessage("view_filename"),
 		"view_label": ut.GetMessage("view_label"), "view_delete": ut.GetMessage("view_delete"),
+		"view_configuration": ut.GetMessage("view_configuration"), "env_result": []nt.SM{},
+		"view_envkey": ut.GetMessage("view_envkey"), "view_envvalue": ut.GetMessage("view_envvalue"),
 	}
 }
 
@@ -156,6 +161,23 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 			data["success"] = ut.GetMessage("successful_delete")
 			data["reportkey"] = ""
 		}
+	case "env_list":
+		env_result := make([]nt.SM, 0)
+		keys := make([]string, 0)
+		configs := adm.Config
+		for _, env := range os.Environ() {
+			if strings.HasPrefix(env, "NT_ALIAS_") {
+				configs[strings.Split(env, "=")[0]] = strings.Split(env, "=")[1]
+			}
+		}
+		for key := range configs {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			env_result = append(env_result, nt.SM{"envkey": strings.ToUpper(key), "envvalue": ut.ToString(adm.Config[key], "")})
+		}
+		data["env_result"] = env_result
 	}
 	if err != nil {
 		data["errors"].(nt.SM)["admin"] = err.Error()
