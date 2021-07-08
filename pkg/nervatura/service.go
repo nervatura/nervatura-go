@@ -144,21 +144,6 @@ func defaultValue(key string, options IM, defValue interface{}) interface{} {
 	return defValue
 }
 
-func getFloatValue(value interface{}) (float64, error) {
-
-	switch v := value.(type) {
-	case int:
-		return float64(v), nil
-	case int64:
-		return float64(v), nil
-	case float64:
-		return v, nil
-	case string:
-		return strconv.ParseFloat(v, 64)
-	}
-	return 0, nil
-}
-
 //getPriceValue - get product price
 func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	results = IM{"price": float64(0), "discount": float64(0)}
@@ -190,10 +175,7 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 	}
 	if len(pdata) > 0 {
 		if pdata[0]["mp"] != nil {
-			results["price"], err = getFloatValue(pdata[0]["mp"])
-			if err != nil {
-				return results, err
-			}
+			results["price"] = ut.ToFloat(pdata[0]["mp"], 0)
 		}
 	}
 
@@ -223,10 +205,7 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 		if len(pdata) > 0 {
 			if pdata[0]["mp"] != nil {
-				price, err := getFloatValue(pdata[0]["mp"])
-				if err != nil {
-					return results, err
-				}
+				price := ut.ToFloat(pdata[0]["mp"], 0)
 				if results["price"].(float64) > price || results["price"] == 0 {
 					results["price"] = price
 					results["discount"] = 0
@@ -244,10 +223,7 @@ func (nstore *NervaStore) getPriceValue(options IM) (results IM, err error) {
 		}
 		if len(pdata) > 0 {
 			if pdata[0]["mp"] != nil {
-				price, err := getFloatValue(pdata[0]["mp"])
-				if err != nil {
-					return results, err
-				}
+				price := ut.ToFloat(pdata[0]["mp"], 0)
 				if results["price"].(float64) > price || results["price"] == 0 {
 					results["price"] = price
 					results["discount"] = 0

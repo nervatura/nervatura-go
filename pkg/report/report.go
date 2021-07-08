@@ -231,7 +231,9 @@ func (pi *PageItem) setPageItem(fieldname string, value interface{}) error {
 			"Height": func(value interface{}) {
 				pi.Item.(*VGap).Height = ut.ToFloat(value, 0)
 			},
-			"Visible": func(value interface{}) {},
+			"Visible": func(value interface{}) {
+				// Deprecated
+			},
 		},
 		"hline": {
 			"Width": func(value interface{}) {
@@ -243,7 +245,9 @@ func (pi *PageItem) setPageItem(fieldname string, value interface{}) error {
 			"BorderColor": func(value interface{}) {
 				pi.Item.(*HLine).BorderColor = ut.ToRGBA(value, pi.Item.(*HLine).BorderColor)
 			},
-			"Visible": func(value interface{}) {},
+			"Visible": func(value interface{}) {
+				// Deprecated
+			},
 		},
 		"html": {
 			"Fieldname": func(value interface{}) {
@@ -1352,9 +1356,9 @@ func (rpt *Report) parseValue(vname string, value interface{}) interface{} {
 						ivalue = 100
 					}
 					return ut.ToString(ivalue, "0") + "%"
-				} else {
-					return ut.ToString(ut.ToFloat(value, 0)*_mmPt, "0")
 				}
+				return ut.ToString(ut.ToFloat(value, 0)*_mmPt, "0")
+
 			default:
 				return ut.ToString(ut.ToFloat(value, 0)*_mmPt, "0")
 			}
@@ -1412,17 +1416,32 @@ func (rpt *Report) parseValue(vname string, value interface{}) interface{} {
 }
 
 func (rpt *Report) setFont() bool {
+	fontFile := map[string]func(family string) string{
+		"REGULAR": func(family string) string {
+			return family + "-Regular.ttf"
+		},
+		"BOLD": func(family string) string {
+			return family + "-Bold.ttf"
+		},
+		"ITALIC": func(family string) string {
+			return family + "-Italic.ttf"
+		},
+		"BOLDITALIC": func(family string) string {
+			return family + "-BoldItalic.ttf"
+		},
+	}
+
 	checkCustom := func() bool {
-		if _, err := os.Stat(path.Join(rpt.fontDir, rpt.FontFamily+"-Regular.ttf")); err != nil {
+		if _, err := os.Stat(path.Join(rpt.fontDir, fontFile["REGULAR"](rpt.FontFamily))); err != nil {
 			return false
 		}
-		if _, err := os.Stat(path.Join(rpt.fontDir, rpt.FontFamily+"-Bold.ttf")); err != nil {
+		if _, err := os.Stat(path.Join(rpt.fontDir, fontFile["BOLD"](rpt.FontFamily))); err != nil {
 			return false
 		}
-		if _, err := os.Stat(path.Join(rpt.fontDir, rpt.FontFamily+"-Italic.ttf")); err != nil {
+		if _, err := os.Stat(path.Join(rpt.fontDir, fontFile["ITALIC"](rpt.FontFamily))); err != nil {
 			return false
 		}
-		if _, err := os.Stat(path.Join(rpt.fontDir, rpt.FontFamily+"-BoldItalic.ttf")); err != nil {
+		if _, err := os.Stat(path.Join(rpt.fontDir, fontFile["BOLDITALIC"](rpt.FontFamily))); err != nil {
 			return false
 		}
 		return true
@@ -1434,19 +1453,19 @@ func (rpt *Report) setFont() bool {
 	}
 
 	if custom {
-		rpt.pdf.AddFont(rpt.FontFamily, "", path.Join(rpt.fontDir, rpt.FontFamily+"-Regular.ttf"), nil)
-		rpt.pdf.AddFont(rpt.FontFamily, "B", path.Join(rpt.fontDir, rpt.FontFamily+"-Bold.ttf"), nil)
-		rpt.pdf.AddFont(rpt.FontFamily, "I", path.Join(rpt.fontDir, rpt.FontFamily+"-Italic.ttf"), nil)
-		rpt.pdf.AddFont(rpt.FontFamily, "BI", path.Join(rpt.fontDir, rpt.FontFamily+"-BoldItalic.ttf"), nil)
+		rpt.pdf.AddFont(rpt.FontFamily, "", path.Join(rpt.fontDir, fontFile["REGULAR"](rpt.FontFamily)), nil)
+		rpt.pdf.AddFont(rpt.FontFamily, "B", path.Join(rpt.fontDir, fontFile["BOLD"](rpt.FontFamily)), nil)
+		rpt.pdf.AddFont(rpt.FontFamily, "I", path.Join(rpt.fontDir, fontFile["ITALIC"](rpt.FontFamily)), nil)
+		rpt.pdf.AddFont(rpt.FontFamily, "BI", path.Join(rpt.fontDir, fontFile["BOLDITALIC"](rpt.FontFamily)), nil)
 	} else {
 		rpt.FontFamily = _fontFamily
-		font, _ := ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-Regular.ttf"))
+		font, _ := ut.Public.Open(path.Join("static", "fonts", fontFile["REGULAR"](_fontFamily)))
 		rpt.pdf.AddFont(rpt.FontFamily, "", "", font)
-		font, _ = ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-Bold.ttf"))
+		font, _ = ut.Public.Open(path.Join("static", "fonts", fontFile["BOLD"](_fontFamily)))
 		rpt.pdf.AddFont(rpt.FontFamily, "B", "", font)
-		font, _ = ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-Italic.ttf"))
+		font, _ = ut.Public.Open(path.Join("static", "fonts", fontFile["ITALIC"](_fontFamily)))
 		rpt.pdf.AddFont(rpt.FontFamily, "I", "", font)
-		font, _ = ut.Public.Open(path.Join("static", "fonts", rpt.FontFamily+"-BoldItalic.ttf"))
+		font, _ = ut.Public.Open(path.Join("static", "fonts", fontFile["BOLDITALIC"](_fontFamily)))
 		rpt.pdf.AddFont(rpt.FontFamily, "BI", "", font)
 	}
 	return true

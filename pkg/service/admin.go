@@ -162,7 +162,7 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 			data["reportkey"] = ""
 		}
 	case "env_list":
-		env_result := make([]nt.SM, 0)
+		envResult := make([]nt.SM, 0)
 		keys := make([]string, 0)
 		configs := adm.Config
 		for _, env := range os.Environ() {
@@ -175,9 +175,9 @@ func (adm *AdminService) Admin(w http.ResponseWriter, r *http.Request) {
 		}
 		sort.Strings(keys)
 		for _, key := range keys {
-			env_result = append(env_result, nt.SM{"envkey": strings.ToUpper(key), "envvalue": ut.ToString(adm.Config[key], "")})
+			envResult = append(envResult, nt.SM{"envkey": strings.ToUpper(key), "envvalue": ut.ToString(adm.Config[key], "")})
 		}
-		data["env_result"] = env_result
+		data["env_result"] = envResult
 	}
 	if err != nil {
 		data["errors"].(nt.SM)["admin"] = err.Error()

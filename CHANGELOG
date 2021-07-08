@@ -1,3 +1,7 @@
+## 5.0.0-beta.3
+- code quality and stability fixes
+- server-side Python sample app
+
 ## 5.0.0-beta.2
 - mysql database connection bug fixes
 - upgrade mysql support to v8

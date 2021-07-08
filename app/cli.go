@@ -70,11 +70,11 @@ func (s *cliServer) parseFlags() (err error) {
 	var cmds = []string{"server", "Delete", "Function", "Get", "Update", "View",
 		"UserPassword", "TokenLogin", "TokenRefresh", "UserLogin", "DatabaseCreate",
 		"Report", "ReportDelete", "ReportInstall", "ReportList", "TokenDecode"}
-	var cmds_o = []string{"Delete", "Function", "Get", "Update", "UserPassword",
+	var cmdsO = []string{"Delete", "Function", "Get", "Update", "UserPassword",
 		"UserLogin", "DatabaseCreate", "Report", "ReportDelete", "ReportInstall", "ReportList"}
-	var cmds_nt = []string{"Update"}
-	var cmds_d = []string{"Update", "View"}
-	var cmds_k = []string{"DatabaseCreate"}
+	var cmdsNT = []string{"Update"}
+	var cmdsD = []string{"Update", "View"}
+	var cmdsK = []string{"DatabaseCreate"}
 
 	var help bool
 	flag.BoolVar(&help, "help", false, ut.GetMessage("cli_usage"))
@@ -83,13 +83,13 @@ func (s *cliServer) parseFlags() (err error) {
 	var token string
 	flag.StringVar(&token, "t", "", ut.GetMessage("cli_flag_t"))
 	var options string
-	flag.StringVar(&options, "o", "", ut.GetMessage("cli_flag_o")+strings.Join(cmds_o[:8], ", ")+",\n"+strings.Join(cmds_o[8:], ", "))
+	flag.StringVar(&options, "o", "", ut.GetMessage("cli_flag_o")+strings.Join(cmdsO[:8], ", ")+",\n"+strings.Join(cmdsO[8:], ", "))
 	var ntype string
-	flag.StringVar(&ntype, "nt", "", ut.GetMessage("cli_flag_nt")+strings.Join(cmds_nt, ", "))
+	flag.StringVar(&ntype, "nt", "", ut.GetMessage("cli_flag_nt")+strings.Join(cmdsNT, ", "))
 	var data string
-	flag.StringVar(&data, "d", "", ut.GetMessage("cli_flag_d")+strings.Join(cmds_d, ", "))
+	flag.StringVar(&data, "d", "", ut.GetMessage("cli_flag_d")+strings.Join(cmdsD, ", "))
 	var key string
-	flag.StringVar(&key, "k", "", ut.GetMessage("cli_flag_k")+strings.Join(cmds_k, ", "))
+	flag.StringVar(&key, "k", "", ut.GetMessage("cli_flag_k")+strings.Join(cmdsK, ", "))
 
 	flag.Usage = func() {
 		flag.PrintDefaults()

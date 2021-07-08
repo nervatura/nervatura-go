@@ -298,18 +298,18 @@ func TestUpdate(t *testing.T) {
 			"notes":   "Update an item by Keys"}}
 	transData := []nt.IM{
 		{
-			"transtype":   int64(57),
-			"direction":   int64(70),
+			"transtype":   int64(55),
+			"direction":   int64(68),
 			"crdate":      "2019-09-01",
 			"transdate":   "2019-09-02",
 			"duedate":     "2019-09-08T00:00:00",
 			"customer_id": int64(2),
-			"department":  int64(149),
-			"paidtype":    int64(135),
+			"department":  int64(138),
+			"paidtype":    int64(123),
 			"curr":        "EUR",
 			"notes":       "Create a new item by IDs",
 			"fnote":       "A long and <b><i>rich text</b></i> at the bottom of the invoice...<br><br>Can be multiple lines ...",
-			"transtate":   int64(105),
+			"transtate":   int64(93),
 			"keys": nt.IM{
 				"transnumber": nt.IL{"numberdef", "invoice_out"}}},
 		{

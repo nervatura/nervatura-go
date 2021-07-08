@@ -256,6 +256,30 @@ func ToBoolean(value interface{}, defValue bool) bool {
 	return defValue
 }
 
+//StringToDateTime - parse string to datetime
+func StringToDateTime(value string) (time.Time, error) {
+	tm, err := time.Parse("2006-01-02T15:04:05-07:00", value)
+	if err != nil {
+		tm, err = time.Parse("2006-01-02T15:04:05-0700", value)
+	}
+	if err != nil {
+		tm, err = time.Parse("2006-01-02T15:04:05", value)
+	}
+	if err != nil {
+		tm, err = time.Parse("2006-01-02T15:04:05Z", value)
+	}
+	if err != nil {
+		tm, err = time.Parse("2006-01-02 15:04:05", value)
+	}
+	if err != nil {
+		tm, err = time.Parse("2006-01-02 15:04", value)
+	}
+	if err != nil {
+		tm, err = time.Parse("2006-01-02", value)
+	}
+	return tm, err
+}
+
 // Find returns the smallest index i at which x == a[i],
 // or len(a) if there is no such index.
 func Find(a []string, x string) int {

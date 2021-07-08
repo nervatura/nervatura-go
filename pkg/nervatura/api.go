@@ -725,134 +725,87 @@ func (api *API) Function(options IM) (results interface{}, err error) {
 	return api.NStore.GetService(key, options["values"].(IM))
 }
 
-/*
-Update - Add or update one or more items
-
-If the ID (or Key) value is missing, it creates a new item. Returns the all new/updated IDs values.
-
-Examples:
-
-  addressData := []map[string]interface{}{
-    map[string]interface{}{
-      "nervatype":         10,
-      "ref_id":            2,
-      "zipcode":           "12345",
-      "city":              "BigCity",
-      "notes":             "Create a new item by IDs",
-      "address_metadata1": "value1",
-      "address_metadata2": "value2~note2"},
-    map[string]interface{}{
-      "id":                6,
-      "zipcode":           "54321",
-      "city":              "BigCity",
-      "notes":             "Update an item by IDs",
-      "address_metadata1": "value1",
-      "address_metadata2": "value2~note2"},
-    map[string]interface{}{
-      "keys": map[string]interface{}{
-        "nervatype": "customer",
-        "ref_id":    "customer/DMCUST/00001"},
-      "zipcode":           "12345",
-      "city":              "BigCity",
-      "notes":             "Create a new item by Keys",
-      "address_metadata1": "value1",
-      "address_metadata2": "value2~note2"},
-    map[string]interface{}{
-      "keys": map[string]interface{}{
-        "id": "customer/DMCUST/00001~1"},
-      "zipcode":           "54321",
-      "city":              "BigCity",
-      "notes":             "Update an item by Keys",
-      "address_metadata1": "value1",
-      "address_metadata2": "value2~note2"}}
-
-  _, err = api.Update("address", addressData)
-
-*/
-func (api *API) Update(nervatype string, data []IM) (results []int64, err error) {
-	if _, found := api.NStore.models[nervatype]; !found {
-		return results, errors.New(ut.GetMessage("invalid_nervatype") + " " + nervatype)
-	}
-
-	if nervatype == "trans" {
-		for index := 0; index < len(data); index++ {
-			_, fkeys := data[index]["keys"]
-			ftranstype := false
-			fcustomer := false
-			if fkeys {
-				_, ftranstype = data[index]["keys"].(IM)["transtype"]
-				_, fcustomer = data[index]["keys"].(IM)["customer_id"]
+func (api *API) updateTransInfo(data []IM) ([]IM, error) {
+	for index := 0; index < len(data); index++ {
+		_, fkeys := data[index]["keys"]
+		ftranstype := false
+		fcustomer := false
+		if fkeys {
+			_, ftranstype = data[index]["keys"].(IM)["transtype"]
+			_, fcustomer = data[index]["keys"].(IM)["customer_id"]
+		}
+		if !(fkeys && ftranstype && fcustomer) {
+			options := IM{"qkey": "post_transtype"}
+			options["transtype_id"] = nil
+			transtypeId := ut.ToInteger(data[index]["transtype"], 0)
+			if transtypeId > 0 {
+				options["transtype_id"] = transtypeId
 			}
-			if !(fkeys && ftranstype && fcustomer) {
-				options := IM{"qkey": "post_transtype"}
-				options["transtype_id"] = nil
-				transtypeId := ut.ToInteger(data[index]["transtype"], 0)
-				if transtypeId > 0 {
-					options["transtype_id"] = transtypeId
+			options["transtype_key"] = nil
+			if fkeys && ftranstype {
+				transtype := ut.ToString(data[index]["keys"].(IM)["transtype"], "")
+				if transtype != "" {
+					options["transtype_key"] = transtype
 				}
-				options["transtype_key"] = nil
-				if fkeys && ftranstype {
-					transtype := ut.ToString(data[index]["keys"].(IM)["transtype"], "")
-					if transtype != "" {
-						options["transtype_key"] = transtype
+			}
+			options["customer_id"] = nil
+			if _, found := data[index]["customer_id"]; found {
+				customerId := ut.ToInteger(data[index]["customer_id"], 0)
+				if customerId > 0 {
+					options["customer_id"] = customerId
+				}
+			}
+			options["custnumber"] = nil
+			if fkeys && fcustomer {
+				custnumber := ut.ToString(data[index]["keys"].(IM)["customer_id"], "")
+				if custnumber != "" {
+					options["custnumber"] = custnumber
+				}
+			}
+			options["trans_id"] = nil
+			if _, found := data[index]["id"]; found {
+				transId := ut.ToInteger(data[index]["id"], 0)
+				if transId > 0 {
+					options["trans_id"] = transId
+				}
+			}
+			info, err := api.NStore.ds.QueryKey(options, nil)
+			if err != nil {
+				return data, err
+			}
+			if len(info) > 0 {
+				if !fkeys {
+					data[index]["keys"] = IM{}
+				}
+				keys := map[string][]interface{}{}
+				for index := 0; index < len(info); index++ {
+					keys[info[index]["rtype"].(string)] = IL{info[index]["transtype"], info[index]["custnumber"]}
+				}
+				if _, found := keys["groups"]; found {
+					if !ftranstype {
+						data[index]["keys"].(IM)["transtype"] = keys["groups"][0]
+					}
+				} else if _, found := keys["trans"]; found {
+					if !ftranstype {
+						data[index]["keys"].(IM)["transtype"] = keys["trans"][0]
 					}
 				}
-				options["customer_id"] = nil
-				if _, found := data[index]["customer_id"]; found {
-					customerId := ut.ToInteger(data[index]["customer_id"], 0)
-					if customerId > 0 {
-						options["customer_id"] = customerId
+				if _, found := keys["customer"]; found {
+					if !fcustomer {
+						data[index]["keys"].(IM)["customer_id"] = keys["customer"][1]
 					}
-				}
-				options["custnumber"] = nil
-				if fkeys && fcustomer {
-					custnumber := ut.ToString(data[index]["keys"].(IM)["customer_id"], "")
-					if custnumber != "" {
-						options["custnumber"] = custnumber
-					}
-				}
-				options["trans_id"] = nil
-				if _, found := data[index]["id"]; found {
-					transId := ut.ToInteger(data[index]["id"], 0)
-					if transId > 0 {
-						options["trans_id"] = transId
-					}
-				}
-				info, err := api.NStore.ds.QueryKey(options, nil)
-				if err != nil {
-					return results, err
-				}
-				if len(info) > 0 {
-					if !fkeys {
-						data[index]["keys"] = IM{}
-					}
-					keys := map[string][]interface{}{}
-					for index := 0; index < len(info); index++ {
-						keys[info[index]["rtype"].(string)] = IL{info[index]["transtype"], info[index]["custnumber"]}
-					}
-					if _, found := keys["groups"]; found {
-						if !ftranstype {
-							data[index]["keys"].(IM)["transtype"] = keys["groups"][0]
-						}
-					} else if _, found := keys["trans"]; found {
-						if !ftranstype {
-							data[index]["keys"].(IM)["transtype"] = keys["trans"][0]
-						}
-					}
-					if _, found := keys["customer"]; found {
-						if !fcustomer {
-							data[index]["keys"].(IM)["customer_id"] = keys["customer"][1]
-						}
-					} else if _, found := keys["trans"]; found {
-						if !fcustomer && keys["trans"][1] != nil {
-							data[index]["keys"].(IM)["customer_id"] = keys["trans"][1]
-						}
+				} else if _, found := keys["trans"]; found {
+					if !fcustomer && keys["trans"][1] != nil {
+						data[index]["keys"].(IM)["customer_id"] = keys["trans"][1]
 					}
 				}
 			}
 		}
 	}
+	return data, nil
+}
 
+func (api *API) updateSetKeys(nervatype string, data []IM) ([]IM, error) {
 	for index := 0; index < len(data); index++ {
 		if _, found := data[index]["keys"]; found {
 			for key, value := range data[index]["keys"].(IM) {
@@ -913,13 +866,13 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 				if info["reftype"] == "numberdef" {
 					retnumber, err := api.NStore.nextNumber(info)
 					if err != nil {
-						return results, err
+						return data, err
 					}
 					data[index][ut.ToString(info["fieldname"], "")] = retnumber
 				} else {
 					refValues, err := api.NStore.GetInfofromRefnumber(info)
 					if err != nil {
-						return results, err
+						return data, err
 					}
 					data[index][ut.ToString(info["fieldname"], "")] = refValues["id"]
 					extraInfo := ut.ToBoolean(info["extra_info"], false)
@@ -935,7 +888,10 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 			}
 		}
 	}
+	return data, nil
+}
 
+func (api *API) updateCheckInfo(nervatype string, data []IM) ([]IM, error) {
 	model := api.NStore.models[nervatype].(IM)
 	for index := 0; index < len(data); index++ {
 		delete(data[index], "keys")
@@ -963,7 +919,7 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 				default:
 					if ifield.(MF).NotNull && ifield.(MF).Default == nil {
 						if _, found := data[index][ikey]; !found {
-							return results, errors.New(ut.GetMessage("missing_required_field") + " " + ikey)
+							return data, errors.New(ut.GetMessage("missing_required_field") + " " + ikey)
 						}
 					}
 				}
@@ -980,6 +936,74 @@ func (api *API) Update(nervatype string, data []IM) (results []int64, err error)
 				}
 			}
 		}
+	}
+	return data, nil
+}
+
+/*
+Update - Add or update one or more items
+
+If the ID (or Key) value is missing, it creates a new item. Returns the all new/updated IDs values.
+
+Examples:
+
+  addressData := []map[string]interface{}{
+    map[string]interface{}{
+      "nervatype":         10,
+      "ref_id":            2,
+      "zipcode":           "12345",
+      "city":              "BigCity",
+      "notes":             "Create a new item by IDs",
+      "address_metadata1": "value1",
+      "address_metadata2": "value2~note2"},
+    map[string]interface{}{
+      "id":                6,
+      "zipcode":           "54321",
+      "city":              "BigCity",
+      "notes":             "Update an item by IDs",
+      "address_metadata1": "value1",
+      "address_metadata2": "value2~note2"},
+    map[string]interface{}{
+      "keys": map[string]interface{}{
+        "nervatype": "customer",
+        "ref_id":    "customer/DMCUST/00001"},
+      "zipcode":           "12345",
+      "city":              "BigCity",
+      "notes":             "Create a new item by Keys",
+      "address_metadata1": "value1",
+      "address_metadata2": "value2~note2"},
+    map[string]interface{}{
+      "keys": map[string]interface{}{
+        "id": "customer/DMCUST/00001~1"},
+      "zipcode":           "54321",
+      "city":              "BigCity",
+      "notes":             "Update an item by Keys",
+      "address_metadata1": "value1",
+      "address_metadata2": "value2~note2"}}
+
+  _, err = api.Update("address", addressData)
+
+*/
+func (api *API) Update(nervatype string, data []IM) (results []int64, err error) {
+	if _, found := api.NStore.models[nervatype]; !found {
+		return results, errors.New(ut.GetMessage("invalid_nervatype") + " " + nervatype)
+	}
+
+	if nervatype == "trans" {
+		data, err = api.updateTransInfo(data)
+		if err != nil {
+			return results, err
+		}
+	}
+
+	data, err = api.updateSetKeys(nervatype, data)
+	if err != nil {
+		return results, err
+	}
+
+	data, err = api.updateCheckInfo(nervatype, data)
+	if err != nil {
+		return results, err
 	}
 
 	var trans interface{}

@@ -105,7 +105,7 @@ func (app *App) setConfig() {
 	app.config["NT_HTTP_WRITE_TIMEOUT"] = ut.ToFloat(os.Getenv("NT_HTTP_WRITE_TIMEOUT"), 30)
 	app.config["NT_HTTP_HOME"] = ut.ToString(os.Getenv("NT_HTTP_HOME"), "/admin")
 	app.config["NT_HTTP_LOG_FILE"] = ut.ToString(os.Getenv("NT_HTTP_LOG_FILE"), "")
-	if app.config["NT_HTTP_LOG_FILE"] == "" && os.Getenv("SNAP_COMMON") != "" {
+	if app.config["NT_HTTP_LOG_FILE"] == "" && os.Getenv("SNAP_COMMON") != "" && strings.Contains(os.Getenv("SNAP_COMMON"), "nervatura") {
 		app.config["NT_HTTP_LOG_FILE"] = os.Getenv("SNAP_COMMON") + "/http.log"
 	}
 
@@ -185,7 +185,7 @@ func (app *App) setConfig() {
 		if _, err := os.Stat("data"); err == nil {
 			app.config["NT_ALIAS_DEMO"] = "sqlite://file:data/demo.db?cache=shared&mode=rwc"
 		}
-		if os.Getenv("SNAP_COMMON") != "" {
+		if os.Getenv("SNAP_COMMON") != "" && strings.Contains(os.Getenv("SNAP_COMMON"), "nervatura") {
 			app.config["NT_ALIAS_DEMO"] = "sqlite://file:" + os.Getenv("SNAP_COMMON") + "/demo.db?cache=shared&mode=rwc"
 		}
 	}
@@ -233,27 +233,27 @@ func (app *App) startServer() {
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	http_disabled := false
+	httpDisabled := false
 	if _, found := services["http"]; found && app.config["NT_HTTP_ENABLED"].(bool) {
 		g.Go(func() error {
 			return app.startService("http")
 		})
 	} else {
-		http_disabled = true
+		httpDisabled = true
 		app.infoLog.Println(ut.GetMessage("http_disabled"))
 	}
 
-	grpc_disabled := false
+	grpcDisabled := false
 	if _, found := services["grpc"]; found && app.config["NT_GRPC_ENABLED"].(bool) {
 		g.Go(func() error {
 			return app.startService("grpc")
 		})
 	} else {
-		grpc_disabled = true
+		grpcDisabled = true
 		app.infoLog.Println(ut.GetMessage("grpc_disabled"))
 	}
 
-	if http_disabled && grpc_disabled {
+	if httpDisabled && grpcDisabled {
 		return
 	}
 

@@ -1,5 +1,5 @@
 APP_NAME = nervatura
-VNUM = 5.0.0-beta.2
+VNUM = 5.0.0-beta.3
 # all http grpc postgres mysql sqlite
 TAGS = all
 
@@ -68,3 +68,6 @@ snap-boot:
 
 snap-demo:
 	sudo NT_API_KEY=DEMO_API_KEY NT_ALIAS_DEMO="sqlite://file:/var/snap/nervatura/common/demo.db?cache=shared&mode=rwc" /snap/nervatura/current/nervatura -c DatabaseCreate -k DEMO_API_KEY -o "{\"database\":\"demo\",\"demo\":true}"
+
+proto-py:
+	python -m grpc_tools.protoc -I ./pkg/proto --python_out=./pkg/proto --grpc_python_out=./pkg/proto ./pkg/proto/api.proto

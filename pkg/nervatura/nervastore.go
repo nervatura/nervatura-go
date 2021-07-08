@@ -74,56 +74,6 @@ func checkFieldvalueBool(value interface{}) (interface{}, error) {
 	}
 }
 
-func checkFieldvalueInteger(value interface{}, fieldname string) (interface{}, error) {
-	if value == nil {
-		return int64(0), nil
-	}
-	switch v := value.(type) {
-	case int32:
-		return int64(v), nil
-	case int64:
-		return v, nil
-	case float64:
-		return int64(v), nil
-	case float32:
-		return int64(v), nil
-	case int:
-		return int64(v), nil
-	case string:
-		value, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return value, err
-		}
-		return value, nil
-	}
-	return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (integer)")
-}
-
-func checkFieldvalueFloat(value interface{}, fieldname string) (interface{}, error) {
-	if value == nil {
-		return float64(0), nil
-	}
-	switch v := value.(type) {
-	case int32:
-		return float64(v), nil
-	case int64:
-		return float64(v), nil
-	case int:
-		return float64(v), nil
-	case float32:
-		return float64(v), nil
-	case float64:
-		return v, nil
-	case string:
-		value, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return value, err
-		}
-		return value, nil
-	}
-	return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (float)")
-}
-
 func checkFieldvalueDate(value interface{}, fieldname, fieldtype string) (interface{}, error) {
 	if value == nil {
 		return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
@@ -133,9 +83,6 @@ func checkFieldvalueDate(value interface{}, fieldname, fieldtype string) (interf
 		return v.Format(dateFmt), nil
 	case string:
 		tm, err := time.Parse(dateFmt, v)
-		if err != nil {
-			tm, err = time.Parse(dateFmt, v)
-		}
 		if err != nil {
 			return value, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + fieldtype + ")")
 		}
@@ -215,10 +162,10 @@ func (nstore *NervaStore) checkFieldvalue(fieldname string, value, trans interfa
 		return checkFieldvalueBool(value)
 
 	case "integer":
-		return checkFieldvalueInteger(value, fieldname)
+		return ut.ToInteger(value, 0), nil
 
 	case "float":
-		return checkFieldvalueFloat(value, fieldname)
+		return ut.ToFloat(value, 0), nil
 
 	case "date":
 		return checkFieldvalueDate(value, fieldname, fieldtype)
@@ -308,6 +255,179 @@ func (nstore *NervaStore) insertLog(options IM) error {
 		}
 	}
 	return nil
+}
+
+func (nstore *NervaStore) updateValidate(nervatype string, checkValues IM, trans interface{}) (IM, error) {
+	//validate
+	query := []Query{{
+		Fields: []string{"g.id as id", "g.groupname as groupname", "g.groupvalue as groupvalue"},
+		From:   "groups g", Filters: []Filter{
+			{Field: "g.deleted", Comp: "==", Value: 0}}},
+		{
+			Fields: []string{"c.id as id", "'curr' as groupname", "c.curr as groupvalue"},
+			From:   "currency c"}}
+	result, err := nstore.ds.Query(query, trans)
+	if err != nil {
+		return nil, err
+	}
+	groups := make(map[int64]interface{})
+	curr := make(IM)
+	for index := 0; index < len(result); index++ {
+		row := result[index]
+		if row["groupname"] == "curr" {
+			curr[row["groupvalue"].(string)] = row["id"]
+		} else {
+			if id := ut.ToInteger(row["id"], 0); id > 0 {
+				groups[id] = row
+			}
+		}
+	}
+	for fieldname, value := range checkValues["values"].(IM) {
+		var field = nstore.models[nervatype].(IM)[fieldname].(MF)
+		switch field.Type {
+		case "integer":
+			if field.Requires == nil {
+				if value != nil || field.NotNull {
+					checkValues["values"].(IM)[fieldname] = ut.ToInteger(value, 0)
+				}
+			}
+
+		case "float":
+			if value != nil || field.NotNull {
+				checkValues["values"].(IM)[fieldname] = ut.ToFloat(value, 0)
+			}
+
+		case "date":
+			if ((value == nil) || (value == "")) && !field.NotNull {
+				checkValues["values"].(IM)[fieldname] = nil
+			} else {
+				switch value.(type) {
+				case time.Time:
+					checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
+				case string:
+					tm, err := time.Parse(dateFmt, value.(string))
+					if err != nil {
+						return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+					}
+					checkValues["values"].(IM)[fieldname] = tm.Format(dateFmt)
+				default:
+					return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+				}
+			}
+
+		case "datetime":
+			if ((value == nil) || (value == "")) && !field.NotNull {
+				checkValues["values"].(IM)[fieldname] = nil
+			} else {
+				switch value.(type) {
+				case time.Time:
+					checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
+				case string:
+					tm, err := ut.StringToDateTime(value.(string))
+					if err != nil {
+						return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+					}
+					checkValues["values"].(IM)[fieldname] = tm.Format(datetimeISOFmt)
+				default:
+					return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
+				}
+			}
+
+		case "password", "string", "text":
+			if ((value == nil) || (value == "")) && field.NotNull && field.Default != nil {
+				checkValues["values"].(IM)[fieldname] = strings.ReplaceAll(field.Default.(string), "'", "")
+			} else if ((value == nil) || (value == "")) && !field.NotNull {
+				checkValues["values"].(IM)[fieldname] = nil
+			} else {
+				checkValues["values"].(IM)[fieldname] = ut.ToString(value, "")
+				if len(checkValues["values"].(IM)[fieldname].(string)) > field.Length {
+					checkValues["values"].(IM)[fieldname] = checkValues["values"].(IM)[fieldname].(string)[:field.Length]
+				}
+			}
+		default:
+			if value == "" || value == 0 {
+				checkValues["values"].(IM)[fieldname] = nil
+			}
+		}
+		value = checkValues["values"].(IM)[fieldname]
+		if value == nil && field.NotNull {
+			return nil, errors.New(ut.GetMessage("missing_required_field") + ": " + fieldname)
+		}
+		if field.Requires != nil {
+			_, minFound := field.Requires["min"]
+			_, maxFound := field.Requires["max"]
+			if minFound || maxFound {
+				if _, found := field.Requires["min"]; found {
+					switch v := value.(type) {
+					case int64:
+						if v < field.Requires["min"].(int64) {
+							return nil, errors.New(ut.GetMessage("invalid_value") + " (min. value): " + fieldname)
+						}
+					case float64:
+						if v < field.Requires["min"].(float64) {
+							return nil, errors.New(ut.GetMessage("invalid_value") + " (min. value): " + fieldname)
+						}
+					}
+				}
+				if _, found := field.Requires["max"]; found {
+					switch v := value.(type) {
+					case int64:
+						if v > field.Requires["max"].(int64) {
+							return nil, errors.New(ut.GetMessage("invalid_value") + " (max. value): " + fieldname)
+						}
+					case float64:
+						if v > field.Requires["max"].(float64) {
+							return nil, errors.New(ut.GetMessage("invalid_value") + " (max. value): " + fieldname)
+						}
+					}
+				}
+			} else if _, found := field.Requires["bool"]; found {
+				switch value {
+				case "true", "True", "TRUE", "t", "T", "y", "YES", "yes", float64(1), int64(1), "1", true:
+					checkValues["values"].(IM)[fieldname] = 1
+				default:
+					checkValues["values"].(IM)[fieldname] = 0
+				}
+			} else if _, found := field.Requires["curr"]; found {
+				if value == "" || value == nil {
+					checkValues["values"].(IM)[fieldname] = nil
+				} else {
+					value, valid := value.(string)
+					if !valid {
+						return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
+					} else if _, found := curr[value]; !found {
+						return nil, errors.New(ut.GetMessage("invalid_value") + ": " + value)
+					}
+				}
+			} else {
+				ivalue := ut.ToInteger(value, 0)
+				if value == "" || value == nil {
+					checkValues["values"].(IM)[fieldname] = nil
+				} else if ivalue == 0 {
+					return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
+				} else if _, found := groups[ivalue]; !found {
+					return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
+				} else {
+					var gvalid bool
+					for req, rvalue := range field.Requires {
+						if groups[ivalue].(IM)["groupname"].(string) == req {
+							gvalid = true
+						} else if len(rvalue.(SL)) > 0 {
+							for index := 0; index < len(rvalue.(SL)); index++ {
+								if rvalue.(SL)[index] == groups[ivalue].(IM)["groupvalue"].(string) {
+									gvalid = true
+								}
+							}
+						}
+					}
+					if !gvalid {
+						return nil, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
+					}
+				}
+			}
+		}
+	}
+	return checkValues, nil
 }
 
 // UpdateData - update a record data
@@ -448,248 +568,9 @@ func (nstore *NervaStore) UpdateData(options IM) (id int64, err error) {
 	}
 
 	if len(checkValues["values"].(IM)) > 0 && validate {
-		//validate
-		query := []Query{{
-			Fields: []string{"g.id as id", "g.groupname as groupname", "g.groupvalue as groupvalue"},
-			From:   "groups g", Filters: []Filter{
-				{Field: "g.deleted", Comp: "==", Value: 0}}},
-			{
-				Fields: []string{"c.id as id", "'curr' as groupname", "c.curr as groupvalue"},
-				From:   "currency c"}}
-		result, err = nstore.ds.Query(query, trans)
+		checkValues, err = nstore.updateValidate(nervatype, checkValues, trans)
 		if err != nil {
 			return id, err
-		}
-		groups := make(map[int64]interface{})
-		curr := make(IM)
-		for index := 0; index < len(result); index++ {
-			row := result[index]
-			if row["groupname"] == "curr" {
-				curr[row["groupvalue"].(string)] = row["id"]
-			} else {
-				switch v := row["id"].(type) {
-				case int:
-					groups[int64(v)] = row
-				case int64:
-					groups[v] = row
-				case float64:
-					groups[int64(v)] = row
-				case string:
-					rid, err := strconv.ParseInt(v, 10, 64)
-					if err == nil {
-						groups[rid] = row
-					}
-				}
-			}
-		}
-		for fieldname, value := range checkValues["values"].(IM) {
-			var field = nstore.models[nervatype].(IM)[fieldname].(MF)
-			switch field.Type {
-			case "integer":
-				if field.Requires == nil {
-					if value == nil {
-						if field.NotNull {
-							checkValues["values"].(IM)[fieldname] = int64(0)
-						}
-					} else {
-						switch v := value.(type) {
-						case int32:
-							checkValues["values"].(IM)[fieldname] = int64(v)
-						case float64:
-							checkValues["values"].(IM)[fieldname] = int64(v)
-						case float32:
-							checkValues["values"].(IM)[fieldname] = int64(v)
-						case int:
-							checkValues["values"].(IM)[fieldname] = int64(v)
-						case int64:
-						default:
-							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (integer)")
-						}
-					}
-				}
-
-			case "float":
-				if value == nil {
-					if field.NotNull {
-						checkValues["values"].(IM)[fieldname] = float64(0)
-					}
-				} else {
-					switch value.(type) {
-					case float32:
-						checkValues["values"].(IM)[fieldname] = float64(value.(float32))
-					case float64:
-						checkValues["values"].(IM)[fieldname] = value.(float64)
-					default:
-						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (float)")
-					}
-				}
-
-			case "date":
-				if ((value == nil) || (value == "")) && !field.NotNull {
-					checkValues["values"].(IM)[fieldname] = nil
-				} else {
-					switch value.(type) {
-					case time.Time:
-						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
-					case string:
-						tm, err := time.Parse(dateFmt, value.(string))
-						if err != nil {
-							tm, err = time.Parse(dateFmt, value.(string))
-						}
-						if err != nil {
-							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
-						}
-						checkValues["values"].(IM)[fieldname] = tm.Format(dateFmt)
-					default:
-						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
-					}
-				}
-
-			case "datetime":
-				if ((value == nil) || (value == "")) && !field.NotNull {
-					checkValues["values"].(IM)[fieldname] = nil
-				} else {
-					switch value.(type) {
-					case time.Time:
-						checkValues["values"].(IM)[fieldname] = value.(time.Time).Format(dateFmt)
-					case string:
-						tm, err := time.Parse(datetimeISOFmt, value.(string))
-						if err != nil {
-							tm, err = time.Parse("2006-01-02T15:04:05-0700", value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse("2006-01-02T15:04:05", value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse("2006-01-02T15:04:05Z", value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse(TimeLayout, value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse("2006-01-02 15:04", value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse(dateFmt, value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse(datetimeFmt, value.(string))
-						}
-						if err != nil {
-							tm, err = time.Parse(dateFmt, value.(string))
-						}
-						if err != nil {
-							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
-						}
-						checkValues["values"].(IM)[fieldname] = tm.Format(datetimeISOFmt)
-					default:
-						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (" + field.Type + ")")
-					}
-				}
-
-			case "password", "string", "text":
-				if ((value == nil) || (value == "")) && field.NotNull && field.Default != nil {
-					checkValues["values"].(IM)[fieldname] = strings.ReplaceAll(field.Default.(string), "'", "")
-				} else if ((value == nil) || (value == "")) && !field.NotNull {
-					checkValues["values"].(IM)[fieldname] = nil
-				} else {
-					switch v := value.(type) {
-					case int64:
-						checkValues["values"].(IM)[fieldname] = strconv.FormatInt(v, 10)
-					case float64:
-						checkValues["values"].(IM)[fieldname] = strconv.FormatFloat(value.(float64), 'f', -1, 64)
-					case bool:
-						checkValues["values"].(IM)[fieldname] = strconv.FormatBool(value.(bool))
-					case string:
-						if field.Length > 0 && len(value.(string)) > field.Length {
-							checkValues["values"].(IM)[fieldname] = value.(string)[:field.Length]
-						}
-					default:
-						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname + " (string)")
-					}
-				}
-			default:
-				if value == "" || value == 0 {
-					checkValues["values"].(IM)[fieldname] = nil
-				}
-			}
-			value = checkValues["values"].(IM)[fieldname]
-			if value == nil && field.NotNull {
-				return id, errors.New(ut.GetMessage("missing_required_field") + ": " + fieldname)
-			}
-			if field.Requires != nil {
-				_, minFound := field.Requires["min"]
-				_, maxFound := field.Requires["max"]
-				if minFound || maxFound {
-					if _, found := field.Requires["min"]; found {
-						switch v := value.(type) {
-						case int64:
-							if v < field.Requires["min"].(int64) {
-								return id, errors.New(ut.GetMessage("invalid_value") + " (min. value): " + fieldname)
-							}
-						case float64:
-							if v < field.Requires["min"].(float64) {
-								return id, errors.New(ut.GetMessage("invalid_value") + " (min. value): " + fieldname)
-							}
-						}
-					}
-					if _, found := field.Requires["max"]; found {
-						switch v := value.(type) {
-						case int64:
-							if v > field.Requires["max"].(int64) {
-								return id, errors.New(ut.GetMessage("invalid_value") + " (max. value): " + fieldname)
-							}
-						case float64:
-							if v > field.Requires["max"].(float64) {
-								return id, errors.New(ut.GetMessage("invalid_value") + " (max. value): " + fieldname)
-							}
-						}
-					}
-				} else if _, found := field.Requires["bool"]; found {
-					switch value {
-					case "true", "True", "TRUE", "t", "T", "y", "YES", "yes", float64(1), int64(1), "1", true:
-						checkValues["values"].(IM)[fieldname] = 1
-					default:
-						checkValues["values"].(IM)[fieldname] = 0
-					}
-				} else if _, found := field.Requires["curr"]; found {
-					if value == "" || value == nil {
-						checkValues["values"].(IM)[fieldname] = nil
-					} else {
-						value, valid := value.(string)
-						if !valid {
-							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
-						} else if _, found := curr[value]; !found {
-							return id, errors.New(ut.GetMessage("invalid_value") + ": " + value)
-						}
-					}
-				} else {
-					ivalue := ut.ToInteger(value, 0)
-					if value == "" || value == nil {
-						checkValues["values"].(IM)[fieldname] = nil
-					} else if ivalue == 0 {
-						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
-					} else if _, found := groups[ivalue]; !found {
-						return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
-					} else {
-						var gvalid bool
-						for req, rvalue := range field.Requires {
-							if groups[ivalue].(IM)["groupname"].(string) == req {
-								gvalid = true
-							} else if len(rvalue.(SL)) > 0 {
-								for index := 0; index < len(rvalue.(SL)); index++ {
-									if rvalue.(SL)[index] == groups[ivalue].(IM)["groupvalue"].(string) {
-										gvalid = true
-									}
-								}
-							}
-						}
-						if !gvalid {
-							return id, errors.New(ut.GetMessage("invalid_value") + ": " + fieldname)
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -1240,17 +1121,7 @@ func (nstore *NervaStore) DeleteData(options IM) (err error) {
 		}
 		for index := 0; index < len(result); index++ {
 			data = Update{Model: "fieldvalue", Trans: trans}
-			switch v := result[index]["id"].(type) {
-			case int:
-				data.IDKey = int64(v)
-			case float64:
-				data.IDKey = int64(v)
-			case string:
-				IDKey, err := strconv.ParseInt(v, 10, 64)
-				if err == nil {
-					data.IDKey = IDKey
-				}
-			}
+			data.IDKey = ut.ToInteger(result[index]["id"], 0)
 			if data.IDKey > 0 {
 				_, err = nstore.ds.Update(data)
 				if err != nil {
